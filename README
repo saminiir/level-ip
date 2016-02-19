@@ -1,0 +1,9 @@
+# Lvl-IP
+
+Lvl-IP is a Linux userspace TCP/IP stack, implemented with TUN/TAP devices.
+
+The main goals are to:
+* Learn TCP/IP
+* Learn Linux Socket API
+* Learn Linux virtual interfaces (TUN/TAP devices)
+* Learn how to compile a libc to redirect socket initialization to use our new TCP/IP stack
