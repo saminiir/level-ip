@@ -26,9 +26,15 @@ int run_cmd(char *cmd, ...)
     return system(buf);
 }
 
-int set_route(char *dev, char *cidr)
+int set_if_route(char *dev, char *cidr)
 {
     return run_cmd("ip route add dev %s %s", dev, cidr);
+}
+
+int set_if_address(char *dev, char *cidr)
+{
+    return run_cmd("ip address add dev %s local %s", dev, cidr);
+
 }
 
 int set_if_up(char *dev)
@@ -80,10 +86,13 @@ int main(int argc, char** argv) {
 
     if (set_if_up(dev) != 0) {
         printf("ERROR when setting up if\n");
-            
     }
 
-    if (set_route(dev, "10.0.0.0/24") != 0) {
+    if (set_if_address(dev, "10.0.0.5/24") != 0) {
+        printf("ERROR when setting address for if\n");
+    };
+
+    if (set_if_route(dev, "10.0.0.0/24") != 0) {
         printf("ERROR when setting route for if\n");
     }
 
