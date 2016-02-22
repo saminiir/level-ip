@@ -10,6 +10,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include "basic.h"
+
 #define CMDBUFLEN 100
 
 int run_cmd(char *cmd, ...)
@@ -80,8 +82,8 @@ int tun_alloc(char *dev)
 int main(int argc, char** argv) {
     int tun_fd;
     char buf[100];
-
     char *dev = calloc(10, 1);
+    CLEAR(buf);
     tun_fd = tun_alloc(dev);
 
     if (set_if_up(dev) != 0) {
