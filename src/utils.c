@@ -16,3 +16,14 @@ int run_cmd(char *cmd, ...)
 
     return system(buf);
 }
+
+void print_hexdump(char *str, int len)
+{
+    printf("Printing hexdump:\n");
+    for (int i = 0; i < len; i ++) {
+        if (i % 8 == 0) printf("\n");
+        printf("%02x ", (unsigned char)str[i]);
+    }
+
+    printf("\n");
+}

@@ -6,6 +6,7 @@
 
 #include "basic.h"
 #include "tuntap_if.h"
+#include "utils.h"
 
 int main(int argc, char** argv) {
     int tun_fd;
@@ -27,6 +28,8 @@ int main(int argc, char** argv) {
     }
 
     read(tun_fd, buf, 100);
+
+    print_hexdump(buf, 100);
 
     free(dev);
 }
