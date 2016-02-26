@@ -27,9 +27,11 @@ int main(int argc, char** argv) {
         printf("ERROR when setting route for if\n");
     }
 
-    read(tun_fd, buf, 100);
+    while (1) {
+        read(tun_fd, buf, 100);
 
-    print_hexdump(buf, 100);
+        print_hexdump(buf, 100);
+    }
 
     free(dev);
 }
