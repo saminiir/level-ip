@@ -8,9 +8,11 @@
 #include "tuntap_if.h"
 #include "utils.h"
 
+#define BUFLEN 100
+
 int main(int argc, char** argv) {
     int tun_fd;
-    char buf[100];
+    char buf[BUFLEN];
     char *dev = calloc(10, 1);
     CLEAR(buf);
     tun_fd = tun_alloc(dev);
@@ -28,9 +30,9 @@ int main(int argc, char** argv) {
     }
 
     while (1) {
-        read(tun_fd, buf, 100);
+        read(tun_fd, buf, BUFLEN);
 
-        print_hexdump(buf, 100);
+        print_hexdump(buf, BUFLEN);
     }
 
     free(dev);
