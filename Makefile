@@ -1,12 +1,13 @@
-vpath %.c src
-vpath %.h include
-
 CPPFLAGS = -I include -Wall
 
-objects := main.o utils.o tuntap_if.o
+src = $(wildcard src/*.c)
+obj = $(patsubst src/%.c, build/%.o, $(src))
 
-lvl-ip: $(objects)
-	$(CC) $(objects) -o lvl-ip
+lvl-ip: $(obj)
+	$(CC) $(obj) -o lvl-ip
+
+build/%.o: src/%.c
+	$(CC) $(CPPFLAGS) -c $< -o $@
 
 clean:
-	rm *.o lvl-ip
+	rm build/*.o lvl-ip
