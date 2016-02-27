@@ -40,7 +40,7 @@ int tun_alloc(char *dev)
         exit(1);
     }
 
-    memset(&ifr, 0, sizeof(ifr));
+    CLEAR(ifr);
 
     /* Flags: IFF_TUN   - TUN device (no Ethernet headers)
      *        IFF_TAP   - TAP device
