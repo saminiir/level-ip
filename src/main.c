@@ -21,10 +21,6 @@ int main(int argc, char** argv) {
         print_error("ERROR when setting up if\n");
     }
 
-    if (set_if_address(dev, "10.0.0.5/24") != 0) {
-        printf("ERROR when setting address for if\n");
-    };
-
     if (set_if_route(dev, "10.0.0.0/24") != 0) {
         print_error("ERROR when setting route for if\n");
     }
