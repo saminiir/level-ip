@@ -46,7 +46,7 @@ int tun_alloc(char *dev)
      *
      *        IFF_NO_PI - Do not provide packet information
      */
-    ifr.ifr_flags = IFF_TAP;
+    ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     if( *dev ) {
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
     }
