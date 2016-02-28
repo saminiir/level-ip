@@ -1,9 +1,4 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <errno.h>
-
+#include "syshead.h"
 #include "basic.h"
 #include "tuntap_if.h"
 #include "utils.h"
