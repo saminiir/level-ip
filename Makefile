@@ -7,7 +7,7 @@ lvl-ip: $(obj)
 	$(CC) $(obj) -o lvl-ip
 
 build/%.o: src/%.c
-	$(CC) $(CPPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 clean:
 	rm build/*.o lvl-ip
