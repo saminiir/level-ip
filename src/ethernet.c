@@ -6,12 +6,14 @@ struct eth_hdr* init_eth_hdr(char* buf)
 {
     struct eth_hdr *hdr = (struct eth_hdr *) buf;
 
+    hdr->ethertype = htons(hdr->ethertype);
+
     return hdr;
 }
 
 void print_eth_hdr(struct eth_hdr *hdr)
 {
-    printf("Printing Ethernet hdr:\n");
+    printf("\nPrinting Ethernet hdr:\n");
 
     printf("Source MAC: ");
     for (int i = 0; i < 6; i++) {
