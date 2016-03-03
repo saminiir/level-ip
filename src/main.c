@@ -3,8 +3,24 @@
 #include "tuntap_if.h"
 #include "utils.h"
 #include "ethernet.h"
+#include "arp.h"
 
 #define BUFLEN 100
+
+void handle_frame(struct eth_hdr *hdr)
+{
+    switch (hdr->ethertype) {
+        case ETH_P_ARP:
+            arp_incoming(hdr);
+            break;
+        case ETH_P_IP:
+            printf("Found IPv4\n");
+            break;
+        default:
+            printf("Unrecognized ethertype %x\n", hdr->ethertype);
+            break;
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -22,14 +38,14 @@ int main(int argc, char** argv)
         print_error("ERROR when setting route for if\n");
     }
 
-    struct eth_hdr *eth_hdr = init_eth_hdr(buf);
-
     while (1) {
         read(tun_fd, buf, BUFLEN);
 
         print_hexdump(buf, BUFLEN);
 
-        print_eth_hdr(eth_hdr);
+        struct eth_hdr *eth_hdr = init_eth_hdr(buf);
+
+        handle_frame(eth_hdr);
     }
 
     free(dev);
