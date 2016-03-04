@@ -7,11 +7,11 @@
 
 #define BUFLEN 100
 
-void handle_frame(struct eth_hdr *hdr)
+void handle_frame(int tun_fd, struct eth_hdr *hdr)
 {
     switch (hdr->ethertype) {
         case ETH_P_ARP:
-            arp_incoming(hdr);
+            arp_incoming(tun_fd, hdr);
             break;
         case ETH_P_IP:
             printf("Found IPv4\n");
@@ -45,7 +45,7 @@ int main(int argc, char** argv)
 
         struct eth_hdr *eth_hdr = init_eth_hdr(buf);
 
-        handle_frame(eth_hdr);
+        handle_frame(tun_fd, eth_hdr);
     }
 
     free(dev);
