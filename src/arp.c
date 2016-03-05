@@ -1,6 +1,10 @@
 #include "arp.h"
 #include "netdev.h"
 
+/*
+ * https://tools.ietf.org/html/rfc826
+ */
+
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
 void arp_init()
