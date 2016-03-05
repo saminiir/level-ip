@@ -21,7 +21,7 @@ struct arp_hdr
     unsigned char pro_size;
     uint16_t opcode;
     unsigned char data[];
-};
+} __attribute__((packed));
 
 struct arp_ipv4
 {
@@ -30,6 +30,7 @@ struct arp_ipv4
     unsigned char dst_mac[6];
     unsigned char dst_addr[4];
 };
+} __attribute__((packed));
 
 struct arp_cache_entry
 {

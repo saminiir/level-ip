@@ -8,7 +8,7 @@ struct eth_hdr
     unsigned char src_mac[6];
     unsigned short ethertype;
     unsigned char payload[];
-};
+} __attribute__((packed));
 
 struct eth_hdr* init_eth_hdr(char* buf);
 
