@@ -20,7 +20,7 @@ struct arp_hdr
     unsigned char hw_size;
     unsigned char pro_size;
     uint16_t opcode;
-    unsigned char payload[];
+    unsigned char data[];
 };
 
 struct arp_ipv4

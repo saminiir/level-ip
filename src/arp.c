@@ -53,7 +53,7 @@ void arp_init()
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct arp_hdr *arphdr;
-    struct arp_ipv4 *arp_payload;
+    struct arp_ipv4 *arpdata;
     int merge_flag = 0;
 
     arphdr = (struct arp_hdr *) hdr->payload;
@@ -72,15 +72,15 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
         return;
     }
 
-    arp_payload = (struct arp_ipv4 *) arphdr->payload;
+    arpdata = (struct arp_ipv4 *) arphdr->data;
 
-    merge_flag = update_arp_translation_table(arphdr, arp_payload);
+    merge_flag = update_arp_translation_table(arphdr, arpdata);
 
-    if (!memcmp(&netdev->addr, arp_payload->dst_addr, 4)) {
+    if (!memcmp(&netdev->addr, arpdata->dst_addr, 4)) {
         printf("ARP was not for us\n");
     }
 
-    if (!merge_flag && insert_arp_translation_table(arphdr, arp_payload) != 0) {
+    if (!merge_flag && insert_arp_translation_table(arphdr, arpdata) != 0) {
        perror("ERR: No free space in ARP translation table\n"); 
     }
 
