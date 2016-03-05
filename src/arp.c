@@ -1,4 +1,5 @@
 #include "arp.h"
+#include "netdev.h"
 
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
@@ -7,7 +8,7 @@ void arp_init()
     memset(arp_cache, 0, ARP_CACHE_LEN * sizeof(struct arp_cache_entry));
 }
 
-void arp_incoming(int tun_fd, struct eth_hdr *hdr)
+void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct arp_hdr *arphdr;
     struct arp_ipv4 *arp_payload;

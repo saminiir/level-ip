@@ -2,6 +2,7 @@
 #define ARP_H
 #include "syshead.h"
 #include "ethernet.h"
+#include "netdev.h"
 
 #define ARP_ETHERNET    0x0001
 #define ARP_IPV4        0x0800
@@ -39,7 +40,7 @@ struct arp_cache_entry
 };
 
 void arp_init();
-void arp_incoming(int tun_fd, struct eth_hdr *hdr);
+void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data);
 
 #endif
