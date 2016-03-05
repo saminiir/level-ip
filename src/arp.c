@@ -94,7 +94,8 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
     }
 }
 
-void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr) {
+void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr) 
+{
     struct arp_ipv4 *arpdata;
     int len;
 
