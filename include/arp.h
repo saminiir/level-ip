@@ -15,27 +15,27 @@
 
 struct arp_hdr
 {
-    uint16_t hw_type;
-    uint16_t pro_type;
-    unsigned char hw_size;
-    unsigned char pro_size;
+    uint16_t hwtype;
+    uint16_t protype;
+    unsigned char hwsize;
+    unsigned char prosize;
     uint16_t opcode;
     unsigned char data[];
 } __attribute__((packed));
 
 struct arp_ipv4
 {
-    unsigned char src_mac[6];
-    uint32_t src_addr;
-    unsigned char dst_mac[6];
-    uint32_t dst_addr;
+    unsigned char smac[6];
+    uint32_t sip;
+    unsigned char dmac[6];
+    uint32_t dip;
 } __attribute__((packed));
 
 struct arp_cache_entry
 {
-    uint16_t hw_type;
-    uint32_t src_addr;
-    unsigned char src_mac[4];
+    uint16_t hwtype;
+    uint32_t sip;
+    unsigned char smac[4];
     unsigned int state;
 };
 

@@ -43,8 +43,8 @@ int main(int argc, char** argv)
 
         print_hexdump(buf, BUFLEN);
 
-        struct eth_hdr *eth_hdr = init_eth_hdr(buf);
+        struct eth_hdr *hdr = init_eth_hdr(buf);
 
-        handle_frame(&netdev, eth_hdr);
+        handle_frame(&netdev, hdr);
     }
 }
