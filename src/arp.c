@@ -7,6 +7,26 @@
 
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
+static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
+{
+    struct arp_cache_entry *entry;
+    for (int i = 0; i<ARP_CACHE_LEN; i++) {
+        entry = &arp_cache[i];
+
+        if (entry->state == ARP_FREE) {
+            entry->state = ARP_RESOLVED;
+
+            memcpy(&entry->hw_type, &hdr->hw_type, sizeof(hdr->hw_type));
+            memcpy(entry->src_addr, data->src_addr, sizeof(data->src_addr));
+            memcpy(entry->src_mac, data->src_mac, sizeof(data->src_mac));
+
+            return 0;
+        }
+    }
+
+    return -1;
+}
+
 static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
     struct arp_cache_entry *entry;
@@ -54,7 +74,15 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 
     arp_payload = (struct arp_ipv4 *) arphdr->payload;
 
-    update_arp_translation_table(arphdr, arp_payload);
+    merge_flag = update_arp_translation_table(arphdr, arp_payload);
+
+    if (!memcmp(&netdev->addr, arp_payload->dst_addr, 4)) {
+        printf("ARP was not for us\n");
+    }
+
+    if (!merge_flag && insert_arp_translation_table(arphdr, arp_payload) != 0) {
+       perror("ERR: No free space in ARP translation table\n"); 
+    }
 
     switch (arphdr->opcode) {
     case ARP_REQUEST:
