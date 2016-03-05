@@ -3,7 +3,7 @@
 #include "syshead.h"
 
 struct netdev {
-    struct in_addr addr;
+    uint32_t addr;
     unsigned char hwaddr[6];
 };
 
