@@ -11,6 +11,5 @@ struct eth_hdr
 };
 
 struct eth_hdr* init_eth_hdr(char* buf);
-void print_eth_hdr(struct eth_hdr *ehdr);
 
 #endif
