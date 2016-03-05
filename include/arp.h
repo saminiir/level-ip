@@ -41,6 +41,5 @@ struct arp_cache_entry
 
 void arp_init();
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
-int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data);
 
 #endif
