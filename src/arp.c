@@ -58,9 +58,9 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 
     arphdr = (struct arp_hdr *) hdr->payload;
 
-    arphdr->hwtype = htons(arphdr->hwtype);
-    arphdr->protype = htons(arphdr->protype);
-    arphdr->opcode = htons(arphdr->opcode);
+    arphdr->hwtype = ntohs(arphdr->hwtype);
+    arphdr->protype = ntohs(arphdr->protype);
+    arphdr->opcode = ntohs(arphdr->opcode);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
         printf("Unsupported HW type\n");
