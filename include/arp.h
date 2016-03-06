@@ -36,7 +36,7 @@ struct arp_cache_entry
 {
     uint16_t hwtype;
     uint32_t sip;
-    unsigned char smac[4];
+    unsigned char smac[6];
     unsigned int state;
 };
 

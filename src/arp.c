@@ -18,7 +18,7 @@ static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
 
             entry->hwtype = hdr->hwtype;
             entry->sip = data->sip;
-            memcpy(entry->smac, data->smac, sizeof(data->smac));
+            memcpy(entry->smac, data->smac, sizeof(entry->smac));
 
             return 0;
         }
