@@ -78,6 +78,7 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 
     if (netdev->addr != arpdata->dip) {
         printf("ARP was not for us\n");
+        return;
     }
 
     if (!merge && insert_arp_translation_table(arphdr, arpdata) != 0) {
