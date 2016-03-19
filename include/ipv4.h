@@ -21,6 +21,7 @@ struct iphdr {
     uint16_t csum;
     uint32_t saddr;
     uint32_t daddr;
+    uint8_t data[];
 } __attribute__((packed));
     
 void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
