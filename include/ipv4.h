@@ -9,8 +9,8 @@
 #define ICMPV4 0x01
 
 struct iphdr {
+    uint8_t ihl : 4; /* TODO: Support Big Endian hosts */
     uint8_t version : 4;
-    uint8_t ihl : 4;
     uint8_t tos;
     uint16_t len;
     uint16_t id;
