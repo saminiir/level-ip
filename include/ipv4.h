@@ -4,6 +4,9 @@
 
 #include "netdev.h"
 
+#define IPV4 0x04
+
+#define ICMPV4 0x01
 
 struct iphdr {
     uint8_t version : 4;

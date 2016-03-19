@@ -17,5 +17,18 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
     iphdr->csum = ntohs(iphdr->csum);
     iphdr->saddr = ntohl(iphdr->saddr);
     iphdr->daddr = ntohl(iphdr->daddr);
-    printf("%d\n", iphdr->tot_len);
+
+    if (iphdr->ihl < 5) {
+        perror("IPv4 header length must be at least 5\n");
+        return; 
+    }
+
+    if (iphdr->ttl == 0) {
+        //TODO: Send ICMP error
+        perror("Time to live of datagram reached 0\n");
+        return;
+    }
+
+    // TODO: Check fragmentation, possibly reassemble
+
 }
