@@ -9,11 +9,10 @@ static int set_if_route(char *dev, char *cidr)
     return run_cmd("ip route add dev %s %s", dev, cidr);
 }
 
-//static int set_if_address(char *dev, char *cidr)
-//{
-//    return run_cmd("ip address add dev %s local %s", dev, cidr);
-//
-//}
+static int set_if_address(char *dev, char *cidr)
+{
+    return run_cmd("ip address add dev %s local %s", dev, cidr);
+}
 
 static int set_if_up(char *dev)
 {
@@ -77,5 +76,9 @@ void tun_init(char *dev)
 
     if (set_if_route(dev, "10.0.0.0/24") != 0) {
         print_error("ERROR when setting route for if\n");
+    }
+
+    if (set_if_address(dev, "10.0.0.5/24") != 0) {
+        print_error("ERROR when setting addr for if\n");
     }
 }
