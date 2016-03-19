@@ -116,3 +116,24 @@ void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphd
     len = sizeof(struct arp_hdr) + sizeof(struct arp_ipv4);
     netdev_transmit(netdev, hdr, ETH_P_ARP, len, arpdata->dmac);
 }
+
+/*
+ * Returns the HW address of the given source IP address
+ * NULL if not found
+ */
+unsigned char* arp_get_hwaddr(uint32_t *sip)
+{
+    struct arp_cache_entry *entry;
+
+    for (int i = 0; i < ARP_CACHE_LEN; i++) {
+        entry = &arp_cache[i];
+
+        if (entry->state == ARP_RESOLVED && 
+            entry->sip == *sip) {
+
+            return entry->smac;
+        }
+    }
+
+    return NULL;
+}

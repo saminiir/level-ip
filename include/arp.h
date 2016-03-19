@@ -43,5 +43,6 @@ struct arp_cache_entry
 void arp_init();
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr);
+unsigned char* arp_get_hwaddr(uint32_t *sip);
 
 #endif
