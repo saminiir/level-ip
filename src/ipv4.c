@@ -17,8 +17,6 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
     iphdr->id = ntohs(iphdr->id);
     iphdr->flags = ntohs(iphdr->flags);
     iphdr->csum = ntohs(iphdr->csum);
-    iphdr->saddr = ntohl(iphdr->saddr);
-    iphdr->daddr = ntohl(iphdr->daddr);
 
     if (iphdr->ihl < 5) {
         perror("IPv4 header length must be at least 5\n");
