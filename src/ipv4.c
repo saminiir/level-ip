@@ -44,17 +44,23 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct iphdr *iphdr = (struct iphdr *)hdr->payload;
-    unsigned char *smac;
     uint32_t tmpaddr;
+    uint8_t len = iphdr->len;
 
-    // Get HW address of the originator
-    if ((smac = arp_get_hwaddr(&iphdr->saddr)) == NULL) {
-        perror("Should make ARP request\n");
-    } else {
-        tmpaddr = iphdr->saddr;
-        iphdr->daddr = tmpaddr;
-        iphdr->saddr = netdev->addr;
+    /* Just swap the source and destination IP addresses,
+     * don't bother with ARP lookup just now
+     */
+    tmpaddr = iphdr->saddr;
+    iphdr->daddr = tmpaddr;
+    iphdr->saddr = netdev->addr;
 
-        netdev_transmit(netdev, hdr, ETH_P_ARP, iphdr->len, hdr->smac);
-    }
+    /*
+     * Switch back the necessary fields to Network Byte Order
+     */
+    iphdr->len = htons(iphdr->len);
+    iphdr->id = ntohs(iphdr->id);
+    iphdr->flags = ntohs(iphdr->flags);
+    iphdr->csum = ntohs(iphdr->csum);
+
+    netdev_transmit(netdev, hdr, ETH_P_IP, len, hdr->smac);
 }
