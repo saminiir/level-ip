@@ -2,21 +2,17 @@
 #include "ipv4.h"
 #include "icmpv4.h"
 #include "netdev.h"
+#include "utils.h"
 
 void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct iphdr *iphdr = (struct iphdr *) hdr->payload;
+    uint16_t csum = -1;
 
     if (iphdr->version != IPV4) {
         perror("Datagram version was not IPv4\n");
         return;
     }
-
-    /* Convert fields from network byte order (Big Endian) to host network order */
-    iphdr->len = ntohs(iphdr->len);
-    iphdr->id = ntohs(iphdr->id);
-    iphdr->flags = ntohs(iphdr->flags);
-    iphdr->csum = ntohs(iphdr->csum);
 
     if (iphdr->ihl < 5) {
         perror("IPv4 header length must be at least 5\n");
@@ -29,7 +25,15 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
         return;
     }
 
+    csum = checksum(iphdr, iphdr->ihl * 4);
+
+    if (csum != 0) {
+        // Invalid checksum, drop packet handling
+        return;
+    }
+
     // TODO: Check fragmentation, possibly reassemble
+    iphdr->len = ntohs(iphdr->len);
 
     switch (iphdr->proto) {
     case ICMPV4:
@@ -45,6 +49,7 @@ void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct iphdr *iphdr = (struct iphdr *)hdr->payload;
     uint32_t tmpaddr;
+    uint16_t csum;
     uint8_t len = iphdr->len;
 
     /* Just swap the source and destination IP addresses,
@@ -54,13 +59,15 @@ void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr)
     iphdr->daddr = tmpaddr;
     iphdr->saddr = netdev->addr;
 
+    /* Calculate and set datagram checksum */
+    iphdr->csum = 0;
+    csum = checksum(iphdr, iphdr->ihl * 4);
+    iphdr->csum = csum;
+
     /*
      * Switch back the necessary fields to Network Byte Order
      */
     iphdr->len = htons(iphdr->len);
-    iphdr->id = ntohs(iphdr->id);
-    iphdr->flags = ntohs(iphdr->flags);
-    iphdr->csum = ntohs(iphdr->csum);
 
     netdev_transmit(netdev, hdr, ETH_P_IP, len, hdr->smac);
 }
