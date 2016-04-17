@@ -40,6 +40,7 @@ int main(int argc, char** argv)
     while (1) {
         if (tun_read(buf, BUFLEN) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
+            return 1;
         }
 
         print_hexdump(buf, BUFLEN);
