@@ -59,15 +59,15 @@ void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr)
     iphdr->daddr = tmpaddr;
     iphdr->saddr = netdev->addr;
 
-    /* Calculate and set datagram checksum */
-    iphdr->csum = 0;
-    csum = checksum(iphdr, iphdr->ihl * 4);
-    iphdr->csum = csum;
-
     /*
      * Switch back the necessary fields to Network Byte Order
      */
     iphdr->len = htons(iphdr->len);
+
+    /* Calculate and set datagram checksum */
+    iphdr->csum = 0;
+    csum = checksum(iphdr, iphdr->ihl * 4);
+    iphdr->csum = csum;
 
     netdev_transmit(netdev, hdr, ETH_P_IP, len, hdr->smac);
 }
