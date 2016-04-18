@@ -18,12 +18,12 @@ struct icmp_v4 {
     uint8_t type;
     uint8_t code;
     uint16_t csum;
-    union {
-        struct {
-            uint8_t id;
-            uint8_t seq;
-        } echo;
-    };
+    uint8_t data[];
+} __attribute__((packed));
+
+struct icmp_v4_echo {
+    uint16_t id;
+    uint16_t seq;
     uint8_t data[];
 } __attribute__((packed));
 
