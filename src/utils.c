@@ -42,6 +42,7 @@ uint16_t checksum(void *addr, int count)
 {
     /* Compute Internet Checksum for "count" bytes
      *         beginning at location "addr".
+     * Taken from https://tools.ietf.org/html/rfc1071
      */
     register uint32_t sum = 0;
     uint16_t * ptr = addr;
