@@ -27,6 +27,14 @@ struct icmp_v4_echo {
     uint8_t data[];
 } __attribute__((packed));
 
+struct icmp_v4_dst_unreachable {
+    uint8_t unused;
+    uint8_t len;
+    uint16_t var;
+    uint8_t data[];
+} __attribute__((packed));
+
+
 void icmpv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 void icmpv4_reply(struct netdev *netdev, struct eth_hdr *hdr);
 
