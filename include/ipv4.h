@@ -5,6 +5,7 @@
 #include "netdev.h"
 
 #define IPV4 0x04
+#define IP_TCP 0x06
 
 #define ICMPV4 0x01
 

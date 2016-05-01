@@ -1,6 +1,7 @@
 #include "arp.h"
 #include "ipv4.h"
 #include "icmpv4.h"
+#include "tcp.h"
 #include "netdev.h"
 #include "utils.h"
 
@@ -39,6 +40,9 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
     case ICMPV4:
         icmpv4_incoming(netdev, hdr);
         break;
+    case IP_TCP:
+        tcp_in(netdev, hdr);
+	break;
     default:
         perror("Unknown IP header proto\n");
         return;
