@@ -38,15 +38,11 @@ void print_error(char *str, ...)
     perror(buf);
 }
 
-uint16_t checksum(void *addr, int count)
+uint32_t sum_every_16bits(void *addr, int count)
 {
-    /* Compute Internet Checksum for "count" bytes
-     *         beginning at location "addr".
-     * Taken from https://tools.ietf.org/html/rfc1071
-     */
     register uint32_t sum = 0;
     uint16_t * ptr = addr;
-
+    
     while( count > 1 )  {
         /*  This is the inner loop */
         sum += * ptr++;
@@ -57,6 +53,19 @@ uint16_t checksum(void *addr, int count)
     if( count > 0 )
         sum += * (uint8_t *) addr;
 
+    return sum;
+}
+
+uint16_t checksum(void *addr, int count, int start_sum)
+{
+    /* Compute Internet Checksum for "count" bytes
+     *         beginning at location "addr".
+     * Taken from https://tools.ietf.org/html/rfc1071
+     */
+    uint32_t sum = start_sum;
+
+    sum += sum_every_16bits(addr, count);
+    
     /*  Fold 32-bit sum to 16 bits */
     while (sum>>16)
         sum = (sum & 0xffff) + (sum >> 16);

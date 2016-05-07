@@ -27,7 +27,7 @@ void icmpv4_reply(struct netdev *netdev, struct eth_hdr *hdr)
     
     icmp->type = ICMP_V4_REPLY;
     icmp->csum = 0;
-    icmp->csum = checksum(icmp, icmp_len);
+    icmp->csum = checksum(icmp, icmp_len, 0);
 
     ipv4_outgoing(netdev, hdr);
 }

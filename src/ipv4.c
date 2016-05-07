@@ -26,7 +26,7 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
         return;
     }
 
-    csum = checksum(iphdr, iphdr->ihl * 4);
+    csum = checksum(iphdr, iphdr->ihl * 4, 0);
 
     if (csum != 0) {
         // Invalid checksum, drop packet handling
@@ -70,7 +70,7 @@ void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr)
 
     /* Calculate and set datagram checksum */
     iphdr->csum = 0;
-    csum = checksum(iphdr, iphdr->ihl * 4);
+    csum = checksum(iphdr, iphdr->ihl * 4, 0);
     iphdr->csum = csum;
 
     netdev_transmit(netdev, hdr, ETH_P_IP, len, hdr->smac);
