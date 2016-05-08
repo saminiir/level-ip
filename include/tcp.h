@@ -36,5 +36,6 @@ struct tcpiphdr {
 } __attribute__((packed));
 
 void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
+void tcp_out(struct netdev *netdev, struct eth_hdr *hdr);
 int tcp_checksum(struct iphdr *iphdr, struct tcphdr *thdr);
 #endif
