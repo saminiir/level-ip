@@ -42,7 +42,7 @@ void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr)
         break;
     case IP_TCP:
         tcp_in(netdev, hdr);
-	break;
+        break;
     default:
         perror("Unknown IP header proto\n");
         return;
