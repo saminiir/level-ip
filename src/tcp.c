@@ -6,22 +6,10 @@ void tcp_in(struct netdev *netdev, struct eth_hdr *hdr)
 {
     struct iphdr *iphdr = (struct iphdr *) hdr->payload;
     struct tcphdr *thdr = (struct tcphdr *) iphdr->data;
-    uint16_t tmpport = thdr->sport;
 
     if (tcp_checksum(iphdr, thdr) != 0) {
         printf("TCP segment checksum did not match, dropping\n");
         return;
-    }
-    
-    thdr->sport = thdr->dport;
-    thdr->dport = tmpport;
-
-    if (thdr->flags & TCP_SYN) {
-        thdr->flags |= TCP_ACK;
-        thdr->ack = htonl(ntohl(thdr->seq) + 1);
-        thdr->seq = htonl(12345678);
-
-        memcpy(thdr->data+12, thdr->data+8, 4);
     }
 
     tcp_out(netdev, hdr);
@@ -49,6 +37,20 @@ void tcp_out(struct netdev *netdev, struct eth_hdr *hdr)
     struct iphdr *iphdr = (struct iphdr *) hdr->payload;
     struct tcphdr *thdr = (struct tcphdr *) iphdr->data;
     struct iphdr pseudo_hdr;
+    uint16_t tmpport = thdr->sport;
+    
+    thdr->sport = thdr->dport;
+    thdr->dport = tmpport;
+
+    if (thdr->flags & TCP_SYN) {
+        thdr->flags |= TCP_ACK;
+        thdr->ack = htonl(ntohl(thdr->seq) + 1);
+	thdr->seq = htonl(12345678);
+    }
+
+    /* Cut off TCP options, we'll implement the important ones later */
+    thdr->hl = 5;
+    iphdr->len -= TCP_HDR_LEN;
     
     pseudo_hdr.saddr = iphdr->daddr;
     pseudo_hdr.daddr = iphdr->saddr;

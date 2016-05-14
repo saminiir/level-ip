@@ -3,6 +3,8 @@
 #include "netdev.h"
 #include "ipv4.h"
 
+#define TCP_HDR_LEN 20
+
 #define TCP_FIN 0x01
 #define TCP_SYN 0x02
 #define TCP_RST 0x04
