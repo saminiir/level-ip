@@ -9,6 +9,37 @@
 
 #define BUFLEN 100
 
+typedef void (*sighandler_t)(int);
+
+int running = 1;
+
+static void stop_stack_handler(int signo)
+{
+    running = 0;
+}
+
+int _signal(int signo, sighandler_t handler)
+{
+    struct sigaction sa;
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_flags |= SA_RESTART;
+    sa.sa_handler = handler;
+    
+    if (sigaction(signo, &sa, NULL) < 0) {
+	return SIG_ERR;
+    }
+
+    return 0;
+}
+
+
+void init_signals()
+{
+    _signal(SIGINT, stop_stack_handler);
+}
+
 void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
 {
     switch (hdr->ethertype) {
@@ -32,12 +63,13 @@ int main(int argc, char** argv)
 
     CLEAR(buf);
 
+    init_signals();
     tun_init(dev);
     netdev_init(&netdev, "10.0.0.4", "00:0c:29:6d:50:25");
 
     arp_init();
 
-    while (1) {
+    while (running) {
         if (tun_read(buf, BUFLEN) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
             return 1;
