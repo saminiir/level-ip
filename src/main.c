@@ -81,4 +81,6 @@ int main(int argc, char** argv)
 
         handle_frame(&netdev, hdr);
     }
+
+    free(dev);
 }
