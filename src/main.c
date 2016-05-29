@@ -13,6 +13,14 @@ typedef void (*sighandler_t)(int);
 
 int running = 1;
 
+static void usage(char *program) {
+    printf("Usage: sudo %s [curl HOST]\n\n", program);
+    printf("  curl HOST - act like curl, HOST as the target. Optional.\n");
+    printf("\n");
+    printf("  Elevated privileges are needed because of tuntap devices.\n");
+    exit(1);
+}
+
 static void stop_stack_handler(int signo)
 {
     running = 0;
@@ -62,6 +70,11 @@ int main(int argc, char** argv)
     struct netdev netdev;
 
     CLEAR(buf);
+
+    if (argc != 1 && argc != 3) {
+        usage(argv[0]);
+        exit(1);
+    }
 
     init_signals();
     tun_init(dev);
