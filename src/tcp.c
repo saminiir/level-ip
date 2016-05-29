@@ -45,7 +45,7 @@ void tcp_out(struct netdev *netdev, struct eth_hdr *hdr)
     if (thdr->flags & TCP_SYN) {
         thdr->flags |= TCP_ACK;
         thdr->ack = htonl(ntohl(thdr->seq) + 1);
-	thdr->seq = htonl(12345678);
+        thdr->seq = htonl(12345678);
     }
 
     /* Cut off TCP options, we'll implement the important ones later */

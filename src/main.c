@@ -36,7 +36,7 @@ static int _signal(int signo, sighandler_t handler)
     sa.sa_handler = handler;
     
     if (sigaction(signo, &sa, NULL) < 0) {
-	return SIG_ERR;
+        return SIG_ERR;
     }
 
     return 0;
