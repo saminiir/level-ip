@@ -16,5 +16,6 @@
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <netdb.h>
 
 #endif
