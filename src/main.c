@@ -88,8 +88,6 @@ int main(int argc, char** argv)
             return 1;
         }
 
-        print_hexdump(buf, BUFLEN);
-
         struct eth_hdr *hdr = init_eth_hdr(buf);
 
         handle_frame(&netdev, hdr);
