@@ -26,7 +26,7 @@ static void stop_stack_handler(int signo)
     running = 0;
 }
 
-int _signal(int signo, sighandler_t handler)
+static int _signal(int signo, sighandler_t handler)
 {
     struct sigaction sa;
 
@@ -43,12 +43,12 @@ int _signal(int signo, sighandler_t handler)
 }
 
 
-void init_signals()
+static void init_signals()
 {
     _signal(SIGINT, stop_stack_handler);
 }
 
-void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
+static void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
 {
     switch (hdr->ethertype) {
         case ETH_P_ARP:
