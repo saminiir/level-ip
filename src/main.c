@@ -11,13 +11,26 @@
 
 #define BUFLEN 100
 
+static void usage(int argc, char** argv);
+
 typedef void (*sighandler_t)(int);
 
 int running = 1;
 pthread_t curl_tid;
 
-static void usage(char *program) {
-    printf("Usage: sudo %s [curl HOST]\n\n", program);
+struct command {
+    int args;
+    void (*cmd_func)(int, char **);
+    char *cmd_str;
+};
+
+static struct command cmds[] = {
+    { 0, usage, "help" },
+    { 0, NULL, NULL }
+};
+
+static void usage(int argc, char **argv) {
+    printf("Usage: sudo %s [curl HOST]\n\n", argv[0]);
     printf("  curl HOST - act like curl, HOST as the target. Optional.\n");
     printf("\n");
     printf("  Elevated privileges are needed because of tuntap devices.\n");
@@ -66,6 +79,22 @@ static void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
     }
 }
 
+void parse_args(int argc, char** argv)
+{
+    if (argc == 1) return;
+
+    struct command *cmd;
+    
+    for (cmd = &cmds[0]; cmd->cmd_func; cmd++) {
+	if (strncmp(argv[1], cmd->cmd_str, 5) == 0) {
+	    cmd->cmd_func(argc, argv);
+	    return;
+	}
+    }
+
+    usage(argc, argv);
+}
+
 int main(int argc, char** argv)
 {
     char buf[BUFLEN];
@@ -74,13 +103,7 @@ int main(int argc, char** argv)
     
     CLEAR(buf);
 
-    if (argc != 1 && argc != 3) {
-        usage(argv[0]);
-    }
-
-    if (curl_init(argc, argv) != 0) {
-
-    }
+    parse_args(argc, argv);
 
     init_signals();
     tun_init(dev);
