@@ -72,3 +72,29 @@ uint16_t checksum(void *addr, int count, int start_sum)
 
     return ~sum;
 }
+
+int get_address(char *host, struct sockaddr *addr)
+{
+    struct addrinfo hints;
+    struct addrinfo *result, *rp;
+    int s;
+
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    s = getaddrinfo(host, NULL, &hints, &result);
+
+    if (s != 0) {
+        print_error("getaddrinfo: %s\n", gai_strerror(s));
+        exit(EXIT_FAILURE);
+    }
+
+    for (rp = result; rp != NULL; rp = rp->ai_next) {
+        *addr = *rp->ai_addr;
+        freeaddrinfo(result);
+        return 0;
+    }
+    
+    return 1;
+}
