@@ -5,7 +5,7 @@ obj = $(patsubst src/%.c, build/%.o, $(src))
 headers = $(wildcard include/*.h)
 
 lvl-ip: $(obj)
-	$(CC) $(obj) -o lvl-ip
+	$(CC) $(CFLAGS) $(obj) -o lvl-ip
 
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
