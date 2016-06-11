@@ -17,5 +17,6 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <netdb.h>
+#include <pthread.h>
 
 #endif

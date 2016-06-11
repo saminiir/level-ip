@@ -22,7 +22,9 @@ int curl_init()
 	return 0;
 }
 
-int curl_main()
+void *curl_main(void *arg)
 {
-	return 0;
+	printf("Test\n");
+
+	return NULL;
 }

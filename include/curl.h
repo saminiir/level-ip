@@ -2,6 +2,6 @@
 #include "syshead.h"
 
 int curl_init();
-int curl_main();
+void *curl_main(void *arg);
 
 #endif

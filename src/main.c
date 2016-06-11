@@ -8,11 +8,13 @@
 #include "ipv4.h"
 #include "curl.h"
 
+
 #define BUFLEN 100
 
 typedef void (*sighandler_t)(int);
 
 int running = 1;
+pthread_t curl_tid;
 
 static void usage(char *program) {
     printf("Usage: sudo %s [curl HOST]\n\n", program);
@@ -86,6 +88,11 @@ int main(int argc, char** argv)
 
     arp_init();
 
+    if (pthread_create(&curl_tid, NULL, curl_main, NULL) !=0) {
+	print_error("Curl thread creation failed \n");
+        exit(1);
+    }
+    
     while (running) {
         if (tun_read(buf, BUFLEN) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
