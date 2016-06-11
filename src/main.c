@@ -12,6 +12,7 @@
 #define BUFLEN 100
 
 static void usage(int argc, char** argv);
+extern void curl(int, char**);
 
 typedef void (*sighandler_t)(int);
 
@@ -26,6 +27,7 @@ struct command {
 
 static struct command cmds[] = {
     { 0, usage, "help" },
+    { 1, curl, "curl" },
     { 0, NULL, NULL }
 };
 
@@ -111,11 +113,6 @@ int main(int argc, char** argv)
 
     arp_init();
 
-    if (pthread_create(&curl_tid, NULL, curl_main, NULL) !=0) {
-	print_error("Curl thread creation failed \n");
-        exit(1);
-    }
-    
     while (running) {
         if (tun_read(buf, BUFLEN) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
