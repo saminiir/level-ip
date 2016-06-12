@@ -1,4 +1,5 @@
 #include "syshead.h"
+#include "utils.h"
 
 #define MAX_HOSTNAME 50
 
