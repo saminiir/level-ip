@@ -1,4 +1,5 @@
-#ifndef TCP_H
+#ifndef TCP_H_
+#define TCP_H_
 #include "syshead.h"
 #include "netdev.h"
 #include "ipv4.h"
