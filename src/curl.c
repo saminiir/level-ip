@@ -2,15 +2,6 @@
 
 #define MAX_HOSTNAME 50
 
-int curl_init()
-{
-
-
-    struct sockaddr addr;
-            /* craft_curl_packet(&netdev, addr.sa_data[2], 4); */
-	return 0;
-}
-
 void curl(int argc, char **argv)
 {
 	if (argc != 3 || strnlen(argv[2], MAX_HOSTNAME) == MAX_HOSTNAME) {
@@ -24,6 +15,6 @@ void curl(int argc, char **argv)
 		print_error("Curl could not resolve hostname\n");
 		exit(1);
 	}
-	
+
 	printf("%hhu.%hhu.%hhu.%hhu\n", addr.sa_data[2], addr.sa_data[3], addr.sa_data[4], addr.sa_data[5]);
 }
