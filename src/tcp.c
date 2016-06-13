@@ -1,6 +1,12 @@
 #include "tcp.h"
+#include "tcp_socket.h"
 #include "ipv4.h"
 #include "utils.h"
+
+void tcp_init()
+{
+    init_tcp_sockets();
+}
 
 void tcp_in(struct netdev *netdev, struct eth_hdr *hdr)
 {

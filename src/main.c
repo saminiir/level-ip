@@ -4,6 +4,7 @@
 #include "utils.h"
 #include "ethernet.h"
 #include "arp.h"
+#include "tcp.h"
 #include "netdev.h"
 #include "ipv4.h"
 #include "curl.h"
@@ -112,6 +113,7 @@ int main(int argc, char** argv)
     netdev_init(&netdev, "10.0.0.4", "00:0c:29:6d:50:25");
 
     arp_init();
+    tcp_init();
 
     while (running) {
         if (tun_read(buf, BUFLEN) < 0) {
