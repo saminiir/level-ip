@@ -12,6 +12,17 @@ void init_tcp_sockets()
 
 struct tcp_socket *alloc_tcp_socket()
 {
+    struct tcp_socket *sock;
+    for (int i = 0; i<MAX_TCP_SOCKETS; i++) {
+        sock = &tcp_sockets[i];
+        if (sock->fd == 0) {
+            sock->fd = cur_fd++;
+            sock->state = CLOSED;
+            return sock;
+        }
+    }
+
+    /* No space left, error case */
     return NULL;
 }
 
