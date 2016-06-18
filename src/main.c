@@ -89,10 +89,10 @@ void parse_args(int argc, char** argv)
     struct command *cmd;
     
     for (cmd = &cmds[0]; cmd->cmd_func; cmd++) {
-	if (strncmp(argv[1], cmd->cmd_str, 5) == 0) {
-	    cmd->cmd_func(argc, argv);
-	    return;
-	}
+        if (strncmp(argv[1], cmd->cmd_str, 5) == 0) {
+             cmd->cmd_func(argc, argv);
+             return;
+        }
     }
 
     usage(argc, argv);
