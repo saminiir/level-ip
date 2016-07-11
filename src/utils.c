@@ -83,7 +83,7 @@ int get_address(char *host, struct sockaddr *addr)
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    s = getaddrinfo(host, NULL, &hints, &result);
+    s = getaddrinfo(host, "80", &hints, &result);
 
     if (s != 0) {
         print_error("getaddrinfo: %s\n", gai_strerror(s));

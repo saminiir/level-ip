@@ -41,5 +41,6 @@ struct tcp_socket {
 void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);
+struct tcp_socket *get_tcp_socket(int sockfd);
 
 #endif

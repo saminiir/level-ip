@@ -30,3 +30,15 @@ void free_tcp_socket(struct tcp_socket *sock)
 {
 
 }
+
+struct tcp_socket *get_tcp_socket(int sockfd)
+{
+    struct tcp_socket sk;
+    for (int i = 0; i<MAX_TCP_SOCKETS; i++) {
+        sk = tcp_sockets[i];
+
+        if (sk.fd == sockfd) return &sk;
+    }
+
+    return NULL;
+}
