@@ -75,7 +75,6 @@ static void init_signals()
 
 static void init_stack()
 {
-
     netdev_init("10.0.0.4", "00:0c:29:6d:50:25");
 
     arp_init();
@@ -89,7 +88,11 @@ static void init_apps()
 
 static void run_threads()
 {
-
+    if (pthread_create(&threads[0], NULL,
+		       &netdev_rx_loop, NULL) != 0) {
+	print_error("Could not create netdev rx loop thread\n");
+	return;
+    }
 }
 
 static void parse_args(int argc, char** argv)
@@ -117,4 +120,11 @@ int main(int argc, char** argv)
     init_apps();
 
     run_threads();
+
+    for (int i = 0; i < 1; i++) {
+	if (pthread_join(threads[i], NULL) != 0) {
+	    print_error("Error when joining threads\n");
+	    return 1;
+	}
+    }
 }

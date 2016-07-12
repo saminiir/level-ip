@@ -46,14 +46,14 @@ void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr,
     tun_write((char *)hdr, len);
 }
 
-void netdev_rx_loop()
+void *netdev_rx_loop()
 {
     int running = 1;
     
     while (running) {
         if (tun_read(netdev.buf, netdev.buflen) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
-            return;
+            return 1;
         }
 
         struct eth_hdr *hdr = init_eth_hdr(netdev.buf);
