@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "basic.h"
+#include "cli.h"
 #include "tuntap_if.h"
 #include "utils.h"
 #include "ethernet.h"
@@ -11,9 +12,6 @@
 
 #define MAX_CMD_LENGTH 6
 
-static void usage(int argc, char** argv);
-extern void curl(int, char**);
-
 typedef void (*sighandler_t)(int);
 
 /*
@@ -24,34 +22,15 @@ static pthread_t threads[2];
 
 int running = 1;
 
-struct command {
-    int args;
-    void (*cmd_func)(int, char **);
-    char *cmd_str;
-};
-
-static struct command cmds[] = {
-    { 0, usage, "help" },
-    { 1, curl, "curl" },
-    { 0, NULL, NULL }
-};
-
 static struct command *cmd_to_run;
-
-static void usage(int argc, char **argv) {
-    printf("Usage: sudo %s [curl HOST]\n\n", argv[0]);
-    printf("  curl HOST - act like curl, HOST as the target. Optional.\n");
-    printf("\n");
-    printf("  Elevated privileges are needed because of tuntap devices.\n");
-    exit(1);
-}
 
 static void stop_stack_handler(int signo)
 {
+    printf("Stopping\n");
     running = 0;
 }
 
-static int _signal(int signo, sighandler_t handler)
+static void *_signal(int signo, sighandler_t handler)
 {
     struct sigaction sa;
 
@@ -95,36 +74,24 @@ static void run_threads()
     }
 }
 
-static void parse_args(int argc, char** argv)
+static void wait_for_threads()
 {
-    if (argc == 1) return;
-
-    struct command *cmd;
-    
-    for (cmd = &cmds[0]; cmd->cmd_func; cmd++) {
-        if (strncmp(argv[1], cmd->cmd_str, 6) == 0) {
-             cmd_to_run = cmd;
-             return;
-        }
+    for (int i = 0; i < 1; i++) {
+	if (pthread_join(threads[i], NULL) != 0) {
+	    print_error("Error when joining threads\n");
+	    exit(1);
+	}
     }
-
-    usage(argc, argv);
 }
 
 int main(int argc, char** argv)
 {
-    parse_args(argc, argv);
+    cmd_to_run = parse_args(argc, argv);
     init_signals();
 
     init_stack();
     init_apps();
 
     run_threads();
-
-    for (int i = 0; i < 1; i++) {
-	if (pthread_join(threads[i], NULL) != 0) {
-	    print_error("Error when joining threads\n");
-	    return 1;
-	}
-    }
+    wait_for_threads();
 }
