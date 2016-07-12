@@ -29,7 +29,6 @@ int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
         exit(1);
     };
     
-
     printf("Connecting socket %d to %hhu.%hhu.%hhu.%hhu\n", sockfd, addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
     return 0;
 }

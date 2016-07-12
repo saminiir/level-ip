@@ -11,14 +11,20 @@
 
 
 #define BUFLEN 100
+#define MAX_CMD_LENGTH 6
 
 static void usage(int argc, char** argv);
 extern void curl(int, char**);
 
 typedef void (*sighandler_t)(int);
 
+/*
+ * 0 for core networking
+ * 1 for possible integrated application
+ */
+static pthread_t threads[2];
+
 int running = 1;
-pthread_t curl_tid;
 
 struct command {
     int args;
@@ -32,6 +38,8 @@ static struct command cmds[] = {
     { 0, NULL, NULL }
 };
 
+static struct command *cmd_to_run;
+
 static void usage(int argc, char **argv) {
     printf("Usage: sudo %s [curl HOST]\n\n", argv[0]);
     printf("  curl HOST - act like curl, HOST as the target. Optional.\n");
@@ -39,6 +47,8 @@ static void usage(int argc, char **argv) {
     printf("  Elevated privileges are needed because of tuntap devices.\n");
     exit(1);
 }
+
+struct netdev netdev;
 
 static void stop_stack_handler(int signo)
 {
@@ -82,39 +92,20 @@ static void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
     }
 }
 
-void parse_args(int argc, char** argv)
+static void init_stack()
 {
-    if (argc == 1) return;
 
-    struct command *cmd;
-    
-    for (cmd = &cmds[0]; cmd->cmd_func; cmd++) {
-        if (strncmp(argv[1], cmd->cmd_str, 5) == 0) {
-             cmd->cmd_func(argc, argv);
-             return;
-        }
-    }
-
-    usage(argc, argv);
-}
-
-int main(int argc, char** argv)
-{
     char buf[BUFLEN];
     char *dev = calloc(10, 1);
-    struct netdev netdev;
-    
-    CLEAR(buf);
 
-    parse_args(argc, argv);
-
-    init_signals();
     tun_init(dev);
     netdev_init(&netdev, "10.0.0.4", "00:0c:29:6d:50:25");
 
     arp_init();
     tcp_init();
-
+    
+    CLEAR(buf);
+    
     while (running) {
         if (tun_read(buf, BUFLEN) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
@@ -127,4 +118,41 @@ int main(int argc, char** argv)
     }
 
     free(dev);
+}
+
+static void init_apps()
+{
+
+}
+
+static void run_threads()
+{
+
+}
+
+static void parse_args(int argc, char** argv)
+{
+    if (argc == 1) return;
+
+    struct command *cmd;
+    
+    for (cmd = &cmds[0]; cmd->cmd_func; cmd++) {
+        if (strncmp(argv[1], cmd->cmd_str, 6) == 0) {
+             cmd_to_run = cmd;
+             return;
+        }
+    }
+
+    usage(argc, argv);
+}
+
+int main(int argc, char** argv)
+{
+    parse_args(argc, argv);
+    init_signals();
+
+    init_stack();
+    init_apps();
+
+    run_threads();
 }
