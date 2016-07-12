@@ -9,8 +9,6 @@
 #include "ipv4.h"
 #include "curl.h"
 
-
-#define BUFLEN 100
 #define MAX_CMD_LENGTH 6
 
 static void usage(int argc, char** argv);
@@ -48,8 +46,6 @@ static void usage(int argc, char **argv) {
     exit(1);
 }
 
-struct netdev netdev;
-
 static void stop_stack_handler(int signo)
 {
     running = 0;
@@ -77,47 +73,13 @@ static void init_signals()
     _signal(SIGINT, stop_stack_handler);
 }
 
-static void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
-{
-    switch (hdr->ethertype) {
-        case ETH_P_ARP:
-            arp_incoming(netdev, hdr);
-            break;
-        case ETH_P_IP:
-            ipv4_incoming(netdev, hdr);
-            break;
-        default:
-            printf("Unrecognized ethertype %x\n", hdr->ethertype);
-            break;
-    }
-}
-
 static void init_stack()
 {
 
-    char buf[BUFLEN];
-    char *dev = calloc(10, 1);
-
-    tun_init(dev);
-    netdev_init(&netdev, "10.0.0.4", "00:0c:29:6d:50:25");
+    netdev_init("10.0.0.4", "00:0c:29:6d:50:25");
 
     arp_init();
     tcp_init();
-    
-    CLEAR(buf);
-    
-    while (running) {
-        if (tun_read(buf, BUFLEN) < 0) {
-            print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
-            return 1;
-        }
-
-        struct eth_hdr *hdr = init_eth_hdr(buf);
-
-        handle_frame(&netdev, hdr);
-    }
-
-    free(dev);
 }
 
 static void init_apps()

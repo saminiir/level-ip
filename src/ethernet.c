@@ -1,6 +1,7 @@
 #include "syshead.h"
 #include "basic.h"
 #include "ethernet.h"
+#include "netdev.h"
 
 struct eth_hdr* init_eth_hdr(char* buf)
 {
@@ -9,4 +10,19 @@ struct eth_hdr* init_eth_hdr(char* buf)
     hdr->ethertype = htons(hdr->ethertype);
 
     return hdr;
+}
+
+void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
+{
+    switch (hdr->ethertype) {
+        case ETH_P_ARP:
+            arp_incoming(netdev, hdr);
+            break;
+        case ETH_P_IP:
+            ipv4_incoming(netdev, hdr);
+            break;
+        default:
+            printf("Unrecognized ethertype %x\n", hdr->ethertype);
+            break;
+    }
 }
