@@ -1,7 +1,10 @@
 #ifndef ETHERNET_H_
 #define ETHERNET_H_
 #include <linux/if_ether.h>
+#include "syshead.h"
 #include "netdev.h"
+
+struct netdev;
 
 struct eth_hdr 
 {

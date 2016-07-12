@@ -5,6 +5,8 @@
 
 #define BUFLEN 512
 
+struct eth_hdr;
+
 struct netdev {
     uint32_t addr;
     uint8_t hwaddr[6];

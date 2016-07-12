@@ -1,7 +1,9 @@
 #include "syshead.h"
 #include "basic.h"
-#include "ethernet.h"
 #include "netdev.h"
+#include "ethernet.h"
+#include "arp.h"
+#include "ipv4.h"
 
 struct eth_hdr* init_eth_hdr(char* buf)
 {
