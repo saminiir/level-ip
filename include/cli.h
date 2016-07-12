@@ -3,11 +3,13 @@
 
 #include "curl.h"
 
-extern void curl(int, char**);
+extern void* curl(void *arg);
 
 struct command {
     int args;
-    void (*cmd_func)(int, char **);
+    int argc;
+    char **argv;
+    void* (*cmd_func)(void *arg);
     char *cmd_str;
 };
 

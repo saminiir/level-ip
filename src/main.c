@@ -72,11 +72,16 @@ static void run_threads()
 	print_error("Could not create netdev rx loop thread\n");
 	return;
     }
+    if (cmd_to_run != NULL && pthread_create(&threads[1], NULL,
+					     cmd_to_run->cmd_func, cmd_to_run) != 0) {
+	print_error("Could not create app thread for %s\n", cmd_to_run->cmd_str);
+	return;
+    }
 }
 
 static void wait_for_threads()
 {
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
 	if (pthread_join(threads[i], NULL) != 0) {
 	    print_error("Error when joining threads\n");
 	    exit(1);
@@ -87,6 +92,7 @@ static void wait_for_threads()
 int main(int argc, char** argv)
 {
     cmd_to_run = parse_args(argc, argv);
+
     init_signals();
 
     init_stack();

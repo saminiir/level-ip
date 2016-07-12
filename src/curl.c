@@ -1,11 +1,16 @@
 #include "syshead.h"
 #include "socket.h" 
 #include "utils.h"
+#include "cli.h"
 
 #define MAX_HOSTNAME 50
 
-void curl(int argc, char **argv)
+void* curl(void *arg)
 {
+    struct command *cmd = arg;
+    int argc = cmd->argc;
+    char **argv = cmd->argv;
+    
     if (argc != 3 || strnlen(argv[2], MAX_HOSTNAME) == MAX_HOSTNAME) {
         print_error("Curl called but HOST not given or invalid\n");
         exit(1);
