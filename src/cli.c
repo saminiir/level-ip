@@ -2,10 +2,12 @@
 #include "cli.h"
 
 static void usage(int argc, char **argv) {
-    printf("Usage: sudo %s [curl HOST]\n\n", argv[0]);
-    printf("  curl HOST - act like curl, HOST as the target. Optional.\n");
+    printf("Usage: sudo %s [command ARGS..]\n\n", argv[0]);
+    printf("Commands:\n");
+    printf("  curl HOST - act like curl, HOST as the target.\n");
     printf("\n");
-    printf("  Elevated privileges are needed because of tuntap devices.\n");
+    printf("Elevated privileges are needed because of tuntap devices.\n");
+    printf("See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
     exit(1);
 }
 
