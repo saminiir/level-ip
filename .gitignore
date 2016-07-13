@@ -1,3 +1,5 @@
 build/*.o
 a.out
 *.o
+*cscope*
+lvl-ip
