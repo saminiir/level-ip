@@ -5,6 +5,8 @@
 
 #define MAX_HOSTNAME 50
 
+extern int running;
+
 void* curl(void *arg)
 {
     struct command *cmd = arg;
@@ -13,7 +15,7 @@ void* curl(void *arg)
     
     if (argc != 3 || strnlen(argv[2], MAX_HOSTNAME) == MAX_HOSTNAME) {
         print_error("Curl called but HOST not given or invalid\n");
-        exit(1);
+        return NULL;
     }
 
     struct sockaddr addr;
@@ -21,13 +23,16 @@ void* curl(void *arg)
 
     if (get_address(argv[2], &addr) != 0) {
         print_error("Curl could not resolve hostname\n");
-        exit(1);
+        return NULL;
     }
 
     sock = _socket(AF_INET, SOCK_STREAM, 0);
 
     if (_connect(sock, &addr, 6) != 0) {
         print_error("Could not establish connection\n");
-        exit(1);
+        return NULL;
     }
+
+    running = 0;
+    return NULL;
 }
