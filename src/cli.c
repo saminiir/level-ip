@@ -1,7 +1,15 @@
 #include "syshead.h"
 #include "cli.h"
 
-void* usage(void *arg) {
+extern int running;
+
+void* noop(void *arg)
+{
+    return NULL;
+}
+
+void* usage(void *arg)
+{
     struct command *cmd = arg;
     
     printf("Usage: sudo %s [command ARGS..]\n\n", cmd->argv[0]);
@@ -10,18 +18,21 @@ void* usage(void *arg) {
     printf("\n");
     printf("Elevated privileges are needed because of tuntap devices.\n");
     printf("See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
-    exit(1);
+
+    running = 0;
+    return NULL;
 }
 
 static struct command cmds[] = {
     { 0, 0, NULL, usage, "help" },
     { 1, 0, NULL, curl, "curl" },
+    { 0, 0, NULL, noop, "noop" },
     { 0, 0, NULL, NULL, NULL }
 };
 
 struct command *parse_args(int argc, char** argv)
 {
-    struct command *cmd = NULL;
+    struct command *cmd = &cmds[2];
     if (argc == 1) return cmd;
 
     // Default to usage

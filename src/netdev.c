@@ -6,6 +6,7 @@
 #include "basic.h"
 
 struct netdev netdev;
+extern int running;
 
 void netdev_init(char *addr, char *hwaddr)
 {
@@ -48,16 +49,21 @@ void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr,
 
 void *netdev_rx_loop()
 {
-    int running = 1;
-    
     while (running) {
         if (tun_read(netdev.buf, netdev.buflen) < 0) {
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
-            return 1;
+            return NULL;
         }
 
         struct eth_hdr *hdr = init_eth_hdr(netdev.buf);
 
         handle_frame(&netdev, hdr);
     }
+
+    return NULL;
+}
+
+void netdev_free()
+{
+    free(netdev.tundev);
 }

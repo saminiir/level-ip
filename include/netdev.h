@@ -19,4 +19,5 @@ void netdev_init(char *addr, char *hwaddr);
 void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 
                      uint16_t ethertype, int len, uint8_t *dst);
 void *netdev_rx_loop();
+void netdev_free();
 #endif

@@ -100,4 +100,6 @@ int main(int argc, char** argv)
 
     run_threads();
     wait_for_threads();
+
+    netdev_free();
 }
