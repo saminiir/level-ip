@@ -1,3 +1,4 @@
+CFLAGS = -pthread
 CPPFLAGS = -I include -Wall
 
 src = $(wildcard src/*.c)
