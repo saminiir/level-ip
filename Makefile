@@ -10,5 +10,8 @@ lvl-ip: $(obj)
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
+debug: CFLAGS+= -g
+debug: lvl-ip
+
 clean:
 	rm build/*.o lvl-ip
