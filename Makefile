@@ -1,11 +1,11 @@
-CPPFLAGS = -I include -Wall
+CPPFLAGS = -I include -Wall -pthread
 
 src = $(wildcard src/*.c)
 obj = $(patsubst src/%.c, build/%.o, $(src))
 headers = $(wildcard include/*.h)
 
 lvl-ip: $(obj)
-	$(CC) $(CFLAGS) $(obj) -o lvl-ip
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(obj) -o lvl-ip
 
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
