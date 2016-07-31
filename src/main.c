@@ -60,11 +60,6 @@ static void init_stack()
     tcp_init();
 }
 
-static void init_apps()
-{
-
-}
-
 static void run_threads()
 {
     if (pthread_create(&threads[0], NULL,
@@ -94,9 +89,7 @@ int main(int argc, char** argv)
     cmd_to_run = parse_args(argc, argv);
 
     init_signals();
-
     init_stack();
-    init_apps();
 
     run_threads();
     wait_for_threads();
