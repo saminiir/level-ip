@@ -33,8 +33,10 @@ struct tcb {
 };
 
 struct tcp_socket {
-    int state;
+    enum tcp_states state;
     int fd;
+    uint16_t sport;
+    uint16_t dport;
     struct tcb tcb;
 };
 
@@ -42,5 +44,6 @@ void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);
 struct tcp_socket *get_tcp_socket(int sockfd);
+int connect_tcp_socket(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 
 #endif
