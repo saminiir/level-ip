@@ -13,7 +13,7 @@ void* curl(void *arg)
     int argc = cmd->argc;
     char **argv = cmd->argv;
     
-    if (argc != 3 || strnlen(argv[2], MAX_HOSTNAME) == MAX_HOSTNAME) {
+    if (argc != 1 || strnlen(argv[0], MAX_HOSTNAME) == MAX_HOSTNAME) {
         print_error("Curl called but HOST not given or invalid\n");
         return NULL;
     }
@@ -21,7 +21,7 @@ void* curl(void *arg)
     struct sockaddr addr;
     int sock;
 
-    if (get_address(argv[2], &addr) != 0) {
+    if (get_address(argv[0], &addr) != 0) {
         print_error("Curl could not resolve hostname\n");
         return NULL;
     }

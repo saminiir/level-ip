@@ -46,7 +46,7 @@ struct command *parse_args(int argc, char** argv)
 
             if (cmd->argc != cmd->args) break;
         
-            cmd->argv = argv;
+            cmd->argv = &argv[2];
             return cmd;
         }
     }
