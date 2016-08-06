@@ -3,6 +3,7 @@
 #include "syshead.h"
 #include "netdev.h"
 #include "ipv4.h"
+#include "tcp_socket.h"
 
 #define TCP_HDR_LEN 20
 
@@ -40,6 +41,6 @@ struct tcpiphdr {
 
 void tcp_init();
 void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
-void tcp_out(struct netdev *netdev, struct eth_hdr *hdr);
+void tcp_out(struct tcp_socket *sock, struct tcphdr *thdr);
 int tcp_checksum(struct iphdr *iphdr, struct tcphdr *thdr);
 #endif
