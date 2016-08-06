@@ -20,5 +20,12 @@ int _socket(int domain, int type, int protocol)
 
 int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-    return connect_tcp_socket(sockfd, addr, addrlen);
+    struct tcp_socket *sock;
+
+    if ((sock = get_tcp_socket(sockfd)) == NULL) {
+        print_error("Could not find socket for connection\n");
+        exit(1);
+    }
+
+    return tcp_v4_connect(sock, addr, addrlen);
 }

@@ -44,6 +44,6 @@ void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);
 struct tcp_socket *get_tcp_socket(int sockfd);
-int connect_tcp_socket(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen);
 
 #endif
