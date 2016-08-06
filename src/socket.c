@@ -1,6 +1,6 @@
 #include "syshead.h"
 #include "utils.h"
-#include "tcp_socket.h"
+#include "tcp.h"
 
 int _socket(int domain, int type, int protocol)
 {
