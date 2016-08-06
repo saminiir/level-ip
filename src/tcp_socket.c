@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "tcp_socket.h"
+#include "tcp.h"
 #include "utils.h"
 
 #define MAX_TCP_SOCKETS 128
@@ -55,36 +56,50 @@ static int generate_iss()
     return 1525252;
 }
 
-static int send_syn(struct tcp_socket *sock)
+static int tcp_send_syn(struct tcp_socket *sock)
 {
     if (sock->state != CLOSED && sock->state != LISTEN) {
         print_error("Socket was not in correct state (closed or listen)");
         return 1;
     }
 
+    struct tcphdr thdr;
+
+    thdr.sport = sock->sport;
+    thdr.dport = sock->dport;
+    thdr.seq = sock->tcb.iss;
+    thdr.ack = 0;
+    thdr.rsvd = 0;
+    thdr.hl = 6;
+    thdr.flags = TCP_SYN;
+    thdr.win = sock->tcb.rcv_wnd;
+    thdr.urp = 0;
+
     sock->state = SYN_SENT;
-    sock->tcb.iss = generate_iss();
+
+    tcp_out(sock, &thdr);
 
     return 0;
 }
 
-int connect_tcp_socket(int fd, const struct sockaddr *addr, socklen_t addrlen)
+static int tcp_connect(struct tcp_socket *sk)
 {
-    struct tcp_socket *sock;
-    printf("%d\n", fd);
+    return tcp_send_syn(sk);
+}
+
+int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen)
+{
     uint16_t dport = addr->sa_data[1];
 
-    if ((sock = get_tcp_socket(fd)) == NULL) {
-        print_error("Could not find socket for connection\n");
-        exit(1);
-    }
-
-    printf("Connecting socket %d to %hhu.%hhu.%hhu.%hhu\n", fd, addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
+    printf("Connecting socket to %hhu.%hhu.%hhu.%hhu\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
 
     sock->dport = dport;
     sock->sport = generate_port();
-
-    send_syn(sock);
-
-    return 0;
+    memcpy(&sock->dip, addr->sa_data + 2, 32);
+    sock->tcb.iss = generate_iss();
+    sock->tcb.snd_una = sock->tcb.iss;
+    sock->tcb.snd_nxt = sock->tcb.iss + 1;
+    sock->tcb.rcv_wnd = 4096;
+    
+    return tcp_connect(sock);
 }

@@ -15,8 +15,6 @@ enum tcp_states {
 };
 
 struct tcb {
-    uint16_t sport;
-    uint16_t dport;
     uint8_t *snd_buf;
     uint8_t *rcv_buf;
     uint32_t snd_una;
@@ -37,6 +35,7 @@ struct tcp_socket {
     int fd;
     uint16_t sport;
     uint16_t dport;
+    uint32_t dip;
     struct tcb tcb;
 };
 
