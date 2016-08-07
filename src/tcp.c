@@ -35,33 +35,6 @@ int tcp_checksum(struct iphdr *ihdr, struct tcphdr *thdr)
     return checksum(thdr, tlen, sum);
 }
 
-void tcp_out(struct tcp_socket *sock, struct tcphdr *thdr)
-{
-    struct iphdr iphdr;
-    struct iphdr pseudo_hdr;
-
-    memset(&iphdr, 0, sizeof(struct iphdr));
-    memset(&pseudo_hdr, 0, sizeof(struct iphdr));
-    
-    /* if (thdr->flags & TCP_SYN) { */
-    /*     thdr->flags |= TCP_ACK; */
-    /*     thdr->ack = htonl(ntohl(thdr->seq) + 1); */
-    /*     thdr->seq = htonl(12345678); */
-    /* } */
-
-    /* /\* Cut off TCP options, we'll implement the important ones later *\/ */
-    /* thdr->hl = 5; */
-    /* iphdr->len -= TCP_HDR_LEN; */
-    
-    /* pseudo_hdr.saddr = iphdr->daddr; */
-    /* pseudo_hdr.daddr = iphdr->saddr; */
-    /* pseudo_hdr.proto = iphdr->proto; */
-    /* pseudo_hdr.len = iphdr->len; */
-    /* pseudo_hdr.ihl = iphdr->ihl; */
-    
-    thdr->csum = 0;
-    thdr->csum = tcp_checksum(&pseudo_hdr, thdr);
-}
 #define MAX_TCP_SOCKETS 128
 #define FIRST_FD 3
 
@@ -118,12 +91,13 @@ static int generate_iss()
 int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen)
 {
     uint16_t dport = addr->sa_data[1];
+    uint32_t daddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
 
     printf("Connecting socket to %hhu.%hhu.%hhu.%hhu\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
 
     sock->dport = dport;
     sock->sport = generate_port();
-    memcpy(&sock->dip, addr->sa_data + 2, 32);
+    sock->daddr = daddr;
     sock->tcb.iss = generate_iss();
     sock->tcb.snd_una = sock->tcb.iss;
     sock->tcb.snd_nxt = sock->tcb.iss + 1;

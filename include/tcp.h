@@ -72,20 +72,20 @@ struct tcp_socket {
     int fd;
     uint16_t sport;
     uint16_t dport;
-    uint32_t dip;
+    uint32_t daddr;
+    uint16_t tcp_header_len;
     struct tcb tcb;
 };
 
 void tcp_init();
 void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
-void tcp_out(struct tcp_socket *sock, struct tcphdr *thdr);
 int tcp_checksum(struct iphdr *iphdr, struct tcphdr *thdr);
-void tcp_select_initial_window();
+void tcp_select_initial_window(uint32_t *rcv_wnd);
 
 void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);
 struct tcp_socket *get_tcp_socket(int sockfd);
 int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen);
-#endif
 int tcp_connect(struct tcp_socket *sock);
+#endif
