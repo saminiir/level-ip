@@ -1,7 +1,7 @@
 #ifndef IPV4_H
 #define IPV4_H
 #include "syshead.h"
-
+#include "skbuff.h"
 #include "netdev.h"
 
 #define IPV4 0x04
@@ -27,6 +27,7 @@ struct iphdr {
 } __attribute__((packed));
     
 void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
-void ipv4_outgoing(struct netdev *netdev, struct eth_hdr *hdr);
+int ip_output(struct sk_buff *skb);
+int ip_queue_xmit(struct sk_buff *skb);
     
 #endif
