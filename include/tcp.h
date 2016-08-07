@@ -4,7 +4,7 @@
 #include "netdev.h"
 #include "ipv4.h"
 
-#define TCP_HDR_LEN 20
+#define TCP_HDR_LEN sizeof(struct tcphdr)
 
 #define TCP_FIN 0x01
 #define TCP_SYN 0x02

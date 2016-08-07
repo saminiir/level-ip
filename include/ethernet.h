@@ -4,6 +4,8 @@
 #include "syshead.h"
 #include "netdev.h"
 
+#define ETH_HDR_LEN sizeof(struct eth_hdr)
+
 struct netdev;
 
 struct eth_hdr 

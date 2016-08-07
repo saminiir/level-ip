@@ -6,8 +6,9 @@
 
 #define IPV4 0x04
 #define IP_TCP 0x06
-
 #define ICMPV4 0x01
+
+#define IP_HDR_LEN sizeof(struct iphdr)
 
 struct iphdr {
     uint8_t ihl : 4; /* TODO: Support Big Endian hosts */
