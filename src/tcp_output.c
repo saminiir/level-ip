@@ -1,23 +1,26 @@
 #include "syshead.h"
 #include "utils.h"
 #include "tcp.h"
+#include "ipv4.h"
 #include "skbuff.h"
 
-static int tcp_transmit_skb(struct tcp_socket *sock, struct sk_buff *buff)
+static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
 {
-    struct tcphdr thdr;
+    struct tcphdr *thdr = (struct tcphdr *)skb->data;
+    struct tcb *tcb = &sk->tcb;
 
-    thdr.sport = sock->sport;
-    thdr.dport = sock->dport;
-    thdr.seq = sock->tcb.iss;
-    thdr.ack = 0;
-    thdr.rsvd = 0;
-    thdr.hl = 6;
-    thdr.flags = TCP_SYN;
-    thdr.win = sock->tcb.rcv_wnd;
-    thdr.urp = 0;
+    thdr->sport = sk->sport;
+    thdr->dport = sk->dport;
+    thdr->seq = tcb->snd_nxt;
+    thdr->ack = tcb->rcv_nxt;
+    thdr->rsvd = 0;
+    thdr->hl = 6;
+    thdr->flags = tcb->tcp_flags;
+    thdr->win = tcb->rcv_wnd;
+    thdr->csum = 0;
+    thdr->urp = 0;
 
-    return 0;
+    return ip_queue_xmit(skb);
 }
 
 static int tcp_send_syn(struct tcp_socket *sock)

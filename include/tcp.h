@@ -52,6 +52,7 @@ enum tcp_states {
 };
 
 struct tcb {
+    uint8_t tcp_flags;
     uint8_t *snd_buf;
     uint8_t *rcv_buf;
     uint32_t snd_una;
