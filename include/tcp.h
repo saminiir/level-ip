@@ -73,6 +73,7 @@ struct tcp_socket {
     int fd;
     uint16_t sport;
     uint16_t dport;
+    uint32_t saddr;
     uint32_t daddr;
     uint16_t tcp_header_len;
     struct tcb tcb;

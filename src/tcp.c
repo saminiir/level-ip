@@ -98,6 +98,7 @@ int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen
     sock->dport = dport;
     sock->sport = generate_port();
     sock->daddr = daddr;
+    sock->saddr = parse_ipv4_string("10.0.0.4"); 
     sock->tcb.iss = generate_iss();
     sock->tcb.snd_una = sock->tcb.iss;
     sock->tcb.snd_nxt = sock->tcb.iss + 1;
