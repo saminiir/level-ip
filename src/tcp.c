@@ -88,21 +88,17 @@ int generate_iss()
     return 1525252;
 }
 
-int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen)
+int tcp_v4_connect(struct tcp_socket *sk, const struct sockaddr *addr, socklen_t addrlen)
 {
     uint16_t dport = addr->sa_data[1];
     uint32_t daddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
 
     printf("Connecting socket to %hhu.%hhu.%hhu.%hhu\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
 
-    sock->dport = dport;
-    sock->sport = generate_port();
-    sock->daddr = daddr;
-    sock->saddr = parse_ipv4_string("10.0.0.4"); 
-    sock->tcb.iss = generate_iss();
-    sock->tcb.snd_una = sock->tcb.iss;
-    sock->tcb.snd_nxt = sock->tcb.iss + 1;
-    sock->tcb.rcv_wnd = 4096;
+    sk->dport = dport;
+    sk->sport = generate_port();
+    sk->daddr = daddr;
+    sk->saddr = parse_ipv4_string("10.0.0.4"); 
     
-    return tcp_connect(sock);
+    return tcp_connect(sk);
 }
