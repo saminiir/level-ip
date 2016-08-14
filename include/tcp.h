@@ -84,6 +84,7 @@ void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
 int tcp_checksum(struct iphdr *iphdr, struct tcphdr *thdr);
 void tcp_select_initial_window(uint32_t *rcv_wnd);
 
+int generate_iss();
 void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);

@@ -83,7 +83,7 @@ struct tcp_socket *get_tcp_socket(int sockfd)
     return sk;
 }
 
-static int generate_iss()
+int generate_iss()
 {
     return 1525252;
 }
