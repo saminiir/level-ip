@@ -4,10 +4,21 @@
 #include "ipv4.h"
 #include "skbuff.h"
 
+static struct sk_buff *tcp_alloc_skb(int size)
+{
+    struct sk_buff *skb = alloc_skb(size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+    skb_reserve(skb, ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+
+    return skb;
+}
+
 static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
 {
-    struct tcphdr *thdr = (struct tcphdr *)skb->data;
     struct tcb *tcb = &sk->tcb;
+
+    skb_push(skb, sk->tcp_header_len);
+
+    struct tcphdr *thdr = (struct tcphdr *)skb->data;
 
     thdr->sport = sk->sport;
     thdr->dport = sk->dport;
@@ -32,10 +43,10 @@ static int tcp_send_syn(struct tcp_socket *sock)
 
     struct sk_buff *skb;
 
-    skb = alloc_skb(TCP_HDR_LEN + IP_HDR_LEN + ETH_HDR_LEN);
+    skb = tcp_alloc_skb(0);
 
     sock->state = SYN_SENT;
-
+    
     return tcp_transmit_skb(sock, skb);
 }
 
