@@ -2,6 +2,9 @@
 #define TCP_H_
 #include "syshead.h"
 #include "netdev.h"
+
+struct tcp_socket;
+
 #include "ipv4.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
@@ -81,7 +84,7 @@ struct tcp_socket {
 
 void tcp_init();
 void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
-int tcp_checksum(struct iphdr *iphdr, struct tcphdr *thdr);
+int tcp_checksum(struct tcp_socket *sock, struct tcphdr *thdr);
 void tcp_select_initial_window(uint32_t *rcv_wnd);
 
 int generate_iss();

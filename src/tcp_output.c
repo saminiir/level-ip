@@ -31,7 +31,7 @@ static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
     thdr->csum = 0;
     thdr->urp = 0;
 
-    return ip_queue_xmit(skb);
+    return ip_queue_xmit(sk, skb);
 }
 
 static int tcp_send_syn(struct tcp_socket *sock)

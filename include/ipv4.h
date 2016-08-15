@@ -3,6 +3,7 @@
 #include "syshead.h"
 #include "skbuff.h"
 #include "netdev.h"
+#include "tcp.h"
 
 #define IPV4 0x04
 #define IP_TCP 0x06
@@ -25,9 +26,14 @@ struct iphdr {
     uint32_t daddr;
     uint8_t data[];
 } __attribute__((packed));
-    
+
+static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
+{
+    return (struct iphdr *)skb->data;
+}
+
 void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 int ip_output(struct sk_buff *skb);
-int ip_queue_xmit(struct sk_buff *skb);
+int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb);
     
 #endif
