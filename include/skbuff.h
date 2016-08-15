@@ -1,7 +1,11 @@
 #ifndef SKBUFF_H_
 #define SKBUFF_H_
 
+#include "netdev.h"
+
 struct sk_buff {
+    struct netdev *dev;
+    uint16_t protocol;
     uint32_t len;
     uint8_t *tail;
     uint8_t *end;

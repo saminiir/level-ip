@@ -10,6 +10,8 @@
 #define ARP_REQUEST     0x0001
 #define ARP_REPLY       0x0002
 
+#define ARP_HDR_LEN sizeof(struct arp_hdr)
+
 #define ARP_CACHE_LEN   32
 #define ARP_FREE        0
 #define ARP_WAITING     1
@@ -46,5 +48,10 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr);
 int neigh_resolve_output(struct sk_buff *skb);
 unsigned char* arp_get_hwaddr(uint32_t *sip);
+
+static inline int arp_hdr_len(struct netdev *netdev)
+{
+    return sizeof(struct arp_hdr) + (netdev->addr_len + sizeof(uint32_t) * 2);
+}
 
 #endif

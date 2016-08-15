@@ -8,6 +8,43 @@
 
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
+struct sk_buff *arp_create(int type, int ptype, uint32_t dest_ip,
+                           struct netdev *netdev, uint32_t src_ip,
+                           const unsigned char *dest_hw,
+                           const unsigned char *src_hw,
+                           const unsigned char *target_hw)
+{
+    struct sk_buff *skb;
+    struct arp_hdr *arp;
+    unsigned char *payload;
+
+    skb = alloc_skb(arp_hdr_len(netdev));
+    arp = (struct arp_hdr *)skb->data;
+    skb->dev = netdev;
+    skb->protocol = htons(ETH_P_ARP);
+
+    arp->hwtype = ARP_ETHERNET; 
+    arp->protype = ETH_P_IP;
+    arp->hwsize = netdev->addr_len;
+    arp->prosize = 4;
+
+    
+    
+    return skb;
+}
+                             
+
+static void arp_send_dst(int type, int ptype, uint32_t dest_ip,
+                         struct netdev *netdev, uint32_t src_ip,
+                         const unsigned char *dest_hw,
+                         const unsigned char *src_hw,
+                         const unsigned char *target_hw)
+{
+    struct sk_buff *skb;
+    
+    
+}
+
 static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
     struct arp_cache_entry *entry;
