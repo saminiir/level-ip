@@ -3,6 +3,11 @@
 #include "ipv4.h"
 #include "arp.h"
 
+void ip_send_check(struct iphdr *ihdr)
+{
+
+}
+
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
 {
     struct iphdr *ihdr;
@@ -15,6 +20,7 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
     ihdr->len = htons(IP_HDR_LEN);
     ihdr->csum = 0;
     
+    ip_send_check(ihdr);
     return neigh_resolve_output(skb);
 }
 
