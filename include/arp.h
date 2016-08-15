@@ -3,6 +3,7 @@
 #include "syshead.h"
 #include "ethernet.h"
 #include "netdev.h"
+#include "skbuff.h"
 
 #define ARP_ETHERNET    0x0001
 #define ARP_IPV4        0x0800
@@ -43,6 +44,7 @@ struct arp_cache_entry
 void arp_init();
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr);
+int neigh_resolve_output(struct sk_buff *skb);
 unsigned char* arp_get_hwaddr(uint32_t *sip);
 
 #endif

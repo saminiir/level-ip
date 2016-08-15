@@ -1,6 +1,7 @@
 #include "syshead.h"
 #include "utils.h"
 #include "ipv4.h"
+#include "arp.h"
 
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
 {
@@ -13,8 +14,8 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
     ihdr->daddr = htons(sock->daddr);
     ihdr->len = htons(IP_HDR_LEN);
     ihdr->csum = 0;
-    return 0;
     
+    return neigh_resolve_output(skb);
 }
 
 int ip_output(struct sk_buff *skb)
