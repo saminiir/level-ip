@@ -8,15 +8,15 @@
 
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
-struct sk_buff *arp_create(int type, int ptype, uint32_t dest_ip,
-                           struct netdev *netdev, uint32_t src_ip,
-                           const unsigned char *dest_hw,
+static struct sk_buff *arp_create(int type, int ptype, uint32_t dip,
+                           struct netdev *netdev, uint32_t sip,
+                           const unsigned char *dst_hw,
                            const unsigned char *src_hw,
                            const unsigned char *target_hw)
 {
     struct sk_buff *skb;
     struct arp_hdr *arp;
-    unsigned char *payload;
+    struct arp_ipv4 *payload;
 
     skb = alloc_skb(arp_hdr_len(netdev));
     arp = (struct arp_hdr *)skb->data;
@@ -28,20 +28,29 @@ struct sk_buff *arp_create(int type, int ptype, uint32_t dest_ip,
     arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
 
-    
+    payload = (struct arp_ipv4 *)arp->data;
+
+    memcpy(payload->smac, src_hw, netdev->addr_len);
+    payload->sip = sip;
+
+    memcpy(payload->dmac, dst_hw, netdev->addr_len);
+    payload->dip = dip;
     
     return skb;
 }
                              
-
-static void arp_send_dst(int type, int ptype, uint32_t dest_ip,
-                         struct netdev *netdev, uint32_t src_ip,
-                         const unsigned char *dest_hw,
+static void arp_send_dst(int type, int ptype, uint32_t dip,
+                         struct netdev *netdev, uint32_t sip,
+                         const unsigned char *dst_hw,
                          const unsigned char *src_hw,
                          const unsigned char *target_hw)
 {
     struct sk_buff *skb;
-    
+
+    skb = arp_create(type, ptype, dip, netdev, sip,
+                     dst_hw, src_hw, target_hw);
+
+    if (!skb) return;
     
 }
 
@@ -86,6 +95,11 @@ static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
 void arp_init()
 {
     memset(arp_cache, 0, ARP_CACHE_LEN * sizeof(struct arp_cache_entry));
+}
+
+void arp_xmit(struct sk_buff *skb)
+{
+
 }
 
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
