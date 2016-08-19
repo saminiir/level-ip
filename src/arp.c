@@ -189,8 +189,3 @@ unsigned char* arp_get_hwaddr(uint32_t *sip)
 
     return NULL;
 }
-
-int neigh_resolve_output(struct sk_buff *skb)
-{
-    return 0;
-}

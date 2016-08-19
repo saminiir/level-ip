@@ -47,7 +47,6 @@ void arp_init();
 void arp_xmit(struct sk_buff *skb);
 void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
 void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr);
-int neigh_resolve_output(struct sk_buff *skb);
 unsigned char* arp_get_hwaddr(uint32_t *sip);
 
 static inline int arp_hdr_len(struct netdev *netdev)
