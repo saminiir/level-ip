@@ -3,6 +3,7 @@
 #include "cli.h"
 #include "tuntap_if.h"
 #include "utils.h"
+#include "route.h"
 #include "ethernet.h"
 #include "arp.h"
 #include "tcp.h"
@@ -56,6 +57,7 @@ static void init_stack()
 {
     netdev_init("10.0.0.4", "00:0c:29:6d:50:25");
 
+    route_init();
     arp_init();
     tcp_init();
 }

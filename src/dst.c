@@ -4,5 +4,5 @@
 
 int dst_neigh_output(struct sk_buff *skb)
 {
-    return 0;
+    return netdev_queue_xmit(skb);
 }
