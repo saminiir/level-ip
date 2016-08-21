@@ -5,7 +5,10 @@ struct sk_buff *alloc_skb(unsigned int size)
 {
     struct sk_buff *skb = malloc(sizeof(struct sk_buff));
 
+    memset(skb, 0, sizeof(struct sk_buff));
     skb->data = malloc(size);
+    memset(skb->data, 0, size);
+    
     skb->head = skb->data;
     skb->tail = skb->data;
     skb->end = skb->tail + size;
