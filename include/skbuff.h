@@ -5,7 +5,6 @@
 #include "dst.h"
 
 struct sk_buff {
-    struct netdev *dev;
     struct dst_entry *dst;
     uint16_t protocol;
     uint32_t len;
@@ -13,8 +12,7 @@ struct sk_buff {
     uint8_t *end;
     uint8_t *head;
     uint8_t *data;
-    
-} __attribute__((packed));
+};
 
 struct sk_buff *alloc_skb(unsigned int size);
 uint8_t *skb_push(struct sk_buff *skb, unsigned int len);

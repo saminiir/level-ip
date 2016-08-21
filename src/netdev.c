@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "utils.h"
+#include "skbuff.h"
 #include "netdev.h"
 #include "ethernet.h"
 #include "tuntap_if.h"
@@ -30,6 +31,25 @@ void netdev_init(char *addr, char *hwaddr)
     dev->tundev = calloc(10, 1);
 
     tun_init(dev->tundev);
+}
+
+int netdev_queue_xmit(struct sk_buff *skb)
+{
+    struct netdev *dev;
+    struct eth_hdr *hdr;
+    uint8_t dmac[6] = { 0x4f, 0x4f, 0x4f, 0x4f, 0x4f, 0x4f };
+
+    dev = skb->dst->dev;
+
+    skb_push(skb, ETH_HDR_LEN);
+
+    hdr = (struct eth_hdr *)skb->data;
+
+    memcpy(hdr->dmac, dmac, 6);
+    memcpy(hdr->smac, dev->hwaddr, 6);
+    hdr->ethertype = ETH_P_IP;
+
+    return tun_write((char *)skb->data, skb->len);
 }
 
 void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 

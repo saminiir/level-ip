@@ -20,7 +20,7 @@ static struct sk_buff *arp_create(int type, int ptype, uint32_t dip,
 
     skb = alloc_skb(arp_hdr_len(netdev));
     arp = (struct arp_hdr *)skb->data;
-    skb->dev = netdev;
+    /* skb->dev = netdev; */
     skb->protocol = htons(ETH_P_ARP);
 
     arp->hwtype = ARP_ETHERNET; 

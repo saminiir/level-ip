@@ -2,11 +2,13 @@
 #define NETDEV_H
 #include "syshead.h"
 #include "ethernet.h"
+#include "skbuff.h"
 
 #define BUFLEN 512
 #define MAX_ADDR_LEN 32
 
 struct eth_hdr;
+struct sk_buff;
 
 struct netdev {
     uint32_t addr;
@@ -20,6 +22,7 @@ struct netdev {
 };
 
 void netdev_init(char *addr, char *hwaddr);
+int netdev_queue_xmit(struct sk_buff *skb);
 void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 
                      uint16_t ethertype, int len, uint8_t *dst);
 void *netdev_rx_loop();
