@@ -1,7 +1,7 @@
 #include "syshead.h"
 #include "utils.h"
 #include "ipv4.h"
-#include "arp.h"
+#include "dst.h"
 
 void ip_send_check(struct iphdr *ihdr)
 {
@@ -21,12 +21,15 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
     ihdr->csum = 0;
     
     ip_send_check(ihdr);
-    return neigh_resolve_output(skb);
+
+    //TODO: Get rt_entry and push it
+    
+    return ip_output(skb);
 }
 
 int ip_output(struct sk_buff *skb)
 {
-    /* struct iphdr *iphdr = (struct iphdr *)hdr->payload; */
+    /* struct iphdr */
     /* uint32_t tmpaddr; */
     /* uint16_t csum; */
     /* uint8_t len = iphdr->len; */
@@ -48,6 +51,7 @@ int ip_output(struct sk_buff *skb)
     /* csum = checksum(iphdr, iphdr->ihl * 4, 0); */
     /* iphdr->csum = csum; */
 
-    /* netdev_transmit(netdev, hdr, ETH_P_IP, len, hdr->smac); */
+    dst_neigh_output(skb);
+    
     return 0;
 }
