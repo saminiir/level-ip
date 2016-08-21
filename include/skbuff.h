@@ -2,9 +2,11 @@
 #define SKBUFF_H_
 
 #include "netdev.h"
+#include "dst.h"
 
 struct sk_buff {
     struct netdev *dev;
+    struct dst_entry *dst;
     uint16_t protocol;
     uint32_t len;
     uint8_t *tail;
@@ -17,5 +19,6 @@ struct sk_buff {
 struct sk_buff *alloc_skb(unsigned int size);
 uint8_t *skb_push(struct sk_buff *skb, unsigned int len);
 void *skb_reserve(struct sk_buff *skb, unsigned int len);
+void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst);
 
 #endif

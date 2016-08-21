@@ -3,6 +3,8 @@
 
 #include "skbuff.h"
 
+struct sk_buff;
+
 struct dst_entry {
     struct netdev *dev;
 };

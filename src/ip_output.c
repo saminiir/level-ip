@@ -1,7 +1,9 @@
 #include "syshead.h"
+#include "skbuff.h"
 #include "utils.h"
 #include "ipv4.h"
 #include "dst.h"
+#include "route.h"
 
 void ip_send_check(struct iphdr *ihdr)
 {
@@ -10,7 +12,17 @@ void ip_send_check(struct iphdr *ihdr)
 
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
 {
+    struct rtable *rt;
     struct iphdr *ihdr;
+
+    rt = route_lookup(sock->saddr, sock->daddr);
+
+    if (!rt) {
+        // Raise error
+    }
+
+    skb_dst_set(skb, &rt->dst);
+
     skb_push(skb, IP_HDR_LEN);
 
     ihdr = ip_hdr(skb);
@@ -21,8 +33,6 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
     ihdr->csum = 0;
     
     ip_send_check(ihdr);
-
-    //TODO: Get rt_entry and push it
     
     return ip_output(skb);
 }

@@ -28,3 +28,8 @@ uint8_t *skb_push(struct sk_buff *skb, unsigned int len)
 
     return skb->data;
 }
+
+void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst)
+{
+    skb->dst = dst;
+}

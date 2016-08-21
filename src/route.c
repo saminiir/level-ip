@@ -18,5 +18,5 @@ void route_init()
 
 struct rtable *route_lookup(uint32_t daddr, uint32_t saddr)
 {
-    return NULL;
+    return &main_rt;
 }
