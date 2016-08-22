@@ -31,6 +31,9 @@ static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
     thdr->csum = 0;
     thdr->urp = 0;
 
+    /* Calculate checksum */
+    thdr->csum = tcp_v4_checksum(skb, htonl(sk->saddr), sk->daddr);
+
     return ip_queue_xmit(sk, skb);
 }
 

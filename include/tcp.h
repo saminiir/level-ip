@@ -92,6 +92,7 @@ void init_tcp_sockets();
 struct tcp_socket *alloc_tcp_socket();
 void free_tcp_socket(struct tcp_socket *sock);
 struct tcp_socket *get_tcp_socket(int sockfd);
+int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
 int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen);
 int tcp_connect(struct tcp_socket *sock);
 #endif

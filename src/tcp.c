@@ -18,6 +18,23 @@ void tcp_in(struct netdev *netdev, struct eth_hdr *hdr)
     /* } */
 }
 
+int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
+                     uint8_t *data, uint16_t len)
+{
+    uint32_t sum = 0;
+
+    sum += saddr;
+    sum += daddr;
+    sum += htons(proto);
+    sum += htons(len);
+    
+    return checksum(data, len, sum);
+}
+
+int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr)
+{
+    return tcp_udp_checksum(saddr, daddr, IP_TCP, skb->data, skb->len); }
+
 int tcp_checksum(struct tcp_socket *sk, struct tcphdr *thdr)
 {
     /* struct tcpiphdr pseudo_hdr; */
