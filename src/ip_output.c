@@ -7,7 +7,8 @@
 
 void ip_send_check(struct iphdr *ihdr)
 {
-
+    uint32_t csum = checksum(ihdr, ihdr->ihl * 4, 0);
+    ihdr->csum = csum;
 }
 
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
