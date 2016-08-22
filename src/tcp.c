@@ -94,7 +94,7 @@ int tcp_v4_connect(struct tcp_socket *sk, const struct sockaddr *addr, socklen_t
     uint16_t dport = addr->sa_data[1];
     uint32_t daddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
 
-    printf("Connecting socket to %hhu.%hhu.%hhu.%hhu\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5]);
+    printf("Connecting socket to %hhu.%hhu.%hhu.%hhu:%d\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5], dport);
 
     sk->dport = dport;
     sk->sport = generate_port();
