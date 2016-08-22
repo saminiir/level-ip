@@ -27,9 +27,17 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
 
     ihdr = ip_hdr(skb);
 
-    ihdr->saddr = htons(sock->saddr);
-    ihdr->daddr = htons(sock->daddr);
-    ihdr->len = htons(IP_HDR_LEN);
+    ihdr->version = IPV4;
+    ihdr->ihl = 0x05;
+    ihdr->tos = 0;
+    ihdr->len = htons(skb->len);
+    ihdr->id = htons(555);
+    ihdr->flags = 0;
+    ihdr->frag_offset = 0;
+    ihdr->ttl = 30;
+    ihdr->proto = IP_TCP;
+    ihdr->saddr = htonl(sock->saddr);
+    ihdr->daddr = sock->daddr;
     ihdr->csum = 0;
     
     ip_send_check(ihdr);

@@ -47,7 +47,7 @@ int netdev_queue_xmit(struct sk_buff *skb)
 
     memcpy(hdr->dmac, dmac, 6);
     memcpy(hdr->smac, dev->hwaddr, 6);
-    hdr->ethertype = ETH_P_IP;
+    hdr->ethertype = htons(ETH_P_IP);
 
     return tun_write((char *)skb->data, skb->len);
 }

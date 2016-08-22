@@ -20,14 +20,14 @@ static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
 
     struct tcphdr *thdr = (struct tcphdr *)skb->data;
 
-    thdr->sport = sk->sport;
-    thdr->dport = sk->dport;
-    thdr->seq = tcb->snd_nxt;
-    thdr->ack = tcb->rcv_nxt;
+    thdr->sport = htons(sk->sport);
+    thdr->dport = htons(sk->dport);
+    thdr->seq = htonl(tcb->snd_nxt);
+    thdr->ack = htonl(tcb->rcv_nxt);
+    thdr->hl = 5;
     thdr->rsvd = 0;
-    thdr->hl = 6;
     thdr->flags = tcb->tcp_flags;
-    thdr->win = tcb->rcv_wnd;
+    thdr->win = htons(tcb->rcv_wnd);
     thdr->csum = 0;
     thdr->urp = 0;
 
@@ -46,6 +46,7 @@ static int tcp_send_syn(struct tcp_socket *sock)
     skb = tcp_alloc_skb(0);
 
     sock->state = SYN_SENT;
+    sock->tcb.tcp_flags = TCP_SYN;
     
     return tcp_transmit_skb(sock, skb);
 }
