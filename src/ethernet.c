@@ -23,6 +23,9 @@ void handle_frame(struct netdev *netdev, struct eth_hdr *hdr)
         case ETH_P_IP:
             ipv4_incoming(netdev, hdr);
             break;
+        case ETH_P_IPV6:
+            printf("IPv6 packet received, not supported\n");
+            break;
         default:
             printf("Unrecognized ethertype %x\n", hdr->ethertype);
             break;
