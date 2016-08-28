@@ -35,7 +35,7 @@ int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
     ihdr->id = htons(555);
     ihdr->flags = 0;
     ihdr->frag_offset = 0;
-    ihdr->ttl = 30;
+    ihdr->ttl = 64;
     ihdr->proto = IP_TCP;
     ihdr->saddr = htonl(sock->saddr);
     ihdr->daddr = sock->daddr;
