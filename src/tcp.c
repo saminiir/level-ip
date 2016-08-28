@@ -7,7 +7,7 @@ void tcp_init()
     init_tcp_sockets();
 }
 
-void tcp_in(struct netdev *netdev, struct eth_hdr *hdr)
+void tcp_in(struct sk_buff *skb, struct netdev *netdev)
 {
     /* struct iphdr *iphdr = (struct iphdr *) hdr->payload; */
     /* struct tcphdr *thdr = (struct tcphdr *) iphdr->data; */

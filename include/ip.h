@@ -29,10 +29,10 @@ struct iphdr {
 
 static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
 {
-    return (struct iphdr *)skb->data;
+    return (struct iphdr *)skb->head + IP_HDR_LEN;
 }
 
-void ipv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
+int ip_rcv(struct sk_buff *skb, struct netdev *netdev);
 int ip_output(struct sk_buff *skb);
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb);
     

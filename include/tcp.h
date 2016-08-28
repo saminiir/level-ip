@@ -83,7 +83,7 @@ struct tcp_socket {
 };
 
 void tcp_init();
-void tcp_in(struct netdev *netdev, struct eth_hdr *hdr);
+void tcp_in(struct sk_buff *skb, struct netdev *netdev);
 int tcp_checksum(struct tcp_socket *sock, struct tcphdr *thdr);
 void tcp_select_initial_window(uint32_t *rcv_wnd);
 

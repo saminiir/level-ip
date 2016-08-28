@@ -35,7 +35,7 @@ struct icmp_v4_dst_unreachable {
 } __attribute__((packed));
 
 
-void icmpv4_incoming(struct netdev *netdev, struct eth_hdr *hdr);
-void icmpv4_reply(struct netdev *netdev, struct eth_hdr *hdr);
+void icmpv4_incoming(struct sk_buff *skb, struct netdev *netdev);
+void icmpv4_reply(struct sk_buff *skb, struct netdev *netdev);
 
 #endif
