@@ -5,7 +5,7 @@
 
 struct tcp_socket;
 
-#include "ipv4.h"
+#include "ip.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
 

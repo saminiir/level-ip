@@ -8,7 +8,7 @@
 #include "arp.h"
 #include "tcp.h"
 #include "netdev.h"
-#include "ipv4.h"
+#include "ip.h"
 #include "curl.h"
 
 #define MAX_CMD_LENGTH 6

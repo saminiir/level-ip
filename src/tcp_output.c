@@ -1,7 +1,7 @@
 #include "syshead.h"
 #include "utils.h"
 #include "tcp.h"
-#include "ipv4.h"
+#include "ip.h"
 #include "skbuff.h"
 
 static struct sk_buff *tcp_alloc_skb(int size)

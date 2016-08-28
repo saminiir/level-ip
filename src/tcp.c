@@ -1,5 +1,5 @@
 #include "tcp.h"
-#include "ipv4.h"
+#include "ip.h"
 #include "utils.h"
 
 void tcp_init()
