@@ -23,7 +23,10 @@ struct eth_hdr
 
 inline struct eth_hdr *eth_hdr(struct sk_buff *skb)
 {
-    return (struct eth_hdr *)skb_head(skb);
+    struct eth_hdr *hdr = (struct eth_hdr *)skb_head(skb);
+
+    hdr->ethertype = ntohs(hdr->ethertype);
+    return hdr;
 }
 
 #endif
