@@ -16,6 +16,7 @@ struct sk_buff {
 
 struct sk_buff *alloc_skb(unsigned int size);
 uint8_t *skb_push(struct sk_buff *skb, unsigned int len);
+uint8_t *skb_head(struct sk_buff *skb);
 void *skb_reserve(struct sk_buff *skb, unsigned int len);
 void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst);
 

@@ -3,6 +3,8 @@
 #include "skbuff.h"
 #include "netdev.h"
 #include "ethernet.h"
+#include "arp.h"
+#include "ip.h"
 #include "tuntap_if.h"
 #include "basic.h"
 
@@ -70,17 +72,41 @@ void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr,
 void *netdev_rx_loop()
 {
     while (running) {
-        if (tun_read(netdev.buf, netdev.buflen) < 0) {
+        struct sk_buff *skb = alloc_skb(BUFLEN);
+        
+        if (tun_read((char *)skb->data, BUFLEN) < 0) { 
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
             return NULL;
         }
 
-        struct eth_hdr *hdr = init_eth_hdr(netdev.buf);
+        printf("Received packets, processing\n");
 
-        handle_frame(&netdev, hdr);
+        netdev_rx_action(skb, &netdev);
     }
 
     return NULL;
+}
+
+int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev)
+{
+    struct eth_hdr *hdr = eth_hdr(skb);
+
+    switch (hdr->ethertype) {
+        case ETH_P_ARP:
+            arp_incoming(netdev, hdr);
+            break;
+        case ETH_P_IP:
+            ip_rcv(skb, netdev);
+            break;
+        case ETH_P_IPV6:
+            printf("IPv6 packet received, not supported\n");
+            break;
+        default:
+            printf("Unrecognized ethertype %x\n", hdr->ethertype);
+            break;
+    }
+
+    return 0;
 }
 
 void netdev_free()

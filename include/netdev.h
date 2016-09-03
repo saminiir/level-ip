@@ -8,7 +8,6 @@
 #define MAX_ADDR_LEN 32
 
 struct eth_hdr;
-struct sk_buff;
 
 struct netdev {
     uint32_t addr;
@@ -26,5 +25,6 @@ int netdev_queue_xmit(struct sk_buff *skb);
 void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 
                      uint16_t ethertype, int len, uint8_t *dst);
 void *netdev_rx_loop();
+int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev);
 void netdev_free();
 #endif

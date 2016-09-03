@@ -36,3 +36,8 @@ void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst)
 {
     skb->dst = dst;
 }
+
+uint8_t *skb_head(struct sk_buff *skb)
+{
+    return skb->head;
+}
