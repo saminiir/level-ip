@@ -19,7 +19,7 @@ int ip_rcv(struct sk_buff *skb, struct netdev *netdev)
 
     if (iphdr->ihl < 5) {
         perror("IPv4 header length must be at least 5\n");
-        return 0;; 
+        return 0;
     }
 
     if (iphdr->ttl == 0) {

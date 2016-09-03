@@ -29,7 +29,7 @@ struct iphdr {
 
 static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
 {
-    return (struct iphdr *)skb->head + IP_HDR_LEN;
+    return (struct iphdr *)(skb->head + ETH_HDR_LEN);
 }
 
 int ip_rcv(struct sk_buff *skb, struct netdev *netdev);
