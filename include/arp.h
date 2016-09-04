@@ -45,7 +45,6 @@ struct arp_cache_entry
 };
 
 void arp_init();
-void arp_xmit(struct sk_buff *skb);
 void arp_rcv(struct sk_buff *skb);
 void arp_reply(struct sk_buff *skb, struct netdev *netdev);
 int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev);

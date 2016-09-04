@@ -9,30 +9,6 @@
 static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
-static struct sk_buff *arp_create(int type, int ptype, uint32_t dip,
-                           struct netdev *netdev, uint32_t sip,
-                           const unsigned char *dst_hw,
-                           const unsigned char *src_hw,
-                           const unsigned char *target_hw)
-{
-
-}
-                             
-static void arp_send_dst(int type, int ptype, uint32_t dip,
-                         struct netdev *netdev, uint32_t sip,
-                         const unsigned char *dst_hw,
-                         const unsigned char *src_hw,
-                         const unsigned char *target_hw)
-{
-    struct sk_buff *skb;
-
-    skb = arp_create(type, ptype, dip, netdev, sip,
-                     dst_hw, src_hw, target_hw);
-
-    if (!skb) return;
-    
-}
-
 static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
     struct arp_cache_entry *entry;
@@ -74,11 +50,6 @@ static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
 void arp_init()
 {
     memset(arp_cache, 0, ARP_CACHE_LEN * sizeof(struct arp_cache_entry));
-}
-
-void arp_xmit(struct sk_buff *skb)
-{
-
 }
 
 void arp_rcv(struct sk_buff *skb)
