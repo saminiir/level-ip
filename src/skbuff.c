@@ -16,6 +16,12 @@ struct sk_buff *alloc_skb(unsigned int size)
     return skb;
 }
 
+void free_skb(struct sk_buff *skb)
+{
+    free(skb->data);
+    free(skb);
+}
+
 void *skb_reserve(struct sk_buff *skb, unsigned int len)
 {
     skb->data += len;

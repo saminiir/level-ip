@@ -35,6 +35,7 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
 {
     struct netdev *dev;
     struct eth_hdr *hdr;
+    int rc = 0;
 
     dev = skb->netdev;
 
@@ -46,7 +47,11 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
     memcpy(hdr->smac, dev->hwaddr, dev->addr_len);
     hdr->ethertype = htons(ethertype);
 
-    return tun_write((char *)skb->data, skb->len);
+    rc = tun_write((char *)skb->data, skb->len);
+
+    free_skb(skb);
+
+    return rc;
 }
 
 static int netdev_rx_action(struct sk_buff *skb)
