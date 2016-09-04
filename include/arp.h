@@ -48,12 +48,8 @@ void arp_init();
 void arp_xmit(struct sk_buff *skb);
 void arp_rcv(struct sk_buff *skb);
 void arp_reply(struct sk_buff *skb, struct netdev *netdev);
-unsigned char* arp_get_hwaddr(uint32_t *sip);
-
-static inline int arp_hdr_len(struct netdev *netdev)
-{
-    return sizeof(struct arp_hdr) + (netdev->addr_len + sizeof(uint32_t) * 2);
-}
+int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev);
+unsigned char* arp_get_hwaddr(uint32_t sip);
 
 static inline struct arp_hdr *arp_hdr(struct sk_buff *skb)
 {

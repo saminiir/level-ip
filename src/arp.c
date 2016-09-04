@@ -6,6 +6,7 @@
  * https://tools.ietf.org/html/rfc826
  */
 
+static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
 static struct sk_buff *arp_create(int type, int ptype, uint32_t dip,
@@ -14,29 +15,7 @@ static struct sk_buff *arp_create(int type, int ptype, uint32_t dip,
                            const unsigned char *src_hw,
                            const unsigned char *target_hw)
 {
-    struct sk_buff *skb;
-    struct arp_hdr *arp;
-    struct arp_ipv4 *payload;
 
-    skb = alloc_skb(arp_hdr_len(netdev));
-    arp = (struct arp_hdr *)skb->data;
-    /* skb->dev = netdev; */
-    skb->protocol = htons(ETH_P_ARP);
-
-    arp->hwtype = ARP_ETHERNET; 
-    arp->protype = ETH_P_IP;
-    arp->hwsize = netdev->addr_len;
-    arp->prosize = 4;
-
-    payload = (struct arp_ipv4 *)arp->data;
-
-    memcpy(payload->smac, src_hw, netdev->addr_len);
-    payload->sip = sip;
-
-    memcpy(payload->dmac, dst_hw, netdev->addr_len);
-    payload->dip = dip;
-    
-    return skb;
 }
                              
 static void arp_send_dst(int type, int ptype, uint32_t dip,
@@ -148,6 +127,33 @@ void arp_rcv(struct sk_buff *skb)
     }
 }
 
+int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
+{
+    struct sk_buff *skb;
+    struct arp_hdr *arp;
+    struct arp_ipv4 *payload;
+
+    skb = alloc_skb(ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
+    arp = arp_hdr(skb);
+    /* skb->dev = netdev; */
+    skb->protocol = htons(ETH_P_ARP);
+
+    arp->hwtype = ARP_ETHERNET; 
+    arp->protype = ETH_P_IP;
+    arp->hwsize = netdev->addr_len;
+    arp->prosize = 4;
+
+    payload = (struct arp_ipv4 *)arp->data;
+
+    memcpy(payload->smac, netdev->hwaddr, netdev->addr_len);
+    payload->sip = sip;
+
+    memcpy(payload->dmac, broadcast_hw, netdev->addr_len);
+    payload->dip = dip;
+    
+    return netdev_transmit(skb, broadcast_hw, ETH_P_ARP);    
+}
+
 void arp_reply(struct sk_buff *skb, struct netdev *netdev) 
 {
     struct arp_hdr *arphdr;
@@ -181,7 +187,7 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
  * Returns the HW address of the given source IP address
  * NULL if not found
  */
-unsigned char* arp_get_hwaddr(uint32_t *sip)
+unsigned char* arp_get_hwaddr(uint32_t sip)
 {
     struct arp_cache_entry *entry;
 
@@ -189,7 +195,7 @@ unsigned char* arp_get_hwaddr(uint32_t *sip)
         entry = &arp_cache[i];
 
         if (entry->state == ARP_RESOLVED && 
-            entry->sip == *sip) {
+            entry->sip == sip) {
 
             return entry->smac;
         }

@@ -62,6 +62,7 @@ int ip_output(struct sk_buff *skb)
 
     skb_dst_set(skb, &rt->dst);
     netdev = rt->dst.dev;
+    skb->netdev = netdev;
 
     skb_push(skb, IP_HDR_LEN);
 
