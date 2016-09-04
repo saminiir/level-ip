@@ -16,9 +16,7 @@ struct netdev {
 };
 
 void netdev_init(char *addr, char *hwaddr);
-int netdev_queue_xmit(struct sk_buff *skb);
-void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 
-                     uint16_t ethertype, int len, uint8_t *dst);
+int netdev_transmit(struct sk_buff *skb, uint8_t *dst, uint16_t ethertype);
 void *netdev_rx_loop();
 int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev);
 void netdev_free();

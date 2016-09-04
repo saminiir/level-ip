@@ -4,5 +4,6 @@
 
 int dst_neigh_output(struct sk_buff *skb)
 {
-    return netdev_queue_xmit(skb);
+    uint8_t dmac[6] = { 0x4f, 0x4f, 0x4f, 0x4f, 0x4f, 0x4f };
+    return netdev_transmit(skb, dmac, ETH_P_IP);
 }

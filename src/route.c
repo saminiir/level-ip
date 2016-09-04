@@ -16,7 +16,7 @@ void route_init()
     main_rt.dst = dst;
 }
 
-struct rtable *route_lookup(uint32_t daddr, uint32_t saddr)
+struct rtable *route_lookup(uint32_t saddr)
 {
     return &main_rt;
 }

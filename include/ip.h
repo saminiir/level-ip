@@ -2,7 +2,6 @@
 #define IPV4_H
 #include "syshead.h"
 #include "skbuff.h"
-#include "netdev.h"
 #include "tcp.h"
 
 #define IPV4 0x04
@@ -32,7 +31,7 @@ static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
     return (struct iphdr *)(skb->head + ETH_HDR_LEN);
 }
 
-int ip_rcv(struct sk_buff *skb, struct netdev *netdev);
+int ip_rcv(struct sk_buff *skb);
 int ip_output(struct sk_buff *skb);
 int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb);
     

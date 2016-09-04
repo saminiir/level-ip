@@ -27,13 +27,14 @@ void netdev_init(char *addr, char *hwaddr)
                                                     &dev->hwaddr[3],
                                                     &dev->hwaddr[4],
                                                     &dev->hwaddr[5]);
+
+    dev->addr_len = 6;
 }
 
-int netdev_queue_xmit(struct sk_buff *skb)
+int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
 {
     struct netdev *dev;
     struct eth_hdr *hdr;
-    uint8_t dmac[6] = { 0x4f, 0x4f, 0x4f, 0x4f, 0x4f, 0x4f };
 
     dev = skb->dst->dev;
 
@@ -41,26 +42,11 @@ int netdev_queue_xmit(struct sk_buff *skb)
 
     hdr = (struct eth_hdr *)skb->data;
 
-    memcpy(hdr->dmac, dmac, 6);
-    memcpy(hdr->smac, dev->hwaddr, 6);
-    hdr->ethertype = htons(ETH_P_IP);
-
-    return tun_write((char *)skb->data, skb->len);
-}
-
-void netdev_transmit(struct netdev *dev, struct eth_hdr *hdr, 
-                     uint16_t ethertype, int len, uint8_t *dst)
-{
-    uint8_t dst_mac[6];
-    memcpy(dst_mac, dst, 6);
+    memcpy(hdr->dmac, dst_hw, dev->addr_len);
+    memcpy(hdr->smac, dev->hwaddr, dev->addr_len);
     hdr->ethertype = htons(ethertype);
 
-    memcpy(hdr->smac, dev->hwaddr, 6);
-    memcpy(hdr->dmac, dst_mac, 6);
-
-    len += sizeof(struct eth_hdr);
-
-    tun_write((char *)hdr, len);
+    return tun_write((char *)skb->data, skb->len);
 }
 
 void *netdev_rx_loop()
@@ -90,7 +76,7 @@ int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev)
             arp_incoming(netdev, hdr);
             break;
         case ETH_P_IP:
-            ip_rcv(skb, netdev);
+            ip_rcv(skb);
             break;
         case ETH_P_IPV6:
             printf("IPv6 packet received, not supported\n");

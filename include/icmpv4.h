@@ -2,7 +2,7 @@
 #define ICMPV4_H
 
 #include "syshead.h"
-#include "netdev.h"
+#include "skbuff.h"
 
 #define ICMP_V4_REPLY           0x00
 #define ICMP_V4_DST_UNREACHABLE 0x03
@@ -35,7 +35,7 @@ struct icmp_v4_dst_unreachable {
 } __attribute__((packed));
 
 
-void icmpv4_incoming(struct sk_buff *skb, struct netdev *netdev);
-void icmpv4_reply(struct sk_buff *skb, struct netdev *netdev);
+void icmpv4_incoming(struct sk_buff *skb);
+void icmpv4_reply(struct sk_buff *skb);
 
 #endif

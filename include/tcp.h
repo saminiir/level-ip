@@ -1,7 +1,6 @@
 #ifndef TCP_H_
 #define TCP_H_
 #include "syshead.h"
-#include "netdev.h"
 
 struct tcp_socket;
 
@@ -83,7 +82,7 @@ struct tcp_socket {
 };
 
 void tcp_init();
-void tcp_in(struct sk_buff *skb, struct netdev *netdev);
+void tcp_in(struct sk_buff *skb);
 int tcp_checksum(struct tcp_socket *sock, struct tcphdr *thdr);
 void tcp_select_initial_window(uint32_t *rcv_wnd);
 

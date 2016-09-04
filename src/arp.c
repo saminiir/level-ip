@@ -166,7 +166,7 @@ void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphd
     arphdr->protype = htons(arphdr->protype);
 
     len = sizeof(struct arp_hdr) + sizeof(struct arp_ipv4);
-    netdev_transmit(netdev, hdr, ETH_P_ARP, len, arpdata->dmac);
+    /* netdev_transmit(netdev, hdr, ETH_P_ARP, len, arpdata->dmac); */
 }
 
 /*

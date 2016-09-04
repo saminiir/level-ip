@@ -4,10 +4,9 @@
 #include "ip.h"
 #include "icmpv4.h"
 #include "tcp.h"
-#include "netdev.h"
 #include "utils.h"
 
-int ip_rcv(struct sk_buff *skb, struct netdev *netdev)
+int ip_rcv(struct sk_buff *skb)
 {
     struct iphdr *iphdr = ip_hdr(skb);
     uint16_t csum = -1;
@@ -40,10 +39,10 @@ int ip_rcv(struct sk_buff *skb, struct netdev *netdev)
 
     switch (iphdr->proto) {
     case ICMPV4:
-        icmpv4_incoming(skb, netdev);
+        icmpv4_incoming(skb);
         break;
     case IP_TCP:
-        tcp_in(skb, netdev);
+        tcp_in(skb);
         break;
     default:
         perror("Unknown IP header proto\n");

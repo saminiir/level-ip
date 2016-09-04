@@ -8,6 +8,6 @@ struct rtable {
 };
 
 void route_init();
-struct rtable *route_lookup(uint32_t daddr, uint32_t saddr);
+struct rtable *route_lookup(uint32_t daddr);
 
 #endif
