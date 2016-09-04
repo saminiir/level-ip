@@ -3,6 +3,7 @@
 #include "basic.h"
 
 static int tun_fd;
+static char* dev;
 
 static int set_if_route(char *dev, char *cidr)
 {
@@ -66,8 +67,9 @@ int tun_write(char *buf, int len)
     return write(tun_fd, buf, len);
 }
 
-void tun_init(char *dev)
+void tun_init()
 {
+    dev = calloc(10, 1);
     tun_fd = tun_alloc(dev);
 
     if (set_if_up(dev) != 0) {
@@ -81,4 +83,9 @@ void tun_init(char *dev)
     if (set_if_address(dev, "10.0.0.5/24") != 0) {
         print_error("ERROR when setting addr for if\n");
     }
+}
+
+void tun_free()
+{
+    free(dev);
 }

@@ -12,12 +12,7 @@ struct eth_hdr;
 struct netdev {
     uint32_t addr;
     uint8_t addr_len;
-    uint8_t *dev_addr;
-    unsigned char broadcast[MAX_ADDR_LEN];
     uint8_t hwaddr[6];
-    char buf[BUFLEN];
-    int buflen;
-    char *tundev;
 };
 
 void netdev_init(char *addr, char *hwaddr);

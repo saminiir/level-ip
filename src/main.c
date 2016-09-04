@@ -55,6 +55,7 @@ static void init_signals()
 
 static void init_stack()
 {
+    tun_init();
     netdev_init("10.0.0.4", "00:0c:29:6d:50:25");
 
     route_init();
@@ -86,6 +87,12 @@ static void wait_for_threads()
     }
 }
 
+void free_stack()
+{
+    netdev_free();
+    tun_free();
+}
+
 int main(int argc, char** argv)
 {
     cmd_to_run = parse_args(argc, argv);
@@ -96,5 +103,5 @@ int main(int argc, char** argv)
     run_threads();
     wait_for_threads();
 
-    netdev_free();
+    free_stack();
 }

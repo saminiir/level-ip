@@ -16,8 +16,6 @@ void netdev_init(char *addr, char *hwaddr)
     struct netdev *dev = &netdev;
     CLEAR(*dev);
 
-    dev->buflen = 512;
-
     if (inet_pton(AF_INET, addr, &dev->addr) != 1) {
         perror("ERR: Parsing inet address failed\n");
         exit(1);
@@ -29,10 +27,6 @@ void netdev_init(char *addr, char *hwaddr)
                                                     &dev->hwaddr[3],
                                                     &dev->hwaddr[4],
                                                     &dev->hwaddr[5]);
-
-    dev->tundev = calloc(10, 1);
-
-    tun_init(dev->tundev);
 }
 
 int netdev_queue_xmit(struct sk_buff *skb)
@@ -111,5 +105,4 @@ int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev)
 
 void netdev_free()
 {
-    free(netdev.tundev);
 }
