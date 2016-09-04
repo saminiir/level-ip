@@ -6,6 +6,7 @@
 
 struct sk_buff {
     struct dst_entry *dst;
+    struct netdev *netdev;
     uint16_t protocol;
     uint32_t len;
     uint8_t *tail;

@@ -36,7 +36,7 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
     struct netdev *dev;
     struct eth_hdr *hdr;
 
-    dev = skb->dst->dev;
+    dev = skb->netdev;
 
     skb_push(skb, ETH_HDR_LEN);
 
@@ -47,6 +47,28 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
     hdr->ethertype = htons(ethertype);
 
     return tun_write((char *)skb->data, skb->len);
+}
+
+static int netdev_rx_action(struct sk_buff *skb)
+{
+    struct eth_hdr *hdr = eth_hdr(skb);
+
+    switch (hdr->ethertype) {
+        case ETH_P_ARP:
+            arp_rcv(skb);
+            break;
+        case ETH_P_IP:
+            ip_rcv(skb);
+            break;
+        case ETH_P_IPV6:
+            printf("IPv6 packet received, not supported\n");
+            break;
+        default:
+            printf("Unrecognized ethertype %x\n", hdr->ethertype);
+            break;
+    }
+
+    return 0;
 }
 
 void *netdev_rx_loop()
@@ -61,32 +83,19 @@ void *netdev_rx_loop()
 
         printf("Received packets, processing\n");
 
-        netdev_rx_action(skb, &netdev);
+        netdev_rx_action(skb);
     }
 
     return NULL;
 }
 
-int netdev_rx_action(struct sk_buff *skb, struct netdev *netdev)
+struct netdev* netdev_get(uint32_t sip)
 {
-    struct eth_hdr *hdr = eth_hdr(skb);
-
-    switch (hdr->ethertype) {
-        case ETH_P_ARP:
-            arp_incoming(netdev, hdr);
-            break;
-        case ETH_P_IP:
-            ip_rcv(skb);
-            break;
-        case ETH_P_IPV6:
-            printf("IPv6 packet received, not supported\n");
-            break;
-        default:
-            printf("Unrecognized ethertype %x\n", hdr->ethertype);
-            break;
+    if (netdev.addr == sip) {
+        return &netdev;
+    } else {
+        return NULL;
     }
-
-    return 0;
 }
 
 void netdev_free()

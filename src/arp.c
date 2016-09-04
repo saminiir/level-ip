@@ -102,13 +102,14 @@ void arp_xmit(struct sk_buff *skb)
 
 }
 
-void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
+void arp_rcv(struct sk_buff *skb)
 {
     struct arp_hdr *arphdr;
     struct arp_ipv4 *arpdata;
+    struct netdev *netdev;
     int merge = 0;
 
-    arphdr = (struct arp_hdr *) hdr->payload;
+    arphdr = arp_hdr(skb);
 
     arphdr->hwtype = ntohs(arphdr->hwtype);
     arphdr->protype = ntohs(arphdr->protype);
@@ -128,7 +129,7 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 
     merge = update_arp_translation_table(arphdr, arpdata);
 
-    if (netdev->addr != arpdata->dip) {
+    if (!(netdev = netdev_get(arpdata->dip))) {
         printf("ARP was not for us\n");
         return;
     }
@@ -139,7 +140,7 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
 
     switch (arphdr->opcode) {
     case ARP_REQUEST:
-        arp_reply(netdev, hdr, arphdr);
+        arp_reply(skb, netdev);
         break;
     default:
         printf("Opcode not supported\n");
@@ -147,15 +148,21 @@ void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr)
     }
 }
 
-void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr) 
+void arp_reply(struct sk_buff *skb, struct netdev *netdev) 
 {
+    struct arp_hdr *arphdr;
     struct arp_ipv4 *arpdata;
-    int len;
+
+    arphdr = arp_hdr(skb);
+
+    skb_reserve(skb, ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
+    skb_push(skb, ARP_HDR_LEN + ARP_DATA_LEN);
 
     arpdata = (struct arp_ipv4 *) arphdr->data;
 
     memcpy(arpdata->dmac, arpdata->smac, 6);
     arpdata->dip = arpdata->sip;
+
     memcpy(arpdata->smac, netdev->hwaddr, 6);
     arpdata->sip = netdev->addr;
 
@@ -165,8 +172,9 @@ void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphd
     arphdr->hwtype = htons(arphdr->hwtype);
     arphdr->protype = htons(arphdr->protype);
 
-    len = sizeof(struct arp_hdr) + sizeof(struct arp_ipv4);
-    /* netdev_transmit(netdev, hdr, ETH_P_ARP, len, arpdata->dmac); */
+    skb->netdev = netdev;
+
+    netdev_transmit(skb, arpdata->dmac, ETH_P_ARP);
 }
 
 /*

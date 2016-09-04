@@ -11,6 +11,7 @@
 #define ARP_REPLY       0x0002
 
 #define ARP_HDR_LEN sizeof(struct arp_hdr)
+#define ARP_DATA_LEN sizeof(struct arp_ipv4)
 
 #define ARP_CACHE_LEN   32
 #define ARP_FREE        0
@@ -45,13 +46,18 @@ struct arp_cache_entry
 
 void arp_init();
 void arp_xmit(struct sk_buff *skb);
-void arp_incoming(struct netdev *netdev, struct eth_hdr *hdr);
-void arp_reply(struct netdev *netdev, struct eth_hdr *hdr, struct arp_hdr *arphdr);
+void arp_rcv(struct sk_buff *skb);
+void arp_reply(struct sk_buff *skb, struct netdev *netdev);
 unsigned char* arp_get_hwaddr(uint32_t *sip);
 
 static inline int arp_hdr_len(struct netdev *netdev)
 {
     return sizeof(struct arp_hdr) + (netdev->addr_len + sizeof(uint32_t) * 2);
+}
+
+static inline struct arp_hdr *arp_hdr(struct sk_buff *skb)
+{
+    return (struct arp_hdr *)(skb->head + ETH_HDR_LEN);
 }
 
 #endif
