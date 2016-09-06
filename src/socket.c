@@ -1,12 +1,24 @@
 #include "syshead.h"
 #include "utils.h"
+#include "socket.h"
 #include "tcp.h"
+
+static struct socket sockets[12];
+
+static struct socket *alloc_socket()
+{
+    struct socket *sock = &sockets[0];
+
+    sock->fd = 5;
+    
+    return sock;
+}
 
 int _socket(int domain, int type, int protocol)
 {
-    struct tcp_socket *sock;
+    struct socket *sock;
 
-    if ((sock = alloc_tcp_socket()) == NULL) {
+    if ((sock = alloc_socket()) == NULL) {
         print_error("Could not alloc socket\n");
         exit(1);
     }
