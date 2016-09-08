@@ -12,8 +12,6 @@ enum socket_state {
 };
 
 struct proto_ops {
-    int             family;
-    struct module   *owner;
     int             (*connect)   (struct socket *sock,
                                   struct sockaddr *vaddr,
                                   int sockaddr_len, int flags);
@@ -24,7 +22,6 @@ struct socket {
     enum socket_state state;
     short type;
     struct proto_ops *ops;
-
 };
 
 int _socket(int domain, int type, int protocol);

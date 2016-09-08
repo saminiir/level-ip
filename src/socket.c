@@ -1,15 +1,23 @@
 #include "syshead.h"
 #include "utils.h"
 #include "socket.h"
+#include "inet.h"
 #include "tcp.h"
 
 static struct socket sockets[12];
+
+extern struct proto_ops inet_ops;
+
+static struct proto_ops *proto_ops[128] = {
+    [AF_INET] = &inet_ops
+};
 
 static struct socket *alloc_socket()
 {
     struct socket *sock = &sockets[0];
 
     sock->fd = 5;
+    sock->state = SS_UNCONNECTED;
     
     return sock;
 }
@@ -22,10 +30,14 @@ int _socket(int domain, int type, int protocol)
         print_error("Could not alloc socket\n");
         exit(1);
     }
+
+    sock->type = type;
     
     printf("domain %x\n", domain);
     printf("type %x\n", type);
     printf("protocol %x\n", protocol);
+
+    sock->ops = proto_ops[domain];
 
     return sock->fd;
 }
