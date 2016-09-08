@@ -12,9 +12,10 @@ enum socket_state {
 };
 
 struct proto_ops {
-    int             (*connect)   (struct socket *sock,
-                                  struct sockaddr *vaddr,
-                                  int sockaddr_len, int flags);
+    int (*socket) (struct socket *sock, int protocol);
+    int (*connect) (struct socket *sock, struct sockaddr *vaddr,
+                    int sockaddr_len, int flags);
+
 };
 
 struct socket {

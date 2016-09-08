@@ -39,6 +39,8 @@ int _socket(int domain, int type, int protocol)
 
     sock->ops = proto_ops[domain];
 
+    sock->ops->socket(sock, protocol);
+
     return sock->fd;
 }
 
