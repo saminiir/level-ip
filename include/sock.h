@@ -15,5 +15,6 @@ struct sock {
 };
 
 struct sock *sk_alloc(struct net_ops *ops);
+void sock_init_data(struct socket *sock, struct sock *sk);
 
 #endif
