@@ -1,6 +1,11 @@
 #include "tcp.h"
 #include "ip.h"
+#include "sock.h"
 #include "utils.h"
+
+struct net_ops tcp_ops = {
+    .connect = &tcp_connect,
+};
 
 void tcp_init()
 {

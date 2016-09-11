@@ -1,6 +1,8 @@
 #ifndef SOCKET_H_
 #define SOCKET_H_
 
+#include "sock.h"
+
 struct socket;
 
 enum socket_state {
@@ -11,11 +13,21 @@ enum socket_state {
     SS_DISCONNECTING                /* in process of disconnecting  */
 };
 
+struct sock_type {
+    struct sock_ops *sock_ops;
+    struct net_ops *net_ops;
+    int type;
+    int protocol;
+};
+
 struct sock_ops {
-    int (*create) (struct socket *sock, int protocol);
     int (*socket) (struct socket *sock, int protocol);
     int (*connect) (struct socket *sock, struct sockaddr *vaddr,
                     int sockaddr_len, int flags);
+};
+
+struct net_family {
+    int (*create) (struct socket *sock, int protocol);    
 };
 
 struct socket {

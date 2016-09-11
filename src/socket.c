@@ -6,10 +6,10 @@
 
 static struct socket sockets[12];
 
-extern struct sock_ops inet_family;
+extern struct net_family inet;
 
-static struct sock_ops *sock_ops[128] = {
-    [AF_INET] = &inet_family,
+static struct net_family *families[128] = {
+    [AF_INET] = &inet,
 };
 
 static struct socket *alloc_socket()
@@ -37,7 +37,7 @@ int _socket(int domain, int type, int protocol)
     printf("type %x\n", type);
     printf("protocol %x\n", protocol);
 
-    sock_ops[domain]->create(sock, protocol);
+    families[domain]->create(sock, protocol);
 
     return sock->fd;
 }
