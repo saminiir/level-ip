@@ -11,22 +11,18 @@ enum socket_state {
     SS_DISCONNECTING                /* in process of disconnecting  */
 };
 
-struct net_proto_family {
+struct sock_ops {
     int (*create) (struct socket *sock, int protocol);
-};
-
-struct proto_ops {
     int (*socket) (struct socket *sock, int protocol);
     int (*connect) (struct socket *sock, struct sockaddr *vaddr,
                     int sockaddr_len, int flags);
-
 };
 
 struct socket {
     int fd;
     enum socket_state state;
     short type;
-    struct proto_ops *ops;
+    struct sock_ops *ops;
 };
 
 int _socket(int domain, int type, int protocol);
