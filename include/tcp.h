@@ -1,9 +1,6 @@
 #ifndef TCP_H_
 #define TCP_H_
 #include "syshead.h"
-
-struct tcp_socket;
-
 #include "ip.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
@@ -70,7 +67,7 @@ struct tcb {
     uint32_t irs;
 };
 
-struct tcp_socket {
+struct tcp_sock {
     enum tcp_states state;
     int fd;
     uint16_t sport;
@@ -81,17 +78,16 @@ struct tcp_socket {
     struct tcb tcb;
 };
 
+#define tcp_sk(sk) ((struct tcp_sock *)sk)
+
 void tcp_init();
 void tcp_in(struct sk_buff *skb);
-int tcp_checksum(struct tcp_socket *sock, struct tcphdr *thdr);
+int tcp_checksum(struct tcp_sock *sock, struct tcphdr *thdr);
 void tcp_select_initial_window(uint32_t *rcv_wnd);
 
 int generate_iss();
-void init_tcp_sockets();
-struct tcp_socket *alloc_tcp_socket();
-void free_tcp_socket(struct tcp_socket *sock);
-struct tcp_socket *get_tcp_socket(int sockfd);
+struct sock *tcp_alloc_sock();
 int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
-int tcp_v4_connect(struct tcp_socket *sock, const struct sockaddr *addr, socklen_t addrlen);
-int tcp_connect(struct tcp_socket *sock);
+int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags);
+int tcp_connect(struct sock *sk);
 #endif

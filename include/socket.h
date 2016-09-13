@@ -21,9 +21,8 @@ struct sock_type {
 };
 
 struct sock_ops {
-    int (*socket) (struct socket *sock, int protocol);
-    int (*connect) (struct socket *sock, struct sockaddr *vaddr,
-                    int sockaddr_len, int flags);
+    int (*connect) (struct socket *sock, const struct sockaddr *addr,
+                    int addr_len, int flags);
 };
 
 struct net_family {
@@ -34,6 +33,7 @@ struct socket {
     int fd;
     enum socket_state state;
     short type;
+    struct sock *sk;
     struct sock_ops *ops;
 };
 

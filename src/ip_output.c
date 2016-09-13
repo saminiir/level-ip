@@ -11,7 +11,7 @@ void ip_send_check(struct iphdr *ihdr)
     ihdr->csum = csum;
 }
 
-int ip_queue_xmit(struct tcp_socket *sock, struct sk_buff *skb)
+int ip_queue_xmit(struct sock *sk, struct sk_buff *skb)
 {
     /* struct rtable *rt; */
     /* struct iphdr *ihdr; */

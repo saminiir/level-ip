@@ -2,11 +2,12 @@
 #include "sock.h"
 #include "socket.h"
 
-struct sock *sk_alloc(struct net_ops *ops)
+struct sock *sk_alloc(struct net_ops *ops, int protocol)
 {
     struct sock *sk;
 
-    sk = malloc(sizeof (struct sock));
+    sk = ops->alloc_sock(protocol);
+
     sk->ops = ops;
 
     return sk;

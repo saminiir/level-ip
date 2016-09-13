@@ -5,14 +5,19 @@
 
 extern struct net_ops tcp_ops;
 
+static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
+                               int addr_len, int flags);
+
 static int INET_OPS = 1;
 
 struct net_family inet = {
     .create = inet_create,
 };
 
+
+
 static struct sock_ops inet_stream_ops = {
-    .connect = inet_stream_connect,
+    .connect = &inet_stream_connect,
 };
 
 static struct sock_type inet_ops[] = {
@@ -42,9 +47,10 @@ int inet_create(struct socket *sock, int protocol)
 
     sock->ops = skt->sock_ops;
 
-    sk = sk_alloc(skt->net_ops);
+    sk = sk_alloc(skt->net_ops, protocol);
 
     sock_init_data(sock, sk);
+    sk->protocol = protocol;
     
     return 0;
 }
@@ -60,7 +66,8 @@ int inet_connect(struct socket *sock, struct sockaddr *addr,
     return 0;
 }
 
-int inet_stream_connect(struct socket *sock, struct sockaddr *addr, int addr_len, int flags)
+static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
+                        int addr_len, int flags)
 {
     return 0;
 }

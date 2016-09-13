@@ -6,15 +6,17 @@
 struct sock;
 
 struct net_ops {
-    int (*connect) (struct sock *sk, struct sockaddr addr, int addr_len);
+    struct sock* (*alloc_sock) (int protocol);
+    int (*connect) (struct sock *sk, const struct sockaddr *addr, int addr_len, int flags);
 };
 
 struct sock {
     struct socket *sock;
     struct net_ops *ops;
+    int protocol;
 };
 
-struct sock *sk_alloc(struct net_ops *ops);
+struct sock *sk_alloc(struct net_ops *ops, int protocol);
 void sock_init_data(struct socket *sock, struct sock *sk);
 
 #endif

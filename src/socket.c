@@ -2,7 +2,6 @@
 #include "utils.h"
 #include "socket.h"
 #include "inet.h"
-#include "tcp.h"
 
 static struct socket sockets[12];
 
@@ -20,6 +19,11 @@ static struct socket *alloc_socket()
     sock->state = SS_UNCONNECTED;
     
     return sock;
+}
+
+static struct socket *get_socket(int fd)
+{
+    return &sockets[0];
 }
 
 int _socket(int domain, int type, int protocol)
@@ -44,12 +48,12 @@ int _socket(int domain, int type, int protocol)
 
 int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-    struct tcp_socket *sock;
+    struct socket *sock;
 
-    if ((sock = get_tcp_socket(sockfd)) == NULL) {
+    if ((sock = get_socket(sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
         exit(1);
     }
 
-    return tcp_v4_connect(sock, addr, addrlen);
+    return sock->ops->connect(sock, addr, addrlen, 0);
 }

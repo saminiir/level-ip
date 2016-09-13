@@ -12,16 +12,17 @@ static struct sk_buff *tcp_alloc_skb(int size)
     return skb;
 }
 
-static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
+static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
-    struct tcb *tcb = &sk->tcb;
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
 
-    skb_push(skb, sk->tcp_header_len);
+    skb_push(skb, tsk->tcp_header_len);
 
     struct tcphdr *thdr = (struct tcphdr *)skb->data;
 
-    thdr->sport = htons(sk->sport);
-    thdr->dport = htons(sk->dport);
+    thdr->sport = htons(tsk->sport);
+    thdr->dport = htons(tsk->dport);
     thdr->seq = htonl(tcb->snd_nxt);
     thdr->ack = htonl(tcb->rcv_nxt);
     thdr->hl = 5;
@@ -32,14 +33,16 @@ static int tcp_transmit_skb(struct tcp_socket *sk, struct sk_buff *skb)
     thdr->urp = 0;
 
     /* Calculate checksum */
-    thdr->csum = tcp_v4_checksum(skb, htonl(sk->saddr), sk->daddr);
+    thdr->csum = tcp_v4_checksum(skb, htonl(tsk->saddr), tsk->daddr);
 
     return ip_queue_xmit(sk, skb);
 }
 
-static int tcp_send_syn(struct tcp_socket *sock)
+static int tcp_send_syn(struct sock *sk)
 {
-    if (sock->state != CLOSED && sock->state != LISTEN) {
+    struct tcp_sock *tsk = tcp_sk(sk);
+    
+    if (tsk->state != CLOSED && tsk->state != LISTEN) {
         print_error("Socket was not in correct state (closed or listen)");
         return 1;
     }
@@ -48,10 +51,10 @@ static int tcp_send_syn(struct tcp_socket *sock)
 
     skb = tcp_alloc_skb(0);
 
-    sock->state = SYN_SENT;
-    sock->tcb.tcp_flags = TCP_SYN;
+    tsk->state = SYN_SENT;
+    tsk->tcb.tcp_flags = TCP_SYN;
     
-    return tcp_transmit_skb(sock, skb);
+    return tcp_transmit_skb(sk, skb);
 }
 
 void tcp_select_initial_window(uint32_t *rcv_wnd)
@@ -59,18 +62,20 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
     *rcv_wnd = 512;
 }
 
-int tcp_connect(struct tcp_socket *sk)
+int tcp_connect(struct sock *sk)
 {
-    sk->tcp_header_len = sizeof(struct tcphdr);
-    sk->tcb.iss = generate_iss();
-    sk->tcb.snd_wnd = 0;
-    sk->tcb.snd_wl1 = 0;
+    struct tcp_sock *tsk = tcp_sk(sk);
     
-    sk->tcb.snd_una = sk->tcb.iss;
-    sk->tcb.snd_up = sk->tcb.iss;
-    sk->tcb.snd_nxt = sk->tcb.iss;
-    sk->tcb.rcv_nxt = 0;
+    tsk->tcp_header_len = sizeof(struct tcphdr);
+    tsk->tcb.iss = generate_iss();
+    tsk->tcb.snd_wnd = 0;
+    tsk->tcb.snd_wl1 = 0;
+    
+    tsk->tcb.snd_una = tsk->tcb.iss;
+    tsk->tcb.snd_up = tsk->tcb.iss;
+    tsk->tcb.snd_nxt = tsk->tcb.iss;
+    tsk->tcb.rcv_nxt = 0;
 
-    tcp_select_initial_window(&sk->tcb.rcv_wnd);
+    tcp_select_initial_window(&tsk->tcb.rcv_wnd);
     return tcp_send_syn(sk);
 }
