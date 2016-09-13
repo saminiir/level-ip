@@ -37,5 +37,5 @@ void icmpv4_reply(struct sk_buff *skb)
 
     skb->protocol = ICMPV4; 
 
-    ip_output(skb);
+    ip_output(NULL, skb);
 }

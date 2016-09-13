@@ -35,7 +35,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     /* Calculate checksum */
     thdr->csum = tcp_v4_checksum(skb, htonl(tsk->saddr), tsk->daddr);
 
-    return ip_queue_xmit(sk, skb);
+    return ip_output(sk, skb);
 }
 
 static int tcp_send_syn(struct sock *sk)
