@@ -44,7 +44,9 @@ int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr)
 
 struct sock *tcp_alloc_sock()
 {
-    return NULL;
+    struct tcp_sock *tsk = malloc(sizeof(struct tcp_sock));
+    
+    return (struct sock *)tsk;
 }
 
 static uint16_t generate_port()

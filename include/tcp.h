@@ -68,6 +68,7 @@ struct tcb {
 };
 
 struct tcp_sock {
+    struct sock sk;
     enum tcp_states state;
     int fd;
     uint16_t sport;

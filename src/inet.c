@@ -51,6 +51,8 @@ int inet_create(struct socket *sock, int protocol)
 
     sock_init_data(sock, sk);
     sk->protocol = protocol;
+
+    sock->sk = sk;
     
     return 0;
 }
