@@ -14,8 +14,6 @@ struct net_family inet = {
     .create = inet_create,
 };
 
-
-
 static struct sock_ops inet_stream_ops = {
     .connect = &inet_stream_connect,
 };
@@ -71,5 +69,49 @@ int inet_connect(struct socket *sock, struct sockaddr *addr,
 static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
                         int addr_len, int flags)
 {
+    struct sock *sk = sock->sk;
+    int err;
+    
+    if (addr_len < sizeof(addr->sa_family)) {
+        return -EINVAL;
+    }
+
+    if (addr->sa_family == AF_UNSPEC) {
+        err = sk->ops->disconnect(sk, flags);
+        sock->state = err ? SS_DISCONNECTING : SS_UNCONNECTED;
+        goto out;
+    }
+
+    switch (sock->state) {
+    default:
+        err = -EINVAL;
+        goto out;
+    case SS_CONNECTED:
+        err = -EISCONN;
+        goto out;
+    case SS_CONNECTING:
+        err = -EALREADY;
+        goto out;
+    case SS_UNCONNECTED:
+        err = -EISCONN;
+        if (sk->state != TCP_CLOSE) {
+            goto out;
+        }
+
+        err = sk->ops->connect(sk, addr, addr_len, flags);
+
+        if (err < 0) {
+            goto out;
+        }
+
+        sock->state = SS_CONNECTING;
+
+        err = -EINPROGRESS;
+        break;
+    }
+    
     return 0;
+
+out:
+    return err;
 }

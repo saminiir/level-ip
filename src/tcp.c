@@ -6,6 +6,7 @@
 struct net_ops tcp_ops = {
     .alloc_sock = &tcp_alloc_sock,
     .connect = &tcp_v4_connect,
+    .disconnect = &tcp_disconnect,
 };
 
 void tcp_init()
@@ -45,6 +46,8 @@ int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr)
 struct sock *tcp_alloc_sock()
 {
     struct tcp_sock *tsk = malloc(sizeof(struct tcp_sock));
+
+    tsk->sk.state = TCP_CLOSE;
     
     return (struct sock *)tsk;
 }
@@ -74,4 +77,9 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
     tsk->saddr = parse_ipv4_string("10.0.0.4"); 
 
     return tcp_connect(sk);
+}
+
+int tcp_disconnect(struct sock *sk, int flags)
+{
+    return 0;
 }

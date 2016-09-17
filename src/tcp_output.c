@@ -42,7 +42,7 @@ static int tcp_send_syn(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     
-    if (tsk->state != CLOSED && tsk->state != LISTEN) {
+    if (sk->state != TCP_CLOSE && sk->state != TCP_LISTEN) {
         print_error("Socket was not in correct state (closed or listen)");
         return 1;
     }
@@ -51,7 +51,7 @@ static int tcp_send_syn(struct sock *sk)
 
     skb = tcp_alloc_skb(0);
 
-    tsk->state = SYN_SENT;
+    sk->state = TCP_SYN_SENT;
     tsk->tcb.tcp_flags = TCP_SYN;
     
     return tcp_transmit_skb(sk, skb);

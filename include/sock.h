@@ -8,12 +8,14 @@ struct sock;
 struct net_ops {
     struct sock* (*alloc_sock) (int protocol);
     int (*connect) (struct sock *sk, const struct sockaddr *addr, int addr_len, int flags);
+    int (*disconnect) (struct sock *sk, int flags);
 };
 
 struct sock {
     struct socket *sock;
     struct net_ops *ops;
     int protocol;
+    int state;
 };
 
 struct sock *sk_alloc(struct net_ops *ops, int protocol);

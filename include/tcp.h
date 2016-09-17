@@ -38,16 +38,16 @@ struct tcpiphdr {
 } __attribute__((packed));
 
 enum tcp_states {
-    CLOSED,
-    LISTEN,
-    SYN_SENT,
-    SYN_RECEIVED,
-    ESTABLISHED,
-    FIN_WAIT_1,
-    FIN_WAIT_2,
-    CLOSE_WAIT,
-    CLOSING,
-    LAST_ACK
+    TCP_LISTEN,
+    TCP_SYN_SENT,
+    TCP_SYN_RECEIVED,
+    TCP_ESTABLISHED,
+    TCP_FIN_WAIT_1,
+    TCP_FIN_WAIT_2,
+    TCP_CLOSE,
+    TCP_CLOSE_WAIT,
+    TCP_CLOSING,
+    TCP_LAST_ACK,
 };
 
 struct tcb {
@@ -69,7 +69,6 @@ struct tcb {
 
 struct tcp_sock {
     struct sock sk;
-    enum tcp_states state;
     int fd;
     uint16_t sport;
     uint16_t dport;
@@ -91,4 +90,5 @@ struct sock *tcp_alloc_sock();
 int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags);
 int tcp_connect(struct sock *sk);
+int tcp_disconnect(struct sock *sk, int flags);
 #endif
