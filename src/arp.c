@@ -9,6 +9,15 @@
 static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
 
+static struct sk_buff *arp_alloc_skb()
+{
+    struct sk_buff *skb = alloc_skb(ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
+    skb_reserve(skb, ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
+    skb->protocol = htons(ETH_P_ARP);
+    
+    return skb;
+}
+
 static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
     struct arp_cache_entry *entry;
@@ -104,23 +113,23 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     struct arp_hdr *arp;
     struct arp_ipv4 *payload;
 
-    skb = alloc_skb(ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
-    arp = arp_hdr(skb);
-    /* skb->dev = netdev; */
-    skb->protocol = htons(ETH_P_ARP);
+    skb = arp_alloc_skb();
+    skb->netdev = netdev;
 
-    arp->hwtype = ARP_ETHERNET; 
-    arp->protype = ETH_P_IP;
-    arp->hwsize = netdev->addr_len;
-    arp->prosize = 4;
-
-    payload = (struct arp_ipv4 *)arp->data;
+    payload = (struct arp_ipv4 *) skb_push(skb, ARP_DATA_LEN);
 
     memcpy(payload->smac, netdev->hwaddr, netdev->addr_len);
     payload->sip = sip;
 
     memcpy(payload->dmac, broadcast_hw, netdev->addr_len);
     payload->dip = dip;
+    
+    arp = (struct arp_hdr *) skb_push(skb, ARP_HDR_LEN);
+
+    arp->hwtype = ARP_ETHERNET; 
+    arp->protype = ETH_P_IP;
+    arp->hwsize = netdev->addr_len;
+    arp->prosize = 4;
     
     return netdev_transmit(skb, broadcast_hw, ETH_P_ARP);    
 }
