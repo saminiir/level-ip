@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "socket.h"
 #include "inet.h"
+#include "wait.h"
 
 static struct socket sockets[12];
 
@@ -17,6 +18,7 @@ static struct socket *alloc_socket()
 
     sock->fd = 5;
     sock->state = SS_UNCONNECTED;
+    wait_init(&sock->sleep);
     
     return sock;
 }

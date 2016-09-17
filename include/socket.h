@@ -2,6 +2,7 @@
 #define SOCKET_H_
 
 #include "sock.h"
+#include "wait.h"
 
 struct socket;
 
@@ -35,6 +36,7 @@ struct socket {
     short type;
     struct sock *sk;
     struct sock_ops *ops;
+    struct wait_lock sleep;
 };
 
 int _socket(int domain, int type, int protocol);
