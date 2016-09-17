@@ -18,7 +18,7 @@ struct sk_buff *alloc_skb(unsigned int size)
 
 void free_skb(struct sk_buff *skb)
 {
-    free(skb->data);
+    free(skb->head);
     free(skb);
 }
 
