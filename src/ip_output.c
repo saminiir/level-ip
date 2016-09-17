@@ -39,7 +39,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->ttl = 64;
     ihdr->proto = skb->protocol;
     ihdr->saddr = netdev->addr;
-    /* ihdr->daddr = sock->daddr; */
+    ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
     
     ip_send_check(ihdr);

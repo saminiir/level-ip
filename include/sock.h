@@ -16,6 +16,10 @@ struct sock {
     struct net_ops *ops;
     int protocol;
     int state;
+    uint16_t sport;
+    uint16_t dport;
+    uint32_t saddr;
+    uint32_t daddr;
 };
 
 struct sock *sk_alloc(struct net_ops *ops, int protocol);

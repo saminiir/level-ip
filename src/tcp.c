@@ -64,17 +64,15 @@ int generate_iss()
 
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags)
 {
-    struct tcp_sock *tsk = tcp_sk(sk);
-    
     uint16_t dport = addr->sa_data[1];
     uint32_t daddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
 
     printf("Connecting socket to %hhu.%hhu.%hhu.%hhu:%d\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5], dport);
 
-    tsk->dport = dport;
-    tsk->sport = generate_port();
-    tsk->daddr = daddr;
-    tsk->saddr = parse_ipv4_string("10.0.0.4"); 
+    sk->dport = dport;
+    sk->sport = generate_port();
+    sk->daddr = daddr;
+    sk->saddr = parse_ipv4_string("10.0.0.4"); 
 
     return tcp_connect(sk);
 }
