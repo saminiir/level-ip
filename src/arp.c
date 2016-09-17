@@ -126,8 +126,9 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     
     arp = (struct arp_hdr *) skb_push(skb, ARP_HDR_LEN);
 
-    arp->hwtype = ARP_ETHERNET; 
-    arp->protype = ETH_P_IP;
+    arp->opcode = htons(ARP_REQUEST);
+    arp->hwtype = htons(ARP_ETHERNET); 
+    arp->protype = htons(ETH_P_IP);
     arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
     
