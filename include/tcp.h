@@ -83,6 +83,8 @@ void tcp_select_initial_window(uint32_t *rcv_wnd);
 
 int generate_iss();
 struct sock *tcp_alloc_sock();
+int tcp_v4_init_sock(struct sock *sk);
+int tcp_init_sock(struct sock *sk);
 int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags);
 int tcp_connect(struct sock *sk);

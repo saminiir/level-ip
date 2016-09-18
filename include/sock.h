@@ -7,6 +7,7 @@ struct sock;
 
 struct net_ops {
     struct sock* (*alloc_sock) (int protocol);
+    int (*init) (struct sock *sk);
     int (*connect) (struct sock *sk, const struct sockaddr *addr, int addr_len, int flags);
     int (*disconnect) (struct sock *sk, int flags);
 };

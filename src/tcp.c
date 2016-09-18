@@ -2,9 +2,11 @@
 #include "ip.h"
 #include "sock.h"
 #include "utils.h"
+#include "tcp_timer.h"
 
 struct net_ops tcp_ops = {
     .alloc_sock = &tcp_alloc_sock,
+    .init = &tcp_v4_init_sock,
     .connect = &tcp_v4_connect,
     .disconnect = &tcp_disconnect,
 };
@@ -50,6 +52,18 @@ struct sock *tcp_alloc_sock()
     tsk->sk.state = TCP_CLOSE;
     
     return (struct sock *)tsk;
+}
+
+int tcp_v4_init_sock(struct sock *sk)
+{
+    tcp_init_sock(sk);
+    return 0;
+}
+
+int tcp_init_sock(struct sock *sk)
+{
+    tcp_init_timers(sk);
+    return 0;
 }
 
 static uint16_t generate_port()
