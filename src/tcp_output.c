@@ -7,7 +7,8 @@
 static struct sk_buff *tcp_alloc_skb(int size)
 {
     struct sk_buff *skb = alloc_skb(size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
-    skb_reserve(skb, ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+    skb_reserve(skb, size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+    skb->protocol = IP_TCP;
 
     return skb;
 }
