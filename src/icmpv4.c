@@ -23,19 +23,22 @@ void icmpv4_incoming(struct sk_buff *skb)
 void icmpv4_reply(struct sk_buff *skb)
 {
     struct iphdr *iphdr = ip_hdr(skb);
-    struct icmp_v4 *icmp = (struct icmp_v4 *) iphdr->data;
+    struct icmp_v4 *icmp;
+    struct sock sk;
     uint16_t icmp_len = iphdr->len - (iphdr->ihl * 4);
 
     skb_reserve(skb, ETH_HDR_LEN + IP_HDR_LEN + icmp_len);
     skb_push(skb, icmp_len);
+    
+    icmp = (struct icmp_v4 *)skb->data;
         
     icmp->type = ICMP_V4_REPLY;
     icmp->csum = 0;
     icmp->csum = checksum(icmp, icmp_len, 0);
 
-    iphdr->daddr = iphdr->saddr;
 
-    skb->protocol = ICMPV4; 
+    skb->protocol = ICMPV4;
+    sk.daddr = iphdr->saddr;
 
-    ip_output(NULL, skb);
+    ip_output(&sk, skb);
 }
