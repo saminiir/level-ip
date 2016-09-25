@@ -18,6 +18,14 @@ void tcp_init()
 
 void tcp_in(struct sk_buff *skb)
 {
+    struct sock *sk;
+    struct iphdr *iph;
+    struct tcphdr *tcph;
+
+    iph = ip_hdr(skb);
+    tcph = (struct tcphdr*) iph->data;
+
+    sk = inet_lookup(skb, tcph->sport, tcph->dport);
     /* struct iphdr *iphdr = (struct iphdr *) hdr->payload; */
     /* struct tcphdr *thdr = (struct tcphdr *) iphdr->data; */
 

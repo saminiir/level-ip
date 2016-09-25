@@ -41,5 +41,6 @@ struct socket {
 
 int _socket(int domain, int type, int protocol);
 int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 
 #endif

@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "inet.h"
+#include "socket.h"
 #include "sock.h"
 #include "tcp.h"
 
@@ -114,4 +115,9 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
 
 out:
     return err;
+}
+
+struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
+{
+    return socket_lookup(sport, dport)->sk;
 }

@@ -28,6 +28,11 @@ static struct socket *get_socket(int fd)
     return &sockets[0];
 }
 
+struct socket *socket_lookup(uint16_t sport, uint16_t dport)
+{
+    return &sockets[0];
+}
+
 int _socket(int domain, int type, int protocol)
 {
     struct socket *sock;
