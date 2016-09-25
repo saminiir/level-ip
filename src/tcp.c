@@ -1,3 +1,5 @@
+#include "syshead.h"
+#include "inet.h"
 #include "tcp.h"
 #include "ip.h"
 #include "sock.h"
@@ -13,7 +15,7 @@ struct net_ops tcp_ops = {
 
 void tcp_init()
 {
-
+    
 }
 
 void tcp_in(struct sk_buff *skb)
@@ -26,13 +28,15 @@ void tcp_in(struct sk_buff *skb)
     tcph = (struct tcphdr*) iph->data;
 
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
-    /* struct iphdr *iphdr = (struct iphdr *) hdr->payload; */
-    /* struct tcphdr *thdr = (struct tcphdr *) iphdr->data; */
-
-    /* if (tcp_checksum(iphdr, thdr) != 0) { */
-    /*     printf("TCP segment checksum did not match, dropping\n"); */
-    /*     return; */
+    
+    /* if (tcp_checksum(iph, tcph) != 0) { */
+    /*     goto discard; */
     /* } */
+        
+    tcp_input_state(sk, skb);
+    
+discard:
+    free_skb(skb);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
