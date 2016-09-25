@@ -74,6 +74,11 @@ struct tcp_sock {
     struct tcb tcb;
 };
 
+static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)
+{
+    return (struct tcphdr *)(skb->head + ETH_HDR_LEN + IP_HDR_LEN);
+
+}
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 
 void tcp_init();
