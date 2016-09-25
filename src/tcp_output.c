@@ -21,6 +21,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     skb_push(skb, tsk->tcp_header_len);
 
     struct tcphdr *thdr = (struct tcphdr *)skb->data;
+    uint8_t *flags = ((uint8_t *)thdr + 13);
 
     thdr->sport = htons(sk->sport);
     thdr->dport = htons(sk->dport);
@@ -28,7 +29,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     thdr->ack = htonl(tcb->rcv_nxt);
     thdr->hl = 5;
     thdr->rsvd = 0;
-    thdr->flags = tcb->tcp_flags;
+    *flags = tcb->tcp_flags;
     thdr->win = htons(tcb->rcv_wnd);
     thdr->csum = 0;
     thdr->urp = 0;
