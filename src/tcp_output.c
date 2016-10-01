@@ -67,16 +67,18 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
 int tcp_connect(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
     
     tsk->tcp_header_len = sizeof(struct tcphdr);
-    tsk->tcb.iss = generate_iss();
-    tsk->tcb.snd_wnd = 0;
-    tsk->tcb.snd_wl1 = 0;
-    
-    tsk->tcb.snd_una = tsk->tcb.iss;
-    tsk->tcb.snd_up = tsk->tcb.iss;
-    tsk->tcb.snd_nxt = tsk->tcb.iss;
-    tsk->tcb.rcv_nxt = 0;
+    tcb->iss = generate_iss();
+    tcb->snd_wnd = 0;
+    tcb->snd_wl1 = 0;
+
+    tcb->snd_una = tcb->iss;
+    tcb->snd_up = tcb->iss;
+    tcb->snd_nxt = tcb->iss + 1;
+    tcb->rcv_nxt = 0;
+    tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
     return tcp_send_syn(sk);
