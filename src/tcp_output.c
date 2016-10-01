@@ -40,6 +40,20 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     return ip_output(sk, skb);
 }
 
+int tcp_send_ack(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    
+    if (sk->state == TCP_CLOSE) return 0;
+    
+    struct sk_buff *skb;
+
+    skb = tcp_alloc_skb(0);
+    tsk->tcb.tcp_flags = TCP_ACK;
+
+    return tcp_transmit_skb(sk, skb);
+}
+
 static int tcp_send_syn(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);

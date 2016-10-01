@@ -10,6 +10,43 @@ static int tcp_listen(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
 
 static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
+    struct tcb *tcb = &tsk->tcb;
+    if (th->ack) {
+        if (th->ack_seq <= tcb->iss || th->ack_seq > tcb->snd_nxt) {
+            if (th->rst) goto discard;
+
+            goto reset_and_discard;
+        }
+
+        if (!(tcb->snd_una <= th->ack_seq && th->ack_seq <= tcb->snd_nxt))
+            goto reset_and_discard;
+    }
+
+    if (th->rst) {
+        goto reset_and_discard;
+    }
+
+    if (!th->syn) {
+        goto discard;
+    }
+
+    tcb->rcv_nxt = th->seq + 1;
+    tcb->irs = th->seq;
+    if (th->ack) {
+        /* Any packets in RTO queue that are acknowledged here should be removed */
+        tcb->snd_una = th->ack_seq;
+    }
+
+    if (tcb->snd_una > tcb->iss) {
+        tsk->sk.state = TCP_ESTABLISHED;
+        tcb->seq = tcb->snd_nxt;
+        tcp_send_ack(&tsk->sk);
+    }
+    
+    return 0;
+discard:
+    return 0;
+reset_and_discard:
     return 0;
 }
 
