@@ -18,6 +18,17 @@ void tcp_init()
     
 }
 
+static void tcp_init_segment(struct tcphdr *th)
+{
+    th->sport = ntohs(th->sport);
+    th->dport = ntohs(th->dport);
+    th->seq = ntohl(th->seq);
+    th->ack_seq = ntohl(th->ack_seq);
+    th->win = ntohs(th->win);
+    th->csum = ntohs(th->csum);
+    th->urp = ntohs(th->urp);
+}
+
 void tcp_in(struct sk_buff *skb)
 {
     struct sock *sk;
@@ -27,6 +38,8 @@ void tcp_in(struct sk_buff *skb)
     iph = ip_hdr(skb);
     tcph = (struct tcphdr*) iph->data;
 
+    tcp_init_segment(tcph);
+    
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
     
     /* if (tcp_checksum(iph, tcph) != 0) { */
@@ -97,7 +110,7 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
 
     sk->dport = dport;
     sk->sport = generate_port();
-    sk->daddr = daddr;
+    sk->daddr = ntohl(daddr);
     sk->saddr = parse_ipv4_string("10.0.0.4"); 
 
     return tcp_connect(sk);
