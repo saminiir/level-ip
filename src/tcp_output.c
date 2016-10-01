@@ -25,8 +25,8 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
     thdr->sport = htons(sk->sport);
     thdr->dport = htons(sk->dport);
-    thdr->seq = htonl(tcb->snd_nxt);
     thdr->ack = htonl(tcb->rcv_nxt);
+    thdr->seq = htonl(tcb->seq);
     thdr->hl = 5;
     thdr->rsvd = 0;
     *flags = tcb->tcp_flags;

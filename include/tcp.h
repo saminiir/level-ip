@@ -61,6 +61,7 @@ struct tcb {
     uint8_t tcp_flags;
     uint8_t *snd_buf;
     uint8_t *rcv_buf;
+    uint32_t seq;
     uint32_t snd_una;
     uint32_t snd_nxt;
     uint32_t snd_wnd;
