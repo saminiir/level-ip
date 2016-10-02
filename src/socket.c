@@ -64,3 +64,15 @@ int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
     return sock->ops->connect(sock, addr, addrlen, 0);
 }
+
+int _write(int sockfd, const void *buf, const unsigned int count)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(sockfd)) == NULL) {
+        print_error("Could not find socket for connection\n");
+        exit(1);
+    }
+
+    return sock->ops->write(sock, buf, count);
+}

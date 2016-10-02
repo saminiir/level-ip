@@ -33,6 +33,14 @@ void* curl(void *arg)
         return NULL;
     }
 
+    char *str = "testtest";
+    int len = strlen(str);
+
+    if (_write(sock, str, len) != len) {
+        print_error("Write error!\n");
+        return NULL;
+    }
+
     running = 0;
     return NULL;
 }

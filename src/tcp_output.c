@@ -97,3 +97,8 @@ int tcp_connect(struct sock *sk)
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
     return tcp_send_syn(sk);
 }
+
+int tcp_send(struct sock *sk, const void *buf, int len)
+{
+    return 0;
+}

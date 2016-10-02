@@ -102,6 +102,8 @@ int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags);
 int tcp_connect(struct sock *sk);
 int tcp_disconnect(struct sock *sk, int flags);
+int tcp_write(struct sock *sk, const void *buf, int len);
 int tcp_input_state(struct sock *sk, struct sk_buff *skb);
 int tcp_send_ack(struct sock *sk);
+int tcp_send(struct sock *sk, const void *buf, int len);
 #endif

@@ -18,6 +18,7 @@ struct net_family inet = {
 
 static struct sock_ops inet_stream_ops = {
     .connect = &inet_stream_connect,
+    .write = &inet_write,
 };
 
 static struct sock_type inet_ops[] = {
@@ -115,6 +116,13 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
 
 out:
     return err;
+}
+
+int inet_write(struct socket *sock, const void *buf, int len)
+{
+    struct sock *sk = sock->sk;
+
+    return sk->ops->write(sk, buf, len);
 }
 
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)

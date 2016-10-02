@@ -11,6 +11,7 @@ struct net_ops tcp_ops = {
     .init = &tcp_v4_init_sock,
     .connect = &tcp_v4_connect,
     .disconnect = &tcp_disconnect,
+    .write = &tcp_write,
 };
 
 void tcp_init()
@@ -119,4 +120,9 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
 int tcp_disconnect(struct sock *sk, int flags)
 {
     return 0;
+}
+
+int tcp_write(struct sock *sk, const void *buf, int len)
+{
+    return tcp_send(sk, buf, len);
 }
