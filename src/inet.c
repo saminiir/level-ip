@@ -3,6 +3,7 @@
 #include "socket.h"
 #include "sock.h"
 #include "tcp.h"
+#include "wait.h"
 
 extern struct net_ops tcp_ops;
 
@@ -98,6 +99,7 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         }
 
         err = sk->ops->connect(sk, addr, addr_len, flags);
+        wait_sleep(&sock->sleep);
 
         if (err < 0) {
             goto out;
