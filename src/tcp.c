@@ -124,5 +124,20 @@ int tcp_disconnect(struct sock *sk, int flags)
 
 int tcp_write(struct sock *sk, const void *buf, int len)
 {
-    return tcp_send(sk, buf, len);
+    struct tcp_sock *tsk = tcp_sk(sk);
+    int ret = -1;
+
+    switch (sk->state) {
+    case TCP_ESTABLISHED:
+    case TCP_CLOSE_WAIT:
+        break;
+    default:
+        goto out;
+    }
+
+    return tcp_send(tsk, buf, len);    
+
+out: 
+    return ret;
+
 }

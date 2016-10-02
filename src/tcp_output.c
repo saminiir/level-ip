@@ -98,7 +98,27 @@ int tcp_connect(struct sock *sk)
     return tcp_send_syn(sk);
 }
 
-int tcp_send(struct sock *sk, const void *buf, int len)
+int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
 {
-    return 0;
+    struct sk_buff *skb;
+    struct tcb *tcb = &tsk->tcb;
+    int ret = -1;
+
+    skb = tcp_alloc_skb(len);
+    skb_push(skb, len);
+    memcpy(skb->data, buf, len);
+    
+    tcb->tcp_flags = TCP_ACK;
+    tcb->seq = tcb->snd_nxt;
+    tcb->snd_nxt += len;
+
+    ret = tcp_transmit_skb(&tsk->sk, skb);
+
+    ret -= (ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+
+    if (ret != len) {
+        return -1;
+    }
+
+    return ret;
 }
