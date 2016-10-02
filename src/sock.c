@@ -15,5 +15,6 @@ struct sock *sk_alloc(struct net_ops *ops, int protocol)
 
 void sock_init_data(struct socket *sock, struct sock *sk)
 {
-
+    sock->sk = sk;
+    sk->sock = sock;
 }

@@ -47,11 +47,9 @@ int inet_create(struct socket *sock, int protocol)
     sock->ops = skt->sock_ops;
 
     sk = sk_alloc(skt->net_ops, protocol);
-
-    sock_init_data(sock, sk);
     sk->protocol = protocol;
-
-    sock->sk = sk;
+    
+    sock_init_data(sock, sk);
     
     return 0;
 }
