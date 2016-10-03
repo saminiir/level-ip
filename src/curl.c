@@ -37,9 +37,19 @@ void* curl(void *arg)
     int len = strlen(str);
 
     if (_write(sock, str, len) != len) {
-        print_error("Write error!\n");
+        print_error("Write error\n");
         return NULL;
     }
+
+    char buf[4096] = { 0 };
+
+    if (_read(sock, buf, len) < 0) {
+        print_error("Read error\n");
+        return NULL;
+    }
+
+    printf("Received data: \n");
+    printf("%s\n", buf);
 
     running = 0;
     return NULL;

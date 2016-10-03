@@ -76,3 +76,15 @@ int _write(int sockfd, const void *buf, const unsigned int count)
 
     return sock->ops->write(sock, buf, count);
 }
+
+int _read(int sockfd, const void *buf, const unsigned int count)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(sockfd)) == NULL) {
+        print_error("Could not find socket for connection\n");
+        exit(1);
+    }
+
+    return sock->ops->read(sock, buf, count);
+}

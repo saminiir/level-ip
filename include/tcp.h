@@ -103,6 +103,7 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
 int tcp_connect(struct sock *sk);
 int tcp_disconnect(struct sock *sk, int flags);
 int tcp_write(struct sock *sk, const void *buf, int len);
+int tcp_read(struct sock *sk, const void *buf, int len);
 int tcp_input_state(struct sock *sk, struct sk_buff *skb);
 int tcp_send_ack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);

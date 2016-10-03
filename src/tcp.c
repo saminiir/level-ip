@@ -12,6 +12,7 @@ struct net_ops tcp_ops = {
     .connect = &tcp_v4_connect,
     .disconnect = &tcp_disconnect,
     .write = &tcp_write,
+    .read = &tcp_read,
 };
 
 void tcp_init()
@@ -139,5 +140,9 @@ int tcp_write(struct sock *sk, const void *buf, int len)
 
 out: 
     return ret;
+}
 
+int tcp_read(struct sock *sk, const void *buf, int len)
+{
+    return 0;
 }
