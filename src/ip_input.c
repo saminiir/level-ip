@@ -6,28 +6,36 @@
 #include "tcp.h"
 #include "utils.h"
 
+static void ip_init_pkt(struct iphdr *ih)
+{
+    ih->saddr = ntohl(ih->saddr);
+    ih->daddr = ntohl(ih->daddr);
+    ih->len = ntohs(ih->len);
+    ih->id = ntohs(ih->id);
+}
+
 int ip_rcv(struct sk_buff *skb)
 {
-    struct iphdr *iphdr = ip_hdr(skb);
+    struct iphdr *ih = ip_hdr(skb);
     uint16_t csum = -1;
 
-    if (iphdr->version != IPV4) {
+    if (ih->version != IPV4) {
         perror("Datagram version was not IPv4\n");
         return 0;
     }
 
-    if (iphdr->ihl < 5) {
+    if (ih->ihl < 5) {
         perror("IPv4 header length must be at least 5\n");
         return 0;
     }
 
-    if (iphdr->ttl == 0) {
+    if (ih->ttl == 0) {
         //TODO: Send ICMP error
         perror("Time to live of datagram reached 0\n");
         return 0;
     }
 
-    csum = checksum(iphdr, iphdr->ihl * 4, 0);
+    csum = checksum(ih, ih->ihl * 4, 0);
 
     if (csum != 0) {
         // Invalid checksum, drop packet handling
@@ -35,9 +43,10 @@ int ip_rcv(struct sk_buff *skb)
     }
 
     // TODO: Check fragmentation, possibly reassemble
-    iphdr->len = ntohs(iphdr->len);
 
-    switch (iphdr->proto) {
+    ip_init_pkt(ih);
+
+    switch (ih->proto) {
     case ICMPV4:
         icmpv4_incoming(skb);
         break;
