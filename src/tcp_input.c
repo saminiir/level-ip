@@ -79,3 +79,8 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb)
 discard:
     return tcp_drop(tsk, skb);
 }
+
+int tcp_receive(struct tcp_sock *tsk, const void *buf, int len)
+{
+    return 0;
+}

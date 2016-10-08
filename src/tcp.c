@@ -144,5 +144,41 @@ out:
 
 int tcp_read(struct sock *sk, const void *buf, int len)
 {
-    return 0;
+        struct tcp_sock *tsk = tcp_sk(sk);
+    int ret = -1;
+
+    switch (sk->state) {
+    case TCP_CLOSE:
+        printf("error:  connection does not exist\n");
+        goto out;
+    case TCP_LISTEN:
+    case TCP_SYN_SENT:
+    case TCP_SYN_RECEIVED:
+        /* Queue for processing after entering ESTABLISHED state.  If there
+           is no room to queue this request, respond with "error:
+           insufficient resources". */
+    case TCP_ESTABLISHED:
+    case TCP_FIN_WAIT_1:
+    case TCP_FIN_WAIT_2:
+        /* If insufficient incoming segments are queued to satisfy the
+           request, queue the request. */
+        
+        break;
+    case TCP_CLOSE_WAIT:
+        /* If no text is awaiting delivery, the RECEIVE will get a
+           "error:  connection closing" response.  Otherwise, any remainingn
+           text can be used to satisfy the RECEIVE. */
+    case TCP_CLOSING:
+    case TCP_LAST_ACK:
+    case TCP_TIME_WAIT:
+        printf("error:  connection closing\n");
+        goto out;
+    default:
+        goto out;
+    }
+
+    return tcp_receive(tsk, buf, len);    
+
+out: 
+    return ret;
 }
