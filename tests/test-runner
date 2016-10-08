@@ -1,0 +1,10 @@
+#!/bin/bash
+
+../lvl-ip 1>/dev/null &
+pid="$!"
+
+sleep 5
+
+python2.7 venv/lib/python2.7/site-packages/scapy/tools/UTscapy.py "$@"
+
+kill -9 "$pid"

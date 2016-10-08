@@ -1,5 +1,8 @@
+*.pyc
 build/*.o
 a.out
 *.o
 *cscope*
 lvl-ip
+tests/venv
+vgcore*

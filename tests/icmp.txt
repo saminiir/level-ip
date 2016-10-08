@@ -1,0 +1,7 @@
+% ICMP tests
+
++ ICMP Set 1
+
+= Basic ping should work
+p=sr1(IP(dst="10.0.0.4")/ICMP(),timeout=3)
+assert(p != None)
