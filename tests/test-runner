@@ -1,10 +1,18 @@
 #!/bin/bash
 
+
+PYTHON="python2.7"
+UTSCAPY="venv/lib/python2.7/site-packages/scapy/tools/UTscapy.py"
+
+function cleanup {
+    kill "$stack_pid"
+}
+
+trap cleanup EXIT ERR
+
 ../lvl-ip 1>/dev/null &
-pid="$!"
+stack_pid="$!"
 
-sleep 5
+sleep 3
 
-python2.7 venv/lib/python2.7/site-packages/scapy/tools/UTscapy.py "$@"
-
-kill -9 "$pid"
+"$PYTHON" "$UTSCAPY" "$@"
