@@ -21,7 +21,7 @@ void* curl(void *arg)
     struct sockaddr addr;
     int sock;
 
-    if (get_address(argv[0], &addr) != 0) {
+    if (get_address(argv[0], "8000", &addr) != 0) {
         print_error("Curl could not resolve hostname\n");
         return NULL;
     }

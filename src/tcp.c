@@ -120,12 +120,12 @@ int generate_iss()
 
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags)
 {
-    uint16_t dport = addr->sa_data[1];
+    uint16_t dport = ((struct sockaddr_in *)addr)->sin_port;
     uint32_t daddr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
 
     printf("Connecting socket to %hhu.%hhu.%hhu.%hhu:%d\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5], dport);
 
-    sk->dport = dport;
+    sk->dport = ntohs(dport);
     sk->sport = generate_port();
     sk->daddr = ntohl(daddr);
     sk->saddr = parse_ipv4_string("10.0.0.4"); 

@@ -73,7 +73,7 @@ uint16_t checksum(void *addr, int count, int start_sum)
     return ~sum;
 }
 
-int get_address(char *host, struct sockaddr *addr)
+int get_address(char *host, char *port, struct sockaddr *addr)
 {
     struct addrinfo hints;
     struct addrinfo *result, *rp;
@@ -83,7 +83,7 @@ int get_address(char *host, struct sockaddr *addr)
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
 
-    s = getaddrinfo(host, "80", &hints, &result);
+    s = getaddrinfo(host, port, &hints, &result);
 
     if (s != 0) {
         print_error("getaddrinfo: %s\n", gai_strerror(s));

@@ -8,7 +8,7 @@ void print_hexdump(char *str, int len);
 void print_error(char *str, ...);
 uint32_t sum_every_16bits(void *addr, int count);
 uint16_t checksum(void *addr, int count, int start_sum);
-int get_address(char *host, struct sockaddr *addr);
+int get_address(char *host, char *port, struct sockaddr *addr);
 uint32_t parse_ipv4_string(char *addr);
 
 #endif
