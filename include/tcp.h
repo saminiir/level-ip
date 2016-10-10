@@ -113,6 +113,7 @@ struct tcp_sock {
     uint16_t tcp_header_len;
     uint8_t *rcv_buf;
     struct tcb tcb;
+    uint8_t flags;
 };
 
 static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)
@@ -141,5 +142,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 int tcp_send_ack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
 int tcp_send_reset(struct tcp_sock *tsk, struct tcphdr *th);
+int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg);
 int tcp_recv_notify(struct sock *sk);
+
 #endif

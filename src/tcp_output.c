@@ -123,3 +123,17 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
 
     return ret;
 }
+
+int tcp_send_reset(struct tcp_sock *tsk, struct tcphdr *th)
+{
+    struct sk_buff *skb;
+    struct tcphdr *oth;
+
+    skb = tcp_alloc_skb(0);
+    skb_push(skb, tsk->tcp_header_len);
+    oth = tcp_hdr(skb);
+
+    oth->ack = 1;
+    
+    return tcp_transmit_skb(&tsk->sk, skb);
+}

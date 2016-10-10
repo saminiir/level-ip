@@ -33,9 +33,10 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_seg
     th->urp = ntohs(th->urp);
 
     seg->seq = th->seq;
-    seg->ack = th->ack;
+    seg->ack = th->ack_seq;
     seg->dlen = ip_len(ih) - tcp_hlen(th);
     seg->len = seg->dlen + th->syn + th->fin;
+
     seg->win = th->win;
     seg->up = th->urp;
     seg->prc = 0;
@@ -89,6 +90,8 @@ struct sock *tcp_alloc_sock()
     struct tcp_sock *tsk = malloc(sizeof(struct tcp_sock));
 
     tsk->sk.state = TCP_CLOSE;
+    tsk->flags = 0;
+    tsk->rcv_buf = NULL;
     
     return (struct sock *)tsk;
 }
@@ -156,7 +159,7 @@ out:
 
 int tcp_read(struct sock *sk, void *buf, int len)
 {
-        struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcp_sock *tsk = tcp_sk(sk);
     int ret = -1;
 
     switch (sk->state) {
@@ -198,8 +201,9 @@ out:
 int tcp_recv_notify(struct sock *sk)
 {
     if (&sk->recv_wait) {
-        wait_wakeup(&sk->recv_wait);
+        return wait_wakeup(&sk->recv_wait);
     }
 
-    return 0;
+    // No recv wait lock
+    return -1;
 }
