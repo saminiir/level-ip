@@ -77,7 +77,7 @@ int _write(int sockfd, const void *buf, const unsigned int count)
     return sock->ops->write(sock, buf, count);
 }
 
-int _read(int sockfd, const void *buf, const unsigned int count)
+int _read(int sockfd, void *buf, const unsigned int count)
 {
     struct socket *sock;
 

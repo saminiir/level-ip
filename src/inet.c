@@ -126,7 +126,7 @@ int inet_write(struct socket *sock, const void *buf, int len)
     return sk->ops->write(sk, buf, len);
 }
 
-int inet_read(struct socket *sock, const void *buf, int len)
+int inet_read(struct socket *sock, void *buf, int len)
 {
     struct sock *sk = sock->sk;
 

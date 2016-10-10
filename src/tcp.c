@@ -151,7 +151,7 @@ out:
     return ret;
 }
 
-int tcp_read(struct sock *sk, const void *buf, int len)
+int tcp_read(struct sock *sk, void *buf, int len)
 {
         struct tcp_sock *tsk = tcp_sk(sk);
     int ret = -1;

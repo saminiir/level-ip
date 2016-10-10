@@ -11,7 +11,7 @@ struct net_ops {
     int (*connect) (struct sock *sk, const struct sockaddr *addr, int addr_len, int flags);
     int (*disconnect) (struct sock *sk, int flags);
     int (*write) (struct sock *sk, const void *buf, int len);
-    int (*read) (struct sock *sk, const void *buf, int len);
+    int (*read) (struct sock *sk, void *buf, int len);
 };
 
 struct sock {
