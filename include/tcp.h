@@ -48,17 +48,33 @@ struct tcpiphdr {
 } __attribute__((packed));
 
 enum tcp_states {
-    TCP_LISTEN,
-    TCP_SYN_SENT,
-    TCP_SYN_RECEIVED,
-    TCP_ESTABLISHED,
-    TCP_FIN_WAIT_1,
-    TCP_FIN_WAIT_2,
-    TCP_CLOSE,
-    TCP_CLOSE_WAIT,
-    TCP_CLOSING,
-    TCP_LAST_ACK,
-    TCP_TIME_WAIT,
+    TCP_LISTEN, /* represents waiting for a connection request from any remote
+                   TCP and port. */
+    TCP_SYN_SENT, /* represents waiting for a matching connection request
+                     after having sent a connection request. */
+    TCP_SYN_RECEIVED, /* represents waiting for a confirming connection
+                         request acknowledgment after having both received and sent a
+                         connection request. */
+    TCP_ESTABLISHED, /* represents an open connection, data received can be
+                        delivered to the user.  The normal state for the data transfer phase
+                        of the connection. */
+    TCP_FIN_WAIT_1, /* represents waiting for a connection termination request
+                       from the remote TCP, or an acknowledgment of the connection
+                       termination request previously sent. */
+    TCP_FIN_WAIT_2, /* represents waiting for a connection termination request
+                       from the remote TCP. */
+    TCP_CLOSE, /* represents no connection state at all. */
+    TCP_CLOSE_WAIT, /* represents waiting for a connection termination request
+                       from the local user. */
+    TCP_CLOSING, /* represents waiting for a connection termination request
+                    acknowledgment from the remote TCP. */
+    TCP_LAST_ACK, /* represents waiting for an acknowledgment of the
+                     connection termination request previously sent to the remote TCP
+                     (which includes an acknowledgment of its connection termination
+                     request). */
+    TCP_TIME_WAIT, /* represents waiting for enough time to pass to be sure
+                      the remote TCP received the acknowledgment of its connection
+                      termination request. */
 };
 
 /* Current Segment Variables */
