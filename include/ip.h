@@ -9,7 +9,7 @@
 #define ICMPV4 0x01
 
 #define IP_HDR_LEN sizeof(struct iphdr)
-#define ip_len(ip) (ip->ihl * 4 - ip->len)
+#define ip_len(ip) (ip->len - (ip->ihl * 4))
 
 struct iphdr {
     uint8_t ihl : 4; /* TODO: Support Big Endian hosts */

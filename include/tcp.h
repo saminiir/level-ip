@@ -82,6 +82,7 @@ struct tcp_segment {
     uint32_t seq; /* first sequence number of a segment */
     uint32_t ack; /* acknowledgment from the receiving TCP (next sequence
                      number expected by the receiving TCP) */
+    uint32_t dlen;
     uint32_t len; /* the number of octets occupied by the data in the segment
                      (counting SYN and FIN) */
     uint32_t win;

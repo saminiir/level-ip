@@ -32,7 +32,8 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_seg
 
     seg->seq = th->seq;
     seg->ack = th->ack;
-    seg->len = ip_len(ih) - tcp_hlen(th) + th->syn + th->fin;
+    seg->dlen = ip_len(ih) - tcp_hlen(th);
+    seg->len = seg->dlen + th->syn + th->fin;
     seg->win = th->win;
     seg->up = th->urp;
     seg->prc = 0;
