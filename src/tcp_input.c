@@ -59,7 +59,7 @@ static int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
 /*
  * Follows RFC793 "Segment Arrives" section closely
  */ 
-int tcp_input_state(struct sock *sk, struct sk_buff *skb)
+int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *seg)
 {
     struct tcphdr *th = tcp_hdr(skb);
     struct tcp_sock *tsk = tcp_sk(sk);

@@ -20,7 +20,7 @@ void tcp_init()
     
 }
 
-static void tcp_init_segment(struct tcphdr *th)
+static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_segment *seg)
 {
     th->sport = ntohs(th->sport);
     th->dport = ntohs(th->dport);
@@ -29,6 +29,14 @@ static void tcp_init_segment(struct tcphdr *th)
     th->win = ntohs(th->win);
     th->csum = ntohs(th->csum);
     th->urp = ntohs(th->urp);
+
+    seg->seq = th->seq;
+    seg->ack = th->ack;
+    seg->len = ip_len(ih) - tcp_hlen(th) + th->syn + th->fin;
+    seg->win = th->win;
+    seg->up = th->urp;
+    seg->prc = 0;
+    seg->seq_last = seg->seq + seg->len - 1;
 }
 
 void tcp_in(struct sk_buff *skb)
@@ -36,11 +44,12 @@ void tcp_in(struct sk_buff *skb)
     struct sock *sk;
     struct iphdr *iph;
     struct tcphdr *tcph;
+    struct tcp_segment seg;
 
     iph = ip_hdr(skb);
     tcph = (struct tcphdr*) iph->data;
 
-    tcp_init_segment(tcph);
+    tcp_init_segment(tcph, iph, &seg);
     
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
     
@@ -48,7 +57,7 @@ void tcp_in(struct sk_buff *skb)
     /*     goto discard; */
     /* } */
         
-    tcp_input_state(sk, skb);
+    tcp_input_state(sk, skb, &seg);
     
 discard:
     free_skb(skb);

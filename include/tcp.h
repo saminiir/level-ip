@@ -15,6 +15,9 @@
 #define TCP_ECN 0x40
 #define TCP_WIN 0x80
 
+#define tcp_sk(sk) ((struct tcp_sock *)sk)
+#define tcp_hlen(tcp) (tcp->hl << 2)
+
 struct tcphdr {
     uint16_t sport;
     uint16_t dport;
@@ -58,18 +61,32 @@ enum tcp_states {
     TCP_TIME_WAIT,
 };
 
+/* Current Segment Variables */
+struct tcp_segment {
+    uint32_t seq; /* first sequence number of a segment */
+    uint32_t ack; /* acknowledgment from the receiving TCP (next sequence
+                     number expected by the receiving TCP) */
+    uint32_t len; /* the number of octets occupied by the data in the segment
+                     (counting SYN and FIN) */
+    uint32_t win;
+    uint32_t up;
+    uint32_t prc; /* precedence value, not used */
+    uint32_t seq_last; /* last sequence number of a segment */
+};
+
 struct tcb {
     uint8_t *snd_buf;
     uint8_t *rcv_buf;
     uint32_t seq;
-    uint32_t snd_una;
-    uint32_t snd_nxt;
+    uint32_t snd_una; /* oldest unacknowledged sequence number */
+    uint32_t snd_nxt; /* next sequence number to be sent */
     uint32_t snd_wnd;
     uint32_t snd_up;
     uint32_t snd_wl1;
     uint32_t snd_wl2;
     uint32_t iss;
-    uint32_t rcv_nxt;
+    uint32_t rcv_nxt; /* next sequence number expected on an incoming segments, and
+                         is the left or lower edge of the receive window */
     uint32_t rcv_wnd;
     uint32_t rcv_up;
     uint32_t irs;
@@ -87,7 +104,6 @@ static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)
     return (struct tcphdr *)(skb->head + ETH_HDR_LEN + IP_HDR_LEN);
 
 }
-#define tcp_sk(sk) ((struct tcp_sock *)sk)
 
 void tcp_init();
 void tcp_in(struct sk_buff *skb);
@@ -105,7 +121,8 @@ int tcp_disconnect(struct sock *sk, int flags);
 int tcp_write(struct sock *sk, const void *buf, int len);
 int tcp_read(struct sock *sk, const void *buf, int len);
 int tcp_receive(struct tcp_sock *tsk, const void *buf, int len);
-int tcp_input_state(struct sock *sk, struct sk_buff *skb);
+int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *seg);
 int tcp_send_ack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
+int tcp_send_reset(struct tcp_sock *tsk, struct tcphdr *th);
 #endif
