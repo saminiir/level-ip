@@ -92,8 +92,6 @@ struct tcp_segment {
 };
 
 struct tcb {
-    uint8_t *snd_buf;
-    uint8_t *rcv_buf;
     uint32_t seq;
     uint32_t snd_una; /* oldest unacknowledged sequence number */
     uint32_t snd_nxt; /* next sequence number to be sent */
@@ -113,6 +111,7 @@ struct tcp_sock {
     struct sock sk;
     int fd;
     uint16_t tcp_header_len;
+    uint8_t *rcv_buf;
     struct tcb tcb;
 };
 
