@@ -33,7 +33,7 @@ void* curl(void *arg)
         return NULL;
     }
 
-    char *str = "testtest";
+    char *str = "GET / HTTP/1.1\n\r\n";
     int len = strlen(str);
 
     if (_write(sock, str, len) != len) {
