@@ -5,6 +5,7 @@
 #include "sock.h"
 #include "utils.h"
 #include "tcp_timer.h"
+#include "wait.h"
 
 struct net_ops tcp_ops = {
     .alloc_sock = &tcp_alloc_sock,
@@ -13,6 +14,7 @@ struct net_ops tcp_ops = {
     .disconnect = &tcp_disconnect,
     .write = &tcp_write,
     .read = &tcp_read,
+    .recv_notify = &tcp_recv_notify,
 };
 
 void tcp_init()
@@ -191,4 +193,13 @@ int tcp_read(struct sock *sk, void *buf, int len)
 
 out: 
     return ret;
+}
+
+int tcp_recv_notify(struct sock *sk)
+{
+    if (&sk->recv_wait) {
+        wait_wakeup(&sk->recv_wait);
+    }
+
+    return 0;
 }

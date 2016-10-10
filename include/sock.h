@@ -2,6 +2,7 @@
 #define _SOCK_H
 
 #include "socket.h"
+#include "wait.h"
 
 struct sock;
 
@@ -12,11 +13,13 @@ struct net_ops {
     int (*disconnect) (struct sock *sk, int flags);
     int (*write) (struct sock *sk, const void *buf, int len);
     int (*read) (struct sock *sk, void *buf, int len);
+    int (*recv_notify) (struct sock *sk);
 };
 
 struct sock {
     struct socket *sock;
     struct net_ops *ops;
+    struct wait_lock recv_wait;
     int protocol;
     int state;
     uint16_t sport;

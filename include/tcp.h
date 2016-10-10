@@ -141,4 +141,5 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 int tcp_send_ack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
 int tcp_send_reset(struct tcp_sock *tsk, struct tcphdr *th);
+int tcp_recv_notify(struct sock *sk);
 #endif
