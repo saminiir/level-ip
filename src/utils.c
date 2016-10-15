@@ -51,7 +51,7 @@ uint32_t sum_every_16bits(void *addr, int count)
 
     /*  Add left-over byte, if any */
     if( count > 0 )
-        sum += * (uint8_t *) addr;
+        sum += * (uint8_t *) ptr;
 
     return sum;
 }
