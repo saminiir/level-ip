@@ -4,6 +4,7 @@
 #include "inet.h"
 #include "wait.h"
 
+static int sock_amount = 0;
 static struct socket sockets[12];
 
 extern struct net_family inet;
@@ -19,8 +20,18 @@ static struct socket *alloc_socket()
     sock->fd = 5;
     sock->state = SS_UNCONNECTED;
     wait_init(&sock->sleep);
+    sock_amount++;
     
     return sock;
+}
+
+int free_sockets() {
+    struct socket *sock;
+    if (sock_amount > 0) {
+        sock = &sockets[0];
+    }
+
+    return 0;
 }
 
 static struct socket *get_socket(int fd)

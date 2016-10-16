@@ -123,8 +123,9 @@ static void wait_for_threads()
 
 void free_stack()
 {
-    netdev_free();
-    tun_free();
+    free_sockets();
+    free_netdev();
+    free_tun();
 }
 
 int main(int argc, char** argv)

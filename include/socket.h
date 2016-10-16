@@ -46,5 +46,6 @@ int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int _write(int sockfd, const void *buf, const unsigned int count);
 int _read(int sockfd, void *buf, const unsigned int count);
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
+int free_sockets();
 
 #endif

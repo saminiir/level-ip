@@ -18,6 +18,6 @@ struct netdev {
 void netdev_init(char *addr, char *hwaddr);
 int netdev_transmit(struct sk_buff *skb, uint8_t *dst, uint16_t ethertype);
 void *netdev_rx_loop();
-void netdev_free();
+void free_netdev();
 struct netdev *netdev_get(uint32_t sip);
 #endif

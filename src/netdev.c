@@ -103,6 +103,6 @@ struct netdev* netdev_get(uint32_t sip)
     }
 }
 
-void netdev_free()
+void free_netdev()
 {
 }

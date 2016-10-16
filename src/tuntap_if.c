@@ -85,7 +85,7 @@ void tun_init()
     }
 }
 
-void tun_free()
+void free_tun()
 {
     free(dev);
 }
