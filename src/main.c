@@ -27,6 +27,13 @@ sigset_t mask;
 
 static struct command *cmd_to_run;
 
+static void print_usage_if_needed(struct command *cmd) {
+    if (strncmp(cmd->cmd_str, "help", 4) == 0) {
+        cmd->cmd_func(cmd);
+        exit(1);
+    }
+}
+
 static void *stop_stack_handler(void *arg)
 {
     int err, signo;
@@ -131,6 +138,8 @@ void free_stack()
 int main(int argc, char** argv)
 {
     cmd_to_run = parse_args(argc, argv);
+
+    print_usage_if_needed(cmd_to_run);
 
     init_signals();
     init_stack();
