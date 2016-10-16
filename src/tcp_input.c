@@ -191,7 +191,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_FIN_WAIT_2:
         /* deliver segment text to user RECEIVE buffers */
         tcp_data_queue(tsk, th, seg);
-        
+        tcp_send_ack(&tsk->sk);
         break;
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:
