@@ -57,23 +57,6 @@ static void *stop_stack_handler(void *arg)
     }
 }
 
-static void *_signal(int signo, sighandler_t handler)
-{
-    struct sigaction sa;
-
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sa.sa_flags |= SA_RESTART;
-    sa.sa_handler = handler;
-    
-    if (sigaction(signo, &sa, NULL) < 0) {
-        return SIG_ERR;
-    }
-
-    return 0;
-}
-
-
 static void init_signals()
 {
     int err;
