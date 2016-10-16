@@ -104,7 +104,7 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     
     }
     
-    rc = tcp_send_reset(tsk, th);
+    rc = tcp_send_reset(tsk);
 
     free_skb(skb);
     

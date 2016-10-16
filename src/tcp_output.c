@@ -124,16 +124,18 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
     return ret;
 }
 
-int tcp_send_reset(struct tcp_sock *tsk, struct tcphdr *th)
+int tcp_send_reset(struct tcp_sock *tsk)
 {
     struct sk_buff *skb;
-    struct tcphdr *oth;
+    struct tcphdr *th;
+    struct tcb *tcb;
 
     skb = tcp_alloc_skb(0);
-    skb_push(skb, tsk->tcp_header_len);
-    oth = tcp_hdr(skb);
+    th = tcp_hdr(skb);
+    tcb = &tsk->tcb;
 
-    oth->ack = 1;
+    th->rst = 1;
+    tcb->seq = tcb->snd_nxt;
     
     return tcp_transmit_skb(&tsk->sk, skb);
 }

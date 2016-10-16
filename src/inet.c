@@ -20,6 +20,7 @@ static struct sock_ops inet_stream_ops = {
     .connect = &inet_stream_connect,
     .write = &inet_write,
     .read = &inet_read,
+    .free = &inet_free,
 };
 
 static struct sock_type inet_ops[] = {
@@ -136,4 +137,11 @@ int inet_read(struct socket *sock, void *buf, int len)
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 {
     return socket_lookup(sport, dport)->sk;
+}
+
+int inet_free(struct socket *sock)
+{
+    struct sock *sk = sock->sk;
+
+    return sk->ops->abort(sk);
 }

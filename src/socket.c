@@ -29,6 +29,7 @@ int free_sockets() {
     struct socket *sock;
     if (sock_amount > 0) {
         sock = &sockets[0];
+        sock->ops->free(sock);
     }
 
     return 0;

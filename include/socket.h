@@ -26,6 +26,7 @@ struct sock_ops {
                     int addr_len, int flags);
     int (*write) (struct socket *sock, const void *buf, int len);
     int (*read) (struct socket *sock, void *buf, int len);
+    int (*free) (struct socket *sock);
 };
 
 struct net_family {
