@@ -17,18 +17,37 @@ typedef void (*sighandler_t)(int);
 
 /*
  * 0 for core networking
- * 1 for possible integrated application
+ * 1 for signal processor
+ * 2 for possible integrated application
  */
-static pthread_t threads[2];
+static pthread_t threads[3];
 
 int running = 1;
+sigset_t mask;
 
 static struct command *cmd_to_run;
 
-static void stop_stack_handler(int signo)
+static void *stop_stack_handler(void *arg)
 {
-    printf("Stopping\n");
-    running = 0;
+    int err, signo;
+
+    for (;;) {
+        err = sigwait(&mask, &signo);
+        if (err != 0) {
+            print_error("Sigwait failed: %d\n", err);
+        }
+
+        switch (signo) {
+        case SIGINT:
+        case SIGQUIT:
+            running = 0;
+            pthread_cancel(threads[0]);
+            if (cmd_to_run != NULL) pthread_cancel(threads[2]);
+            return 0;
+        default:
+            printf("Unexpected signal %d\n", signo);
+        }
+    }
 }
 
 static void *_signal(int signo, sighandler_t handler)
@@ -50,7 +69,16 @@ static void *_signal(int signo, sighandler_t handler)
 
 static void init_signals()
 {
-    _signal(SIGINT, stop_stack_handler);
+    int err;
+    
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    sigaddset(&mask, SIGQUIT);
+
+    if ((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0) {
+        print_error("SIG_BLOCK error\n");
+        exit(1);
+    }
 }
 
 static void init_stack()
@@ -70,7 +98,13 @@ static void run_threads()
 	print_error("Could not create netdev rx loop thread\n");
 	return;
     }
-    if (cmd_to_run != NULL && pthread_create(&threads[1], NULL,
+
+    if (pthread_create(&threads[1], NULL, stop_stack_handler, 0)) {
+        print_error("Could not create signal processor thread\n");
+        return;
+    }
+    
+    if (cmd_to_run != NULL && pthread_create(&threads[2], NULL,
 					     cmd_to_run->cmd_func, cmd_to_run) != 0) {
 	print_error("Could not create app thread for %s\n", cmd_to_run->cmd_str);
 	return;
@@ -79,7 +113,7 @@ static void run_threads()
 
 static void wait_for_threads()
 {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
 	if (pthread_join(threads[i], NULL) != 0) {
 	    print_error("Error when joining threads\n");
 	    exit(1);
