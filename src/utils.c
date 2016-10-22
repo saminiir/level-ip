@@ -26,6 +26,18 @@ void print_hexdump(char *str, int len)
     printf("\n");
 }
 
+void print_err(char *str, ...)
+{
+    va_list ap;
+    char buf[200];
+    va_start(ap, str);
+    vsnprintf(buf, 200, str, ap);
+
+    va_end(ap);
+
+    fprintf(stderr, buf);
+}
+
 void print_error(char *str, ...)
 {
     va_list ap;

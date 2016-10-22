@@ -6,6 +6,7 @@
 int run_cmd(char *cmd, ...);
 void print_hexdump(char *str, int len);
 void print_error(char *str, ...);
+void print_err(char *str, ...);
 uint32_t sum_every_16bits(void *addr, int count);
 uint16_t checksum(void *addr, int count, int start_sum);
 int get_address(char *host, char *port, struct sockaddr *addr);

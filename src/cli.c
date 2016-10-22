@@ -11,19 +11,19 @@ void* noop(void *arg)
 
 static void usage(char *app)
 {
-    fprintf(stderr, "Usage: sudo %s [command ARGS..]\n", app);
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Linux TCP/IP stack implemented with TUN/TAP devices.\n");
-    fprintf(stderr, "Elevated privileges are needed.\n");
-    fprintf(stderr, "See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Commands:\n");
-    fprintf(stderr, "  curl HOST - act like curl, HOST as the target.\n");
-    fprintf(stderr, "\n");
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -d Debug logging and tracing\n");
-    fprintf(stderr, "  -h Print usage\n");
-    fprintf(stderr, "\n");
+    print_err("Usage: sudo %s [command ARGS..]\n", app);
+    print_err("\n");
+    print_err("Linux TCP/IP stack implemented with TUN/TAP devices.\n");
+    print_err("Elevated privileges are needed.\n");
+    print_err("See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
+    print_err("\n");
+    print_err("Commands:\n");
+    print_err("  curl HOST - act like curl, HOST as the target.\n");
+    print_err("\n");
+    print_err("Options:\n");
+    print_err("  -d Debug logging and tracing\n");
+    print_err("  -h Print usage\n");
+    print_err("\n");
     exit(1);
 }
 

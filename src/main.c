@@ -34,7 +34,7 @@ static void *stop_stack_handler(void *arg)
     for (;;) {
         err = sigwait(&mask, &signo);
         if (err != 0) {
-            print_error("Sigwait failed: %d\n", err);
+            print_err("Sigwait failed: %d\n", err);
         }
 
         switch (signo) {
@@ -59,7 +59,7 @@ static void init_signals()
     sigaddset(&mask, SIGQUIT);
 
     if ((err = pthread_sigmask(SIG_BLOCK, &mask, NULL)) != 0) {
-        print_error("SIG_BLOCK error\n");
+        print_err("SIG_BLOCK error\n");
         exit(1);
     }
 }
@@ -78,18 +78,18 @@ static void run_threads()
 {
     if (pthread_create(&threads[0], NULL,
 		       &netdev_rx_loop, NULL) != 0) {
-	print_error("Could not create netdev rx loop thread\n");
+	print_err("Could not create netdev rx loop thread\n");
 	return;
     }
 
     if (pthread_create(&threads[1], NULL, stop_stack_handler, 0)) {
-        print_error("Could not create signal processor thread\n");
+        print_err("Could not create signal processor thread\n");
         return;
     }
     
     if (cmd_to_run != NULL && pthread_create(&threads[2], NULL,
 					     cmd_to_run->cmd_func, cmd_to_run) != 0) {
-	print_error("Could not create app thread for %s\n", cmd_to_run->cmd_str);
+	print_err("Could not create app thread for %s\n", cmd_to_run->cmd_str);
 	return;
     }
 }
@@ -98,7 +98,7 @@ static void wait_for_threads()
 {
     for (int i = 0; i < 3; i++) {
 	if (pthread_join(threads[i], NULL) != 0) {
-	    print_error("Error when joining threads\n");
+	    print_err("Error when joining threads\n");
 	    exit(1);
 	}
     }
