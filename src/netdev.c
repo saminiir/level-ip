@@ -21,6 +21,8 @@ void netdev_init(char *addr, char *hwaddr)
         exit(1);
     }
 
+    dev->addr = ntohl(dev->addr);
+
     sscanf(hwaddr, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev->hwaddr[0],
                                                     &dev->hwaddr[1],
                                                     &dev->hwaddr[2],

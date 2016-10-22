@@ -32,17 +32,24 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->version = IPV4;
     ihdr->ihl = 0x05;
     ihdr->tos = 0;
-    ihdr->len = htons(skb->len);
-    ihdr->id = htons(ihdr->id);
+    ihdr->len = skb->len;
+    ihdr->id = ihdr->id;
     ihdr->flags = 0;
     ihdr->frag_offset = 0;
     ihdr->ttl = 64;
     ihdr->proto = skb->protocol;
     ihdr->saddr = netdev->addr;
-    ihdr->daddr = htonl(sk->daddr);
+    ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
-    
+
     ip_send_check(ihdr);
+
+    ip_dbg("send", ihdr);
+
+    ihdr->len = htons(ihdr->len);
+    ihdr->id = htons(ihdr->id);
+    ihdr->daddr = htonl(ihdr->daddr);
+    ihdr->saddr = htonl(ihdr->saddr);
 
     return dst_neigh_output(skb);
 }

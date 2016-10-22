@@ -46,6 +46,8 @@ int ip_rcv(struct sk_buff *skb)
 
     ip_init_pkt(ih);
 
+    ip_dbg("received", ih);
+
     switch (ih->proto) {
     case ICMPV4:
         icmpv4_incoming(skb);
