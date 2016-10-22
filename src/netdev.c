@@ -45,6 +45,8 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
 
     memcpy(hdr->dmac, dst_hw, dev->addr_len);
     memcpy(hdr->smac, dev->hwaddr, dev->addr_len);
+
+    eth_dbg("send", hdr);
     hdr->ethertype = htons(ethertype);
 
     ret = tun_write((char *)skb->data, skb->len);
@@ -57,6 +59,8 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
 static int netdev_rx_action(struct sk_buff *skb)
 {
     struct eth_hdr *hdr = eth_hdr(skb);
+
+    eth_dbg("receive", hdr);
 
     switch (hdr->ethertype) {
         case ETH_P_ARP:

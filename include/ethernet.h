@@ -9,9 +9,15 @@
 
 #define ETH_HDR_LEN sizeof(struct eth_hdr)
 
-#define eth_dbg(fmt, args...)                   \
-    do {                                        \
-        print_debug("ETHERNET: "fmt, ##args);   \
+#define eth_dbg(msg, hdr)                                               \
+    do {                                                                \
+        print_debug("ETHERNET: "msg" "                                  \
+                "dmac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "     \
+                "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "     \
+                "ethertype: %.4hx\n",                                   \
+                hdr->dmac[0], hdr->dmac[1], hdr->dmac[2], hdr->dmac[3], \
+                hdr->dmac[4], hdr->dmac[5], hdr->smac[0], hdr->smac[1], \
+                hdr->smac[2], hdr->smac[3], hdr->smac[4], hdr->smac[5], hdr->ethertype); \
     } while (0)
 
 struct sk_buff;
@@ -33,12 +39,6 @@ inline struct eth_hdr *eth_hdr(struct sk_buff *skb)
 
     hdr->ethertype = ntohs(hdr->ethertype);
 
-    eth_dbg("received, dmac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "
-                      "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "
-                      "ethertype: %.4hx\n",
-            hdr->dmac[0], hdr->dmac[1], hdr->dmac[2], hdr->dmac[3],
-            hdr->dmac[4], hdr->dmac[5], hdr->smac[0], hdr->smac[1],
-            hdr->smac[2], hdr->smac[3], hdr->smac[4], hdr->smac[5], hdr->ethertype);
     return hdr;
 }
 
