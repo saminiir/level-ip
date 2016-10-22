@@ -4,6 +4,7 @@
 #include "ethernet.h"
 #include "netdev.h"
 #include "skbuff.h"
+#include "utils.h"
 
 #define ARP_ETHERNET    0x0001
 #define ARP_IPV4        0x0800
@@ -17,6 +18,14 @@
 #define ARP_FREE        0
 #define ARP_WAITING     1
 #define ARP_RESOLVED    2
+
+#define arp_dbg(str, hdr)                                               \
+    do {                                                                \
+        print_debug("ARP: "str" hwtype: %hu, protype: %.4hx, "          \
+                    "hwsize: %d, opcode: %.4hx\n",                      \
+                    hdr->hwtype, hdr->protype, hdr->hwsize,             \
+                    hdr->prosize, hdr->opcode);                         \
+    } while (0)
 
 struct arp_hdr
 {
