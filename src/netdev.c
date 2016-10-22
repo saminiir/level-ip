@@ -66,7 +66,7 @@ static int netdev_rx_action(struct sk_buff *skb)
             ip_rcv(skb);
             break;
         case ETH_P_IPV6:
-            printf("IPv6 packet received, not supported\n");
+            netdev_dbg("IPv6 packet received, not supported\n");
             break;
         default:
             printf("Unrecognized ethertype %x\n", hdr->ethertype);
@@ -86,7 +86,7 @@ void *netdev_rx_loop()
             return NULL;
         }
 
-        printf("Received packets, processing\n");
+        netdev_dbg("Received packets, processing\n");
 
         netdev_rx_action(skb);
     }

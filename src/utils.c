@@ -1,6 +1,8 @@
 #include "syshead.h"
 #include "utils.h"
 
+extern int debug;
+
 int run_cmd(char *cmd, ...)
 {
     va_list ap;
@@ -10,7 +12,9 @@ int run_cmd(char *cmd, ...)
 
     va_end(ap);
 
-    printf("%s\n", buf);
+    if (debug) {
+        printf("EXEC: %s\n", buf);
+    }
 
     return system(buf);
 }
@@ -48,6 +52,20 @@ void print_error(char *str, ...)
     va_end(ap);
 
     perror(buf);
+}
+
+void print_debug(char *str, ...)
+{
+    if (!debug) return;
+    
+    va_list ap;
+    char buf[200];
+    va_start(ap, str);
+    vsnprintf(buf, 200, str, ap);
+
+    va_end(ap);
+
+    printf(buf);
 }
 
 uint32_t sum_every_16bits(void *addr, int count)
