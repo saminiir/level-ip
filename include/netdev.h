@@ -8,10 +8,10 @@
 #define BUFLEN 512
 #define MAX_ADDR_LEN 32
 
-#define netdev_dbg(fmt, args...)\
-do {\
-    print_debug("NETDEV: "fmt, ##args);         \
-} while (0)
+#define netdev_dbg(fmt, args...)                \
+    do {                                        \
+        print_debug("NETDEV: "fmt, ##args);     \
+    } while (0)
 
 struct eth_hdr;
 

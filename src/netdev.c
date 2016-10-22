@@ -86,8 +86,6 @@ void *netdev_rx_loop()
             return NULL;
         }
 
-        netdev_dbg("Received packets, processing\n");
-
         netdev_rx_action(skb);
     }
 
