@@ -13,11 +13,13 @@ The results of the learning experience will be accompanied by explanatory blog p
 - Part 2, IPv4 & ICMPv4: http://www.saminiir.com/lets-code-tcp-ip-stack-2-ipv4-icmpv4
 - Part 3, TCP Basics & Handshake: http://www.saminiir.com/lets-code-tcp-ip-stack-3-tcp-handshake/
 
+Also, see [Development](Documentation/development.md).
+
 # Reference works
 
-* QEMU Userspace IP stack, [source code](http://git.qemu.org/?p=qemu.git;a=tree;f=slirp;h=d3a7ee58fa839b55f8cbcc5aa4800db19afac75e;hb=HEAD)
 * Linux kernel IP stack, [source code](https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/net/ipv4)
 * Xiaochen Wang's TAP device & TCP/IP implementation, [source code](https://github.com/chobits/tapip)
+* QEMU Userspace IP stack, [source code](http://git.qemu.org/?p=qemu.git;a=tree;f=slirp;h=d3a7ee58fa839b55f8cbcc5aa4800db19afac75e;hb=HEAD)
 
 # License
 
