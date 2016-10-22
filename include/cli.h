@@ -13,6 +13,6 @@ struct command {
     char *cmd_str;
 };
 
-struct command *parse_args(int argc, char** argv);
+struct command *parse_cli(int argc, char** argv);
 
 #endif
