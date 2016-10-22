@@ -87,6 +87,10 @@ void arp_rcv(struct sk_buff *skb)
 
     arpdata = (struct arp_ipv4 *) arphdr->data;
 
+    arpdata->sip = ntohl(arpdata->sip);
+    arpdata->dip = ntohl(arpdata->dip);
+    arpdata_dbg("receive", arpdata);
+    
     merge = update_arp_translation_table(arphdr, arpdata);
 
     if (!(netdev = netdev_get(arpdata->dip))) {
@@ -133,6 +137,10 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     arp->protype = htons(ETH_P_IP);
     arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
+
+    arpdata_dbg("request", payload);
+    payload->sip = htonl(payload->sip);
+    payload->dip = htonl(payload->dip);
     
     return netdev_transmit(skb, broadcast_hw, ETH_P_ARP);    
 }
@@ -161,6 +169,10 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
     arphdr->opcode = htons(arphdr->opcode);
     arphdr->hwtype = htons(arphdr->hwtype);
     arphdr->protype = htons(arphdr->protype);
+
+    arpdata_dbg("reply", arpdata);
+    arpdata->sip = htonl(arpdata->sip);
+    arpdata->dip = htonl(arpdata->dip);
 
     skb->netdev = netdev;
 

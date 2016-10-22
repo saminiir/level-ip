@@ -27,6 +27,18 @@
                     hdr->prosize, hdr->opcode);                         \
     } while (0)
 
+#define arpdata_dbg(str, data)                                          \
+    do {                                                                \
+        print_debug("ARPDATA: "str" smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
+                    ":%.2hhx:%.2hhx, sip: %hhu.%hhu.%hhu.%hhu, dmac: %.2hhx:%2.hhx" \
+                    ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu\n", \
+                    data->smac[0], data->smac[1], data->smac[2], data->smac[3], \
+                    data->smac[4], data->smac[5], data->sip >> 24, data->sip >> 16, \
+                    data->sip >> 8, data->sip >> 0, data->dmac[0], data->dmac[1], \
+                    data->dmac[2], data->dmac[3], data->dmac[4], data->dmac[5], \
+                    data->dip >> 24, data->dip >> 16, data->dip >> 8, data->dip >> 0); \
+    } while (0)
+
 struct arp_hdr
 {
     uint16_t hwtype;
