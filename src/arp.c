@@ -73,7 +73,7 @@ void arp_rcv(struct sk_buff *skb)
     arphdr->hwtype = ntohs(arphdr->hwtype);
     arphdr->protype = ntohs(arphdr->protype);
     arphdr->opcode = ntohs(arphdr->opcode);
-    arp_dbg("receive", arphdr);
+    arp_dbg("INPUT", arphdr);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
         printf("Unsupported HW type\n");
@@ -131,7 +131,7 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     
     arp = (struct arp_hdr *) skb_push(skb, ARP_HDR_LEN);
 
-    arp_dbg("request", arp);
+    arp_dbg("REQUEST", arp);
     arp->opcode = htons(ARP_REQUEST);
     arp->hwtype = htons(ARP_ETHERNET); 
     arp->protype = htons(ETH_P_IP);
@@ -165,7 +165,7 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
 
     arphdr->opcode = ARP_REPLY;
 
-    arp_dbg("reply", arphdr);
+    arp_dbg("REPLY", arphdr);
     arphdr->opcode = htons(arphdr->opcode);
     arphdr->hwtype = htons(arphdr->hwtype);
     arphdr->protype = htons(arphdr->protype);

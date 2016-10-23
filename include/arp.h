@@ -21,7 +21,7 @@
 
 #define arp_dbg(str, hdr)                                               \
     do {                                                                \
-        print_debug("ARP: "str" hwtype: %hu, protype: %.4hx, "          \
+        print_debug("ARP "str": hwtype: %hu, protype: %.4hx, "          \
                     "hwsize: %d, opcode: %.4hx\n",                      \
                     hdr->hwtype, hdr->protype, hdr->hwsize,             \
                     hdr->prosize, hdr->opcode);                         \
@@ -29,7 +29,7 @@
 
 #define arpdata_dbg(str, data)                                          \
     do {                                                                \
-        print_debug("ARPDATA: "str" smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
+        print_debug("ARPDATA "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
                     ":%.2hhx:%.2hhx, sip: %hhu.%hhu.%hhu.%hhu, dmac: %.2hhx:%.2hhx" \
                     ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu\n", \
                     data->smac[0], data->smac[1], data->smac[2], data->smac[3], \

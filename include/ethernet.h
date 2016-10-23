@@ -11,7 +11,7 @@
 
 #define eth_dbg(msg, hdr)                                               \
     do {                                                                \
-        print_debug("ETHERNET: "msg" "                                  \
+        print_debug("ETHERNET "msg": "                                  \
                 "dmac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "     \
                 "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, "     \
                 "ethertype: %.4hx\n",                                   \

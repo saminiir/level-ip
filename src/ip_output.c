@@ -42,7 +42,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
 
-    ip_dbg("send", ihdr);
+    ip_dbg("OUTPUT", ihdr);
 
     ihdr->len = htons(ihdr->len);
     ihdr->id = htons(ihdr->id);

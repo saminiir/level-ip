@@ -13,7 +13,7 @@
 
 #define ip_dbg(msg, hdr)                                                \
     do {                                                                \
-        print_debug("IP: "msg" ihl: %hhu, version: %hhu, tos: %hhu, "   \
+        print_debug("IP "msg": ihl: %hhu, version: %hhu, tos: %hhu, "   \
                     "len: %hu, id: %hu, flags: %hhu, frag_offset: %hu, ttl: %hhu, " \
                     "proto: %hhu, csum: %hx, saddr: %hhu.%hhu.%hhu.%hhu, " \
                     "daddr: %hhu.%hhu.%hhu.%hhu\n", hdr->ihl,           \
