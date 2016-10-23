@@ -42,14 +42,15 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
 
-    ip_send_check(ihdr);
-
     ip_dbg("send", ihdr);
 
     ihdr->len = htons(ihdr->len);
     ihdr->id = htons(ihdr->id);
     ihdr->daddr = htonl(ihdr->daddr);
     ihdr->saddr = htonl(ihdr->saddr);
+    ihdr->csum = htons(ihdr->csum);
+
+    ip_send_check(ihdr);
 
     return dst_neigh_output(skb);
 }
