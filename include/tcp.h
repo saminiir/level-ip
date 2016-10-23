@@ -18,6 +18,16 @@
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
+#define tcp_dbg(msg, hdr) \
+    do { \
+        print_debug("TCP: "msg", sport: %hu, dport: %hu, seq: %u, ack: %hu " \
+                    "rsvd: %hhu, hl: %hhu, CEUAPRSF: %hhu%hhu%hhu%hhu%hhu%hhu%hhu%hhu, " \
+                    "win: %hu, csum: %.4hx, urp: %hu\n", hdr->sport, hdr->dport, hdr->seq, \
+                    hdr->ack_seq, hdr->rsvd, hdr->hl, hdr->cwr, hdr->ece, hdr->urg, \
+                    hdr->ack, hdr->psh, hdr->rst, hdr->syn, hdr->fin, hdr->win, \
+                    hdr->csum, hdr->urp);                               \
+    } while (0)
+
 struct tcphdr {
     uint16_t sport;
     uint16_t dport;

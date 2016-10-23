@@ -22,19 +22,28 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
     struct tcphdr *thdr = (struct tcphdr *)skb->data;
 
-    thdr->sport = htons(sk->sport);
-    thdr->dport = htons(sk->dport);
-    thdr->seq = htonl(tcb->seq);
-    thdr->ack_seq = htonl(tcb->rcv_nxt);
+    thdr->sport = sk->sport;
+    thdr->dport = sk->dport;
+    thdr->seq = tcb->seq;
+    thdr->ack_seq = tcb->rcv_nxt;
     thdr->hl = 5;
     thdr->rsvd = 0;
-    thdr->win = htons(tcb->rcv_wnd);
+    thdr->win = tcb->rcv_wnd;
     thdr->csum = 0;
     thdr->urp = 0;
 
     /* Calculate checksum */
-    thdr->csum = tcp_v4_checksum(skb, htonl(sk->saddr), htonl(sk->daddr));
+    tcp_dbg("send", thdr);
 
+    thdr->sport = htons(thdr->sport);
+    thdr->dport = htons(thdr->dport);
+    thdr->seq = htonl(thdr->seq);
+    thdr->ack_seq = htonl(thdr->ack_seq);
+    thdr->win = htons(thdr->win);
+    thdr->csum = htons(thdr->csum);
+    thdr->urp = htons(thdr->urp);
+    thdr->csum = tcp_v4_checksum(skb, htonl(sk->saddr), htonl(sk->daddr));
+    
     return ip_output(sk, skb);
 }
 
