@@ -20,7 +20,7 @@
 
 #define tcp_dbg(msg, hdr) \
     do { \
-        print_debug("TCP: "msg", sport: %hu, dport: %hu, seq: %u, ack: %hu " \
+        print_debug("TCP "msg": sport: %hu, dport: %hu, seq: %u, ack: %hu " \
                     "rsvd: %hhu, hl: %hhu, CEUAPRSF: %hhu%hhu%hhu%hhu%hhu%hhu%hhu%hhu, " \
                     "win: %hu, csum: %.4hx, urp: %hu\n", hdr->sport, hdr->dport, hdr->seq, \
                     hdr->ack_seq, hdr->rsvd, hdr->hl, hdr->cwr, hdr->ece, hdr->urg, \

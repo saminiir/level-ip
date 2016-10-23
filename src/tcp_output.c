@@ -32,8 +32,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     thdr->csum = 0;
     thdr->urp = 0;
 
-    /* Calculate checksum */
-    tcp_dbg("send", thdr);
+    tcp_dbg("OUTPUT", thdr);
 
     thdr->sport = htons(thdr->sport);
     thdr->dport = htons(thdr->dport);

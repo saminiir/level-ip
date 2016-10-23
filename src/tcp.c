@@ -55,6 +55,7 @@ void tcp_in(struct sk_buff *skb)
     tcph = (struct tcphdr*) iph->data;
 
     tcp_init_segment(tcph, iph, &seg);
+    tcp_dbg("INPUT", tcph);
     
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
     
