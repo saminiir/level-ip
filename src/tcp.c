@@ -50,12 +50,14 @@ void tcp_in(struct sk_buff *skb)
     struct iphdr *iph;
     struct tcphdr *tcph;
     struct tcp_segment seg;
+    struct tcp_segment *dbg = &seg;
 
     iph = ip_hdr(skb);
     tcph = (struct tcphdr*) iph->data;
 
     tcp_init_segment(tcph, iph, &seg);
-    tcp_dbg("INPUT", tcph);
+    tcphdr_dbg("INPUT", tcph);
+    tcpseg_dbg("INPUT", dbg);
     
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
     
