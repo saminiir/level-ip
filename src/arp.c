@@ -186,9 +186,14 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
 unsigned char* arp_get_hwaddr(uint32_t sip)
 {
     struct arp_cache_entry *entry;
+    
+    print_debug("ARPCACHE: Searching for ARP entry with sip "
+                "%hhu.%hhu.%hhu.%hhu\n", sip >> 24, sip >> 16,
+                sip >> 8, sip >> 0);
 
     for (int i = 0; i < ARP_CACHE_LEN; i++) {
         entry = &arp_cache[i];
+        arpcache_dbg("entry", entry);
 
         if (entry->state == ARP_RESOLVED && 
             entry->sip == sip) {
