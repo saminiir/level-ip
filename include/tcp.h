@@ -43,6 +43,11 @@
                     tcb->snd_wl2, tcb->iss, tcb->rcv_nxt, tcb->rcv_wnd, tcb->rcv_up, tcb->irs); \
     } while (0)
 
+#define tcpstate_dbg(msg)                       \
+    do {                                        \
+        print_debug("TCPSTATE: "msg"\n");       \
+    } while (0)
+
 struct tcphdr {
     uint16_t sport;
     uint16_t dport;

@@ -19,12 +19,16 @@ static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct 
 
 static int tcp_listen(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
+    tcpstate_dbg("state is listen");
     return 0;
 }
 
 static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
     struct tcb *tcb = &tsk->tcb;
+
+    tcpstate_dbg("state is synsent");
+    
     if (th->ack) {
         if (th->ack_seq <= tcb->iss || th->ack_seq > tcb->snd_nxt) {
             if (th->rst) goto discard;
@@ -92,6 +96,8 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     */
 
     int rc = -1;
+
+    tcpstate_dbg("state is closed");
 
     if (th->rst) {
         tcp_discard(tsk, skb, th);
