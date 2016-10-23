@@ -35,6 +35,14 @@
                     seg->win, seg->up, seg->prc, seg->seq_last);        \
     } while (0)
 
+#define tcptcb_dbg(msg, tcb) \
+    do {                                                                \
+        print_debug("TCPTCB "msg": seq: %u, snd_una: %u, snd_nxt: %u, snd_wnd: %u, snd_up: %u " \
+                    "snd_wl1: %u, snd_wl2: %u, iss: %u, rcv_nxt: %u, rcv_wnd: %u, rcv_up: %u, irs: %u\n", \
+                    tcb->seq, tcb->snd_una, tcb->snd_nxt, tcb->snd_wnd, tcb->snd_up, tcb->snd_wl1, \
+                    tcb->snd_wl2, tcb->iss, tcb->rcv_nxt, tcb->rcv_wnd, tcb->rcv_up, tcb->irs); \
+    } while (0)
+
 struct tcphdr {
     uint16_t sport;
     uint16_t dport;

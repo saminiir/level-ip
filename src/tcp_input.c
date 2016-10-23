@@ -120,6 +120,8 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
 
+    tcptcb_dbg("INPUT", tcb);
+
     switch (sk->state) {
     case TCP_CLOSE:
         return tcp_closed(tsk, skb, th);
