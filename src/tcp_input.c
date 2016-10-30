@@ -267,16 +267,12 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 
         rlen += curlen;
 
-        printf("reading tcp\n.");
-
         if (tsk->flags & TCP_PSH) {
             tsk->flags &= ~TCP_PSH;
             break;
         }
         
         wait_sleep(&tsk->sk.recv_wait);
-
-        printf("woke up!\n");
     }
     
     return rlen;
