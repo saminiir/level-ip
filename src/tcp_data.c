@@ -32,3 +32,26 @@ int tcp_read_buf(uint8_t *rcv_buf, void *user_buf, int len)
 
     return rlen;
 }
+
+int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
+{
+    struct tcb *tcb = &tsk->tcb;
+    
+    /* if (seg->seq == tcb->rcv_nxt) { */
+    /*     if (!tcb->rcv_wnd) { */
+    /*         goto out; */
+    /*     } */
+
+    /* } */
+
+    tcp_write_buf(tsk, th->data, seg->dlen);
+
+    if (th->psh) tsk->flags |= TCP_PSH;
+    
+    return tsk->sk.ops->recv_notify(&tsk->sk);
+}
+
+int tcp_data_close(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
+{
+    return 0;
+}

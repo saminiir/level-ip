@@ -1,6 +1,6 @@
 #include "syshead.h"
 #include "tcp.h"
-#include "tcp_text.h"
+#include "tcp_data.h"
 #include "skbuff.h"
 #include "sock.h"
 
@@ -236,24 +236,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     
 discard:
     return tcp_drop(tsk, skb);
-}
-
-int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
-{
-    struct tcb *tcb = &tsk->tcb;
-    
-    /* if (seg->seq == tcb->rcv_nxt) { */
-    /*     if (!tcb->rcv_wnd) { */
-    /*         goto out; */
-    /*     } */
-
-    /* } */
-
-    tcp_write_buf(tsk, th->data, seg->dlen);
-
-    if (th->psh) tsk->flags |= TCP_PSH;
-    
-    return tsk->sk.ops->recv_notify(&tsk->sk);
 }
 
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
