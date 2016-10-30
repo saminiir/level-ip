@@ -82,7 +82,7 @@ static int tcp_send_syn(struct sock *sk)
 
 void tcp_select_initial_window(uint32_t *rcv_wnd)
 {
-    *rcv_wnd = 512;
+    *rcv_wnd = 29200;
 }
 
 int tcp_connect(struct sock *sk)
