@@ -42,14 +42,17 @@ void* curl(void *arg)
     }
 
     char buf[4096] = { 0 };
+    int rlen = 0;
 
-    if (_read(sock, buf, len) < 0) {
-        print_error("Read error\n");
-        return NULL;
+    while ((rlen = _read(sock, buf, 4096)) > 0) {
+        printf("%s\n", buf);
     }
 
-    printf("Received data: \n");
-    printf("%s\n", buf);
+    if (rlen == -1) {
+        print_error("Read error\n");
+    }
+
+    printf("Curl exiting\n");
 
     running = 0;
     return NULL;

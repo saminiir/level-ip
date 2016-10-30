@@ -164,26 +164,37 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         tcp_drop(tsk, skb);
     }
 
-    /* ACK bit is on */
-
+    // ACK bit is on
+    
     switch (sk->state) {
     case TCP_SYN_RECEIVED:
     case TCP_ESTABLISHED:
         if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
             tcb->snd_una = seg->ack;
+            tcb->seq = tcb->snd_una;
             /* TODO: Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
-            
+
+            /* TODO: Users should receive positive acknowledgements for buffers
+               which have been sent and fully acknowledged */
         }
 
         if (seg->ack < tcb->snd_una) {
-            // Ignore
+            // If the ACK is a duplicate, it can be ignored
+            return 0;
         }
 
         if (seg->ack > tcb->snd_nxt) {
+            // If the ACK acks something not yet sent, then send an ACK, drop segment
+            // and return
             tcp_send_ack(&tsk->sk);
             tcp_drop(tsk, skb);
             return 0;
+        }
+
+        if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
+            // Send window should be updated
+
         }
     }
     
@@ -198,8 +209,10 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
         /* deliver segment text to user RECEIVE buffers */
-        tcp_data_queue(tsk, th, seg);
-        tcp_send_ack(&tsk->sk);
+        if (seg->dlen > 0) {
+            tcp_data_queue(tsk, th, seg);
+            tcb->rcv_nxt += seg->dlen;
+        }
         break;
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:
@@ -210,10 +223,14 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         break;
     }
 
-
-    
-
     /* eighth, check the FIN bit */
+    if (th->fin) {
+
+    }
+
+    if (seg->dlen > 0) {
+        tcp_send_ack(&tsk->sk);
+    }
     
     return 0;
     
@@ -261,8 +278,6 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 
         printf("woke up!\n");
     }
-
     
-    
-    return 0;
+    return rlen;
 }

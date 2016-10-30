@@ -26,7 +26,9 @@ int tcp_read_buf(uint8_t *rcv_buf, void *user_buf, int len)
 {
     if (!rcv_buf) return 0;
 
-    memcpy(user_buf, rcv_buf, len);
+    int rlen = strnlen((char *)rcv_buf, len);
 
-    return 0;
+    memcpy(user_buf, rcv_buf, rlen);
+
+    return rlen;
 }
