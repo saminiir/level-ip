@@ -118,6 +118,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
 
     th = tcp_hdr(skb);
     th->ack = 1;
+    th->psh = 1;
     tcb->seq = tcb->snd_nxt;
     tcb->snd_nxt += len;
 
