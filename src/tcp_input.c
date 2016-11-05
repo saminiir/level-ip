@@ -241,6 +241,25 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         case TCP_SYN_RECEIVED:
         case TCP_ESTABLISHED:
             tsk->sk.state = TCP_CLOSE_WAIT;
+            break;
+        case TCP_FIN_WAIT_1:
+            /* TODO:  If our FIN has been ACKed (perhaps in this segment), then
+               enter TIME-WAIT, start the time-wait timer, turn off the other
+               timers; otherwise enter the CLOSING state. */
+            break;
+        case TCP_FIN_WAIT_2:
+            /* TODO: Enter the TIME-WAIT state.  Start the time-wait timer, turn
+               off the other timers. */
+            break;
+        case TCP_CLOSE_WAIT:
+        case TCP_CLOSING:
+        case TCP_LAST_ACK:
+            /* Remain in the state */
+            break;
+        case TCP_TIME_WAIT:
+            /* TODO: Remain in the TIME-WAIT state.  Restart the 2 MSL time-wait
+               timeout. */
+            break;
         }
     }
 
