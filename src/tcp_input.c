@@ -225,12 +225,26 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
     /* eighth, check the FIN bit */
     if (th->fin) {
+        switch (sk->state) {
+        case TCP_CLOSE:
+        case TCP_LISTEN:
+        case TCP_SYN_SENT:
+            // Do not process, since SEG.SEQ cannot be validated
+            return tcp_drop(tsk, skb);
+        }
 
+        printf("  connection closing\n");
+        tcp_data_close(tsk, th, seg);
+        tcb->rcv_nxt += seg->dlen + 1;
+
+        switch (sk->state) {
+        case TCP_SYN_RECEIVED:
+        case TCP_ESTABLISHED:
+            tsk->sk.state = TCP_CLOSE_WAIT;
+        }
     }
 
-    if (seg->dlen > 0) {
-        tcp_send_ack(&tsk->sk);
-    }
+    tcp_send_ack(&tsk->sk);
     
     return 0;
     
