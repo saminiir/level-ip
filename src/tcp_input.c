@@ -212,6 +212,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         if (seg->dlen > 0) {
             tcp_data_queue(tsk, th, seg);
             tcb->rcv_nxt += seg->dlen;
+            tcp_send_ack(&tsk->sk);
         }
         break;
     case TCP_CLOSE_WAIT:
@@ -236,6 +237,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         printf("  connection closing\n");
         tcp_data_close(tsk, th, seg);
         tcb->rcv_nxt += seg->dlen + 1;
+        tcp_send_ack(&tsk->sk);
 
         switch (sk->state) {
         case TCP_SYN_RECEIVED:
@@ -262,8 +264,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             break;
         }
     }
-
-    tcp_send_ack(&tsk->sk);
     
     return 0;
     
@@ -289,6 +289,6 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
         
         wait_sleep(&tsk->sk.recv_wait);
     }
-    
+
     return rlen;
 }
