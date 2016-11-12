@@ -14,6 +14,7 @@ struct net_ops {
     int (*write) (struct sock *sk, const void *buf, int len);
     int (*read) (struct sock *sk, void *buf, int len);
     int (*recv_notify) (struct sock *sk);
+    int (*close) (struct sock *sk);
     int (*abort) (struct sock *sk);
 };
 

@@ -51,7 +51,7 @@ int _socket(int domain, int type, int protocol)
 
     if ((sock = alloc_socket()) == NULL) {
         print_error("Could not alloc socket\n");
-        exit(1);
+        return -1;
     }
 
     sock->type = type;
@@ -71,7 +71,7 @@ int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
     if ((sock = get_socket(sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
-        exit(1);
+        return -1;
     }
 
     return sock->ops->connect(sock, addr, addrlen, 0);
@@ -83,7 +83,7 @@ int _write(int sockfd, const void *buf, const unsigned int count)
 
     if ((sock = get_socket(sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
-        exit(1);
+        return -1;
     }
 
     return sock->ops->write(sock, buf, count);
@@ -95,8 +95,20 @@ int _read(int sockfd, void *buf, const unsigned int count)
 
     if ((sock = get_socket(sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
-        exit(1);
+        return -1;
     }
 
     return sock->ops->read(sock, buf, count);
+}
+
+int _close(int sockfd)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(sockfd)) == NULL) {
+        print_error("Could not find socket for connection\n");
+        return -1;
+    }
+
+    return sock->ops->free(sock);
 }

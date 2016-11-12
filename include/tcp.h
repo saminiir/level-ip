@@ -175,6 +175,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
 int tcp_send_reset(struct tcp_sock *tsk);
 int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg);
 int tcp_recv_notify(struct sock *sk);
+int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
 
 #endif

@@ -15,6 +15,7 @@ struct net_ops tcp_ops = {
     .write = &tcp_write,
     .read = &tcp_read,
     .recv_notify = &tcp_recv_notify,
+    .close = &tcp_close,
     .abort = &tcp_abort,
 };
 
@@ -211,6 +212,12 @@ int tcp_recv_notify(struct sock *sk)
     }
 
     // No recv wait lock
+    return -1;
+}
+
+int tcp_close(struct sock *sk)
+{
+    // TODO: Properly handle TCP socket closing
     return -1;
 }
 

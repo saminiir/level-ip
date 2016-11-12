@@ -20,6 +20,7 @@ static struct sock_ops inet_stream_ops = {
     .connect = &inet_stream_connect,
     .write = &inet_write,
     .read = &inet_read,
+    .close = &inet_close,
     .free = &inet_free,
 };
 
@@ -137,6 +138,24 @@ int inet_read(struct socket *sock, void *buf, int len)
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 {
     return socket_lookup(sport, dport)->sk;
+}
+
+int inet_close(struct socket *sock)
+{
+    struct sock *sk = sock->sk;
+    int err = 0;
+
+    err = sk->ops-close(sk);
+
+    if (err) {
+        print_error("Error on socket closing\n");
+        return -1;
+    }
+
+    sock->state = SS_DISCONNECTING;
+    wait_sleep(&sock->sleep);
+
+    return 0;
 }
 
 int inet_free(struct socket *sock)
