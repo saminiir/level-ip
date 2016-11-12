@@ -237,7 +237,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         printf("  connection closing\n");
         tcp_data_close(tsk, th, seg);
         tcb->rcv_nxt += seg->dlen + 1;
-        tcp_send_ack(&tsk->sk);
+        tcp_send_finack(&tsk->sk);
 
         switch (sk->state) {
         case TCP_SYN_RECEIVED:

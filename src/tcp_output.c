@@ -46,6 +46,20 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     return ip_output(sk, skb);
 }
 
+int tcp_send_finack(struct sock *sk)
+{
+    struct sk_buff *skb;
+    struct tcphdr *th;
+
+    skb = tcp_alloc_skb(0);
+
+    th = tcp_hdr(skb);
+    th->fin = 1;
+    th->ack = 1;
+
+    return tcp_transmit_skb(sk, skb);
+}
+
 int tcp_send_ack(struct sock *sk)
 {
     if (sk->state == TCP_CLOSE) return 0;
