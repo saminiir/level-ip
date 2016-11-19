@@ -115,7 +115,7 @@ int tcp_init_sock(struct sock *sk)
 
 static uint16_t generate_port()
 {
-    return 12000;
+    return 10000 + (time(NULL) % 3000);
 }
 
 int generate_iss()
