@@ -121,7 +121,7 @@ static uint16_t generate_port()
 int generate_iss()
 {
     /* TODO: Generate a proper ISS */
-    return 1525252;
+    return (int)time(NULL) * rand();
 }
 
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags)

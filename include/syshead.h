@@ -18,5 +18,6 @@
 #include <signal.h>
 #include <netdb.h>
 #include <pthread.h>
+#include <time.h>
 
 #endif
