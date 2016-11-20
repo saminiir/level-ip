@@ -96,7 +96,12 @@ static void run_threads()
 
 static void wait_for_threads()
 {
-    for (int i = 0; i < 3; i++) {
+    int rc = 0;
+    rc = pthread_join(threads[2], NULL);
+
+    kill(0, SIGQUIT);
+        
+    for (int i = 0; i < 2; i++) {
 	if (pthread_join(threads[i], NULL) != 0) {
 	    print_err("Error when joining threads\n");
 	    exit(1);

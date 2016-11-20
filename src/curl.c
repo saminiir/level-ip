@@ -53,7 +53,4 @@ void* curl(void *arg)
     }
 
     printf("Curl exiting\n");
-
-    running = 0;
-    return NULL;
 }
