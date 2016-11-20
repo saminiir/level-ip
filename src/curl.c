@@ -45,7 +45,7 @@ void* curl(void *arg)
     int rlen = 0;
 
     while ((rlen = _read(sock, buf, 4096)) > 0) {
-        printf("%s\n", buf);
+        printf("%s", buf);
     }
 
     if (rlen == -1) {
