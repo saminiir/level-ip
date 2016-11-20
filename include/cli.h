@@ -14,5 +14,6 @@ struct command {
 };
 
 struct command *parse_cli(int argc, char** argv);
+int is_cmd_empty(struct command *cmd);
 
 #endif

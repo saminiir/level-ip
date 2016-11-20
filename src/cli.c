@@ -29,7 +29,6 @@ static void usage(char *app)
 
 static struct command cmds[] = {
     { 1, 0, NULL, curl, "curl" },
-    { 0, 0, NULL, noop, "noop" },
     { 0, 0, NULL, NULL, NULL }
 };
 
@@ -90,4 +89,9 @@ struct command* parse_cli(int argc, char **argv)
     if (help) usage(app);
 
     return cmd_to_run;
+}
+
+int is_cmd_empty(struct command *cmd)
+{
+    return !(cmd == NULL || cmd->cmd_func == NULL);
 }
