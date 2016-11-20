@@ -275,7 +275,8 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 {
     int rlen = 0;
     int curlen = 0;
-    
+
+    memset(buf, 0, len);
 
     while (rlen < len) {
         curlen = tcp_read_buf(tsk->rcv_buf, buf + rlen, len - rlen);
