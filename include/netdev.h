@@ -5,7 +5,7 @@
 #include "skbuff.h"
 #include "utils.h"
 
-#define BUFLEN 512
+#define BUFLEN 1500
 #define MAX_ADDR_LEN 32
 
 #define netdev_dbg(fmt, args...)                \
