@@ -210,7 +210,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_FIN_WAIT_2:
         /* deliver segment text to user RECEIVE buffers */
         if (seg->dlen > 0) {
-            tcp_data_queue(tsk, th, seg);
+            tcp_data_queue(tsk, skb, th, seg);
             tcb->rcv_nxt += seg->dlen;
             tcp_send_ack(&tsk->sk);
         }
@@ -235,7 +235,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         }
 
         printf("  connection closing\n");
-        tcp_data_close(tsk, th, seg);
+        tcp_data_close(tsk, skb, th, seg);
         tcb->rcv_nxt += seg->dlen + 1;
         tcp_send_finack(&tsk->sk);
 

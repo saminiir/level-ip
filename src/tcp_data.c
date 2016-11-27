@@ -33,9 +33,12 @@ int tcp_read_buf(uint8_t *rcv_buf, void *user_buf, int len)
     return rlen;
 }
 
-int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
+int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
+                   struct tcphdr *th, struct tcp_segment *seg)
 {
+    struct sock *sk = &tsk->sk;
     struct tcb *tcb = &tsk->tcb;
+    int rc = 0;
     
     /* if (seg->seq == tcb->rcv_nxt) { */
     /*     if (!tcb->rcv_wnd) { */
@@ -44,14 +47,29 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *
 
     /* } */
 
-    tcp_write_buf(tsk, th->data, seg->dlen);
+    pthread_mutex_lock(&sk->receive_queue.lock);
+    skb_queue_tail(&sk->receive_queue, skb);
+    rc = tcp_write_buf(tsk, th->data, seg->dlen);
+    pthread_mutex_unlock(&sk->receive_queue.lock);
 
-    if (th->psh) tsk->flags |= TCP_PSH;
+    if (th->psh) {
+        tsk->flags |= TCP_PSH;
+        return tsk->sk.ops->recv_notify(&tsk->sk);
+    }
     
-    return tsk->sk.ops->recv_notify(&tsk->sk);
+    return rc;
 }
 
-int tcp_data_close(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
+int tcp_data_close(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th,
+                   struct tcp_segment *seg)
 {
+    int rc = 0;
+
+    th->psh = 1;
+
+    if (tcp_data_queue(tsk, skb, th, seg)) {
+        print_error("Fail on tcp data queueing\n");
+    }
+
     return 0;
 }
