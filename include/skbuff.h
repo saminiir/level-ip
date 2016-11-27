@@ -32,6 +32,11 @@ uint8_t *skb_head(struct sk_buff *skb);
 void *skb_reserve(struct sk_buff *skb, unsigned int len);
 void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst);
 
+static inline uint32_t skb_queue_len(const struct sk_buff_head *list)
+{
+    return list->qlen;
+}
+
 static inline void skb_queue_init(struct sk_buff_head *list)
 {
     list_init(&list->head);
