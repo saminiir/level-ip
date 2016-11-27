@@ -3,6 +3,7 @@
 
 #include "socket.h"
 #include "wait.h"
+#include "skbuff.h"
 
 struct sock;
 
@@ -22,6 +23,7 @@ struct sock {
     struct socket *sock;
     struct net_ops *ops;
     struct wait_lock recv_wait;
+    struct sk_buff_head receive_queue;
     int protocol;
     int state;
     uint16_t sport;

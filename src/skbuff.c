@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "skbuff.h"
+#include "list.h"
 
 struct sk_buff *alloc_skb(unsigned int size)
 {
@@ -12,6 +13,8 @@ struct sk_buff *alloc_skb(unsigned int size)
     skb->head = skb->data;
     skb->tail = skb->data;
     skb->end = skb->tail + size;
+
+    list_init(&skb->list);
 
     return skb;
 }
