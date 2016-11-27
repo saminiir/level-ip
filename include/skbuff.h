@@ -12,10 +12,12 @@ struct sk_buff {
     struct netdev *netdev;
     uint16_t protocol;
     uint32_t len;
+    uint32_t dlen;
     uint8_t *tail;
     uint8_t *end;
     uint8_t *head;
     uint8_t *data;
+    uint8_t *payload;
 };
 
 struct sk_buff_head {
@@ -47,6 +49,21 @@ static inline void skb_queue_init(struct sk_buff_head *list)
 static inline void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk)
 {
     list_add_tail(&list->head, &newsk->list);
+    list->qlen += 1;
+}
+
+static inline struct sk_buff *skb_dequeue(struct sk_buff_head *list)
+{
+    struct sk_buff *skb = list_first_entry(&list->head, struct sk_buff, list);
+    list_del(&skb->list);
+    list->qlen -= 1;
+
+    return skb;
+}
+
+static inline int skb_queue_empty(const struct sk_buff_head *list)
+{
+    return skb_queue_len(list) < 1;
 }
 
 #endif

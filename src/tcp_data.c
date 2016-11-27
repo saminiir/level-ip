@@ -1,36 +1,25 @@
 #include "syshead.h"
 #include "tcp.h"
 
-static void *tcp_alloc_buf(int rcv_wnd)
+int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int len)
 {
-    return malloc(rcv_wnd);
-}
+    struct sock *sk = &tsk->sk;
 
-int tcp_write_buf(struct tcp_sock *tsk, uint8_t *data, int len)
-{
-    uint8_t *buf = tsk->rcv_buf;
-    struct tcb *tcb = &tsk->tcb;
-    
-    if (!buf) {
-        buf = tcp_alloc_buf(tcb->rcv_wnd);
-        tsk->rcv_buf = buf;
+    pthread_mutex_lock(&sk->receive_queue.lock);
+    if (skb_queue_empty(&sk->receive_queue)) {
+        pthread_mutex_unlock(&sk->receive_queue.lock);
+        return 0;
     }
-
-    memcpy(buf, data, len);
     
-    return 0;
-}
+    printf("Items in receive queue: %d\n", sk->receive_queue.qlen);
+    struct sk_buff *skb = skb_dequeue(&sk->receive_queue);
+    pthread_mutex_unlock(&sk->receive_queue.lock);
+    
+    printf("Copying %d bytes of data %s\n", skb->dlen, skb->payload);
 
+    memcpy(user_buf, skb->payload, skb->dlen);
 
-int tcp_read_buf(uint8_t *rcv_buf, void *user_buf, int len)
-{
-    if (!rcv_buf) return 0;
-
-    int rlen = strnlen((char *)rcv_buf, len);
-
-    memcpy(user_buf, rcv_buf, rlen);
-
-    return rlen;
+    return skb->len;
 }
 
 int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
@@ -47,9 +36,11 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
 
     /* } */
 
+    skb->dlen = seg->dlen;
+    skb->payload = th->data;
+
     pthread_mutex_lock(&sk->receive_queue.lock);
     skb_queue_tail(&sk->receive_queue, skb);
-    rc = tcp_write_buf(tsk, th->data, seg->dlen);
     pthread_mutex_unlock(&sk->receive_queue.lock);
 
     if (th->psh) {
