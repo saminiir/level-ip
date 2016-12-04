@@ -21,25 +21,25 @@ int ip_rcv(struct sk_buff *skb)
 
     if (ih->version != IPV4) {
         perror("Datagram version was not IPv4\n");
-        return 0;
+        goto drop_pkt;
     }
 
     if (ih->ihl < 5) {
         perror("IPv4 header length must be at least 5\n");
-        return 0;
+        goto drop_pkt;
     }
 
     if (ih->ttl == 0) {
         //TODO: Send ICMP error
         perror("Time to live of datagram reached 0\n");
-        return 0;
+        goto drop_pkt;
     }
 
     csum = checksum(ih, ih->ihl * 4, 0);
 
     if (csum != 0) {
         // Invalid checksum, drop packet handling
-        return 0;
+        goto drop_pkt;
     }
 
     // TODO: Check fragmentation, possibly reassemble
@@ -51,14 +51,16 @@ int ip_rcv(struct sk_buff *skb)
     switch (ih->proto) {
     case ICMPV4:
         icmpv4_incoming(skb);
-        break;
+        return 0;
     case IP_TCP:
         tcp_in(skb);
-        break;
+        return 0;
     default:
         perror("Unknown IP header proto\n");
-        return 0;
+        goto drop_pkt;
     }
 
-    return -1;
+drop_pkt:
+    free_skb(skb);
+    return 0;
 }

@@ -161,6 +161,8 @@ int inet_close(struct socket *sock)
 int inet_free(struct socket *sock)
 {
     struct sock *sk = sock->sk;
+    sk->ops->abort(sk);
 
-    return sk->ops->abort(sk);
+    free(sock->sk);
+    return 0;
 }

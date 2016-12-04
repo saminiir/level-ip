@@ -77,12 +77,12 @@ void arp_rcv(struct sk_buff *skb)
 
     if (arphdr->hwtype != ARP_ETHERNET) {
         printf("Unsupported HW type\n");
-        return;
+        goto drop_pkt;
     }
 
     if (arphdr->protype != ARP_IPV4) {
         printf("Unsupported protocol\n");
-        return;
+        goto drop_pkt;
     }
 
     arpdata = (struct arp_ipv4 *) arphdr->data;
@@ -95,21 +95,26 @@ void arp_rcv(struct sk_buff *skb)
 
     if (!(netdev = netdev_get(arpdata->dip))) {
         printf("ARP was not for us\n");
-        return;
+        goto drop_pkt;
     }
 
     if (!merge && insert_arp_translation_table(arphdr, arpdata) != 0) {
-       perror("ERR: No free space in ARP translation table\n"); 
+        perror("ERR: No free space in ARP translation table\n");
+        goto drop_pkt;
     }
 
     switch (arphdr->opcode) {
     case ARP_REQUEST:
         arp_reply(skb, netdev);
-        break;
+        return;
     default:
         printf("Opcode not supported\n");
-        break;
+        goto drop_pkt;
     }
+
+drop_pkt:
+    free_skb(skb);
+    return;
 }
 
 int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)

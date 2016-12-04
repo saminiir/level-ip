@@ -4,6 +4,12 @@
 #include "skbuff.h"
 #include "sock.h"
 
+static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
+{
+    free_skb(skb);
+    return 0;
+}
+
 static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
 {
     /* struct tcb *tcb = &tsk->tcb; */
@@ -20,6 +26,7 @@ static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct 
 static int tcp_listen(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
     tcpstate_dbg("state is listen");
+    free_skb(skb);
     return 0;
 }
 
@@ -62,15 +69,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         wait_wakeup(&tsk->sk.sock->sleep);
     }
     
-    return 0;
 discard:
+    tcp_drop(tsk, skb);
     return 0;
 reset_and_discard:
-    return 0;
-}
-
-static int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
-{
+    tcp_drop(tsk, skb);
     return 0;
 }
 
@@ -180,15 +183,14 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
         if (seg->ack < tcb->snd_una) {
             // If the ACK is a duplicate, it can be ignored
-            return 0;
+            return tcp_drop(tsk, skb);
         }
 
         if (seg->ack > tcb->snd_nxt) {
             // If the ACK acks something not yet sent, then send an ACK, drop segment
             // and return
             tcp_send_ack(&tsk->sk);
-            tcp_drop(tsk, skb);
-            return 0;
+            return tcp_drop(tsk, skb);
         }
 
         if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {

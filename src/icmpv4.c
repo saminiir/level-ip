@@ -13,11 +13,15 @@ void icmpv4_incoming(struct sk_buff *skb)
     switch (icmp->type) {
         case ICMP_V4_ECHO:
             icmpv4_reply(skb);
-            break;
+            return;
         default:
             perror("ICMPv4 did not match supported types");
-            return;
+            goto drop_pkt;
     }
+
+drop_pkt:
+    free_skb(skb);
+    return;
 }
 
 void icmpv4_reply(struct sk_buff *skb)
@@ -35,7 +39,6 @@ void icmpv4_reply(struct sk_buff *skb)
     icmp->type = ICMP_V4_REPLY;
     icmp->csum = 0;
     icmp->csum = checksum(icmp, icmp_len, 0);
-
 
     skb->protocol = ICMPV4;
     sk.daddr = iphdr->saddr;

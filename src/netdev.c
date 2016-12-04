@@ -58,7 +58,7 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
     return ret;
 }
 
-static int netdev_rx_action(struct sk_buff *skb)
+static int netdev_receive(struct sk_buff *skb)
 {
     struct eth_hdr *hdr = eth_hdr(skb);
 
@@ -72,10 +72,9 @@ static int netdev_rx_action(struct sk_buff *skb)
             ip_rcv(skb);
             break;
         case ETH_P_IPV6:
-            netdev_dbg("IPv6 packet received, not supported\n");
-            break;
         default:
-            printf("Unrecognized ethertype %x\n", hdr->ethertype);
+            printf("Unsupported ethertype %x\n", hdr->ethertype);
+            free_skb(skb);
             break;
     }
 
@@ -89,10 +88,11 @@ void *netdev_rx_loop()
         
         if (tun_read((char *)skb->data, BUFLEN) < 0) { 
             print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
+            free_skb(skb);
             return NULL;
         }
 
-        netdev_rx_action(skb);
+        netdev_receive(skb);
     }
 
     return NULL;
