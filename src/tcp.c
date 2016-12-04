@@ -191,6 +191,11 @@ int tcp_read(struct sock *sk, void *buf, int len)
         /* If no text is awaiting delivery, the RECEIVE will get a
            "error:  connection closing" response.  Otherwise, any remainingn
            text can be used to satisfy the RECEIVE. */
+        if (!skb_queue_empty(&tsk->sk.receive_queue)) break;
+        if (tsk->flags & TCP_FIN) {
+            tsk->flags &= ~TCP_FIN;
+            return 0;
+        }
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:

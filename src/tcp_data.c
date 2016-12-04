@@ -4,15 +4,21 @@
 int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int len)
 {
     struct sock *sk = &tsk->sk;
+    struct tcphdr *th;
     int rlen = 0;
 
     pthread_mutex_lock(&sk->receive_queue.lock);
 
     while (!skb_queue_empty(&sk->receive_queue)) {
         struct sk_buff *skb = skb_dequeue(&sk->receive_queue);
+        th = tcp_hdr(skb);
+
+        if (th->fin) tsk->flags |= TCP_FIN;
+        if (th->psh) tsk->flags |= TCP_PSH;
 
         memcpy(user_buf, skb->payload, skb->dlen);
         rlen += skb->dlen;
+        user_buf += skb->dlen;
         free_skb(skb);
     }
     
