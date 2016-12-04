@@ -201,18 +201,23 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     if (th->urg) {
 
     }
-    
+
+    pthread_mutex_lock(&sk->receive_queue.lock);
     /* seventh, process the segment txt */
     switch (sk->state) {
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
         /* deliver segment text to user RECEIVE buffers */
-        if (seg->dlen > 0) {
-            tcp_data_queue(tsk, skb, th, seg);
-            tcb->rcv_nxt += seg->dlen;
-            tcp_send_ack(&tsk->sk);
+        tcp_data_queue(tsk, skb, th, seg);
+        tcb->rcv_nxt += seg->dlen;
+        tcp_send_ack(&tsk->sk);
+        
+        if (th->psh) {
+            tsk->flags |= TCP_PSH;
         }
+            
+        tsk->sk.ops->recv_notify(&tsk->sk);
         break;
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:
@@ -263,7 +268,9 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             break;
         }
     }
-    
+
+    pthread_mutex_unlock(&sk->receive_queue.lock);
+
     return 0;
     
 discard:

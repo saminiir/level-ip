@@ -4,22 +4,21 @@
 int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int len)
 {
     struct sock *sk = &tsk->sk;
+    int rlen = 0;
 
     pthread_mutex_lock(&sk->receive_queue.lock);
-    if (skb_queue_empty(&sk->receive_queue)) {
-        pthread_mutex_unlock(&sk->receive_queue.lock);
-        return 0;
+
+    while (!skb_queue_empty(&sk->receive_queue)) {
+        struct sk_buff *skb = skb_dequeue(&sk->receive_queue);
+
+        memcpy(user_buf, skb->payload, skb->dlen);
+        rlen += skb->dlen;
+        free_skb(skb);
     }
     
-    printf("Items in receive queue: %d\n", sk->receive_queue.qlen);
-    struct sk_buff *skb = skb_dequeue(&sk->receive_queue);
     pthread_mutex_unlock(&sk->receive_queue.lock);
-    
-    printf("Copying %d bytes of data %s\n", skb->dlen, skb->payload);
 
-    memcpy(user_buf, skb->payload, skb->dlen);
-
-    return skb->len;
+    return rlen;
 }
 
 int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
@@ -38,15 +37,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
 
     skb->dlen = seg->dlen;
     skb->payload = th->data;
-
-    pthread_mutex_lock(&sk->receive_queue.lock);
     skb_queue_tail(&sk->receive_queue, skb);
-    pthread_mutex_unlock(&sk->receive_queue.lock);
-
-    if (th->psh) {
-        tsk->flags |= TCP_PSH;
-        return tsk->sk.ops->recv_notify(&tsk->sk);
-    }
     
     return rc;
 }
