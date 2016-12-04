@@ -79,9 +79,9 @@ static void init_stack()
 static void run_threads()
 {
     if (pthread_create(&threads[THREAD_CORE], NULL,
-		       &netdev_rx_loop, NULL) != 0) {
-	print_err("Could not create netdev rx loop thread\n");
-	return;
+                       netdev_rx_loop, NULL) != 0) {
+        print_err("Could not create netdev rx loop thread\n");
+        return;
     }
 
     if (pthread_create(&threads[THREAD_SIGNAL], NULL, stop_stack_handler, 0)) {
@@ -90,9 +90,9 @@ static void run_threads()
     }
     
     if (app_running && pthread_create(&threads[THREAD_APP], NULL,
-					     cmd_to_run->cmd_func, cmd_to_run) != 0) {
-	print_err("Could not create app thread for %s\n", cmd_to_run->cmd_str);
-	return;
+                                      cmd_to_run->cmd_func, cmd_to_run) != 0) {
+        print_err("Could not create app thread for %s\n", cmd_to_run->cmd_str);
+        return;
     }
 }
 
@@ -109,10 +109,10 @@ static void wait_for_threads()
     }
 
     for (int i = 0; i < 2; i++) {
-	if (pthread_join(threads[i], NULL) != 0) {
-	    print_err("Error when joining threads\n");
-	    exit(1);
-	}
+        if (pthread_join(threads[i], NULL) != 0) {
+            print_err("Error when joining threads\n");
+            exit(1);
+        }
     }
 
     print_debug("All threads joined\n");
