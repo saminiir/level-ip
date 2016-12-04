@@ -145,7 +145,7 @@ int inet_close(struct socket *sock)
     struct sock *sk = sock->sk;
     int err = 0;
 
-    err = sk->ops-close(sk);
+//    err = sk->ops-close(sk);
 
     if (err) {
         print_error("Error on socket closing\n");

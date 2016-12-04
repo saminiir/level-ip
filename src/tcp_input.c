@@ -131,7 +131,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     switch (sk->state) {
     case TCP_CLOSE:
         return tcp_closed(tsk, skb, th);
-        goto discard;
     case TCP_LISTEN:
         return tcp_listen(tsk, skb, th);
     case TCP_SYN_SENT:

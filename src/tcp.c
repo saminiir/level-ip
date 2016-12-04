@@ -67,6 +67,7 @@ void tcp_in(struct sk_buff *skb)
     /* } */
         
     tcp_input_state(sk, skb, &seg);
+    return;
     
 discard:
     free_skb(skb);
@@ -94,9 +95,9 @@ struct sock *tcp_alloc_sock()
 {
     struct tcp_sock *tsk = malloc(sizeof(struct tcp_sock));
 
+    memset(tsk, 0, sizeof(struct tcp_sock));
     tsk->sk.state = TCP_CLOSE;
     tsk->flags = 0;
-    tsk->rcv_buf = NULL;
     
     return (struct sock *)tsk;
 }

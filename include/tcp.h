@@ -141,7 +141,6 @@ struct tcp_sock {
     struct sock sk;
     int fd;
     uint16_t tcp_header_len;
-    uint8_t *rcv_buf;
     struct tcb tcb;
     uint8_t flags;
 };
