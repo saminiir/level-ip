@@ -43,21 +43,8 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
 
     skb->dlen = seg->dlen;
     skb->payload = th->data;
+        
     skb_queue_tail(&sk->receive_queue, skb);
     
     return rc;
-}
-
-int tcp_data_close(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th,
-                   struct tcp_segment *seg)
-{
-    int rc = 0;
-
-    th->psh = 1;
-
-    if (tcp_data_queue(tsk, skb, th, seg)) {
-        print_error("Fail on tcp data queueing\n");
-    }
-
-    return 0;
 }

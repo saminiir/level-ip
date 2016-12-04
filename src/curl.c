@@ -51,6 +51,4 @@ void* curl(void *arg)
     if (rlen == -1) {
         print_error("Read error\n");
     }
-
-    printf("Curl exiting\n");
 }

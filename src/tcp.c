@@ -68,9 +68,6 @@ void tcp_in(struct sk_buff *skb)
         
     tcp_input_state(sk, skb, &seg);
     return;
-    
-discard:
-    free_skb(skb);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -189,7 +186,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
         break;
     case TCP_CLOSE_WAIT:
         /* If no text is awaiting delivery, the RECEIVE will get a
-           "error:  connection closing" response.  Otherwise, any remainingn
+           "error:  connection closing" response.  Otherwise, any remaining
            text can be used to satisfy the RECEIVE. */
         if (!skb_queue_empty(&tsk->sk.receive_queue)) break;
         if (tsk->flags & TCP_FIN) {
@@ -204,7 +201,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
     default:
         goto out;
     }
-
+    
     return tcp_receive(tsk, buf, len);    
 
 out: 

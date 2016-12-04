@@ -6,7 +6,7 @@
 
 static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
 {
-    struct tcb *tcb = &tsk->tcb;
+    /* struct tcb *tcb = &tsk->tcb; */
 
     return 0;
 }
@@ -208,7 +208,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
-        /* deliver segment text to user RECEIVE buffers */
         tcp_data_queue(tsk, skb, th, seg);
         tcb->rcv_nxt += seg->dlen;
         tcp_send_ack(&tsk->sk);
@@ -266,9 +265,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     pthread_mutex_unlock(&sk->receive_queue.lock);
 
     return 0;
-    
-discard:
-    return tcp_drop(tsk, skb);
 }
 
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
@@ -292,6 +288,6 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 
         wait_sleep(&tsk->sk.recv_wait);
     }
-
+    
     return rlen;
 }
