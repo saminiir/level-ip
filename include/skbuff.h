@@ -46,9 +46,9 @@ static inline void skb_queue_init(struct sk_buff_head *list)
     pthread_mutex_init(&list->lock, NULL);
 }
 
-static inline void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *newsk)
+static inline void skb_queue_tail(struct sk_buff_head *list, struct sk_buff *new)
 {
-    list_add_tail(&list->head, &newsk->list);
+    list_add_tail(&new->list, &list->head);
     list->qlen += 1;
 }
 
