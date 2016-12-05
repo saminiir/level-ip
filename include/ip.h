@@ -44,7 +44,19 @@ static inline struct iphdr *ip_hdr(const struct sk_buff *skb)
     return (struct iphdr *)(skb->head + ETH_HDR_LEN);
 }
 
+static inline uint32_t ip_parse(char *addr)
+{
+    uint32_t dst = 0;
+    
+    if (inet_pton(AF_INET, addr, &dst) != 1) {
+        perror("ERR: Parsing inet address failed\n");
+        exit(1);
+    }
+
+    return ntohl(dst);
+}
+
 int ip_rcv(struct sk_buff *skb);
 int ip_output(struct sock *sk, struct sk_buff *skb);
-    
+
 #endif
