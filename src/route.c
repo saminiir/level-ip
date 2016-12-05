@@ -8,7 +8,7 @@
 static LIST_HEAD(routes);
 
 extern struct netdev *netdev;
-extern struct netdev *tap;
+extern struct netdev *loop;
 
 extern char *tapaddr;
 extern char *taproute;
@@ -38,8 +38,9 @@ void route_add(uint32_t dst, uint32_t gateway, uint32_t netmask, uint8_t flags,
 
 void route_init()
 {
-    route_add(netdev->addr, 0, netdev->mask, 0, 0, netdev);
-    route_add(0, ip_parse(tapaddr), 0, 0, 0, netdev);
+    route_add(loop->addr, 0, 0xff000000, RT_LOOPBACK, 0, loop);
+    route_add(netdev->addr, 0, 0xffffff00, RT_HOST, 0, netdev);
+    route_add(0, ip_parse(tapaddr), 0, RT_GATEWAY, 0, netdev);
 }
 
 struct rtentry *route_lookup(uint32_t daddr)
@@ -49,7 +50,7 @@ struct rtentry *route_lookup(uint32_t daddr)
 
     list_for_each(item, &routes) {
         rt = list_entry(item, struct rtentry, list);
-
+        if ((rt->netmask & daddr) == rt->dst) break;
     }
     
     return rt;
