@@ -1,6 +1,7 @@
 #ifndef IPV4_H
 #define IPV4_H
 #include "syshead.h"
+#include "ethernet.h"
 #include "skbuff.h"
 #include "sock.h"
 
