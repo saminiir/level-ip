@@ -5,6 +5,9 @@
 static int tun_fd;
 static char* dev;
 
+char *tapaddr = "10.0.0.5";
+char *taproute = "10.0.0.0/24";
+
 static int set_if_route(char *dev, char *cidr)
 {
     return run_cmd("ip route add dev %s %s", dev, cidr);
@@ -67,7 +70,7 @@ int tun_write(char *buf, int len)
     return write(tun_fd, buf, len);
 }
 
-void tun_init(char *addr, char *route)
+void tun_init()
 {
     dev = calloc(10, 1);
     tun_fd = tun_alloc(dev);
@@ -76,11 +79,11 @@ void tun_init(char *addr, char *route)
         print_error("ERROR when setting up if\n");
     }
 
-    if (set_if_route(dev, route) != 0) {
+    if (set_if_route(dev, taproute) != 0) {
         print_error("ERROR when setting route for if\n");
     }
 
-    if (set_if_address(dev, addr) != 0) {
+    if (set_if_address(dev, tapaddr) != 0) {
         print_error("ERROR when setting addr for if\n");
     }
 }

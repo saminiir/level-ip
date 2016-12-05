@@ -8,20 +8,15 @@
 #include "tuntap_if.h"
 #include "basic.h"
 
-struct netdev netdev;
+struct netdev *loop;
+struct netdev *netdev;
 extern int running;
 
-void netdev_init(char *addr, char *hwaddr)
+static struct netdev *netdev_alloc(char *addr, char *netmask, char *hwaddr)
 {
-    struct netdev *dev = &netdev;
-    CLEAR(*dev);
+    struct netdev *dev = malloc(sizeof(struct netdev));
 
-    if (inet_pton(AF_INET, addr, &dev->addr) != 1) {
-        perror("ERR: Parsing inet address failed\n");
-        exit(1);
-    }
-
-    dev->addr = ntohl(dev->addr);
+    dev->addr = ip_parse(addr);
 
     sscanf(hwaddr, "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dev->hwaddr[0],
                                                     &dev->hwaddr[1],
@@ -31,6 +26,14 @@ void netdev_init(char *addr, char *hwaddr)
                                                     &dev->hwaddr[5]);
 
     dev->addr_len = 6;
+
+    return dev;
+}
+
+void netdev_init(char *addr, char *hwaddr)
+{
+    loop = netdev_alloc("127.0.0.1", "255.0.0.0", "00:00:00:00:00:00");
+    netdev = netdev_alloc("10.0.0.4", "255.255.255.0", "00:0c:29:6d:50:25");
 }
 
 int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
@@ -100,8 +103,8 @@ void *netdev_rx_loop()
 
 struct netdev* netdev_get(uint32_t sip)
 {
-    if (netdev.addr == sip) {
-        return &netdev;
+    if (netdev->addr == sip) {
+        return netdev;
     } else {
         return NULL;
     }
@@ -109,4 +112,6 @@ struct netdev* netdev_get(uint32_t sip)
 
 void free_netdev()
 {
+    free(loop);
+    free(netdev);
 }

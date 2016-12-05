@@ -17,11 +17,13 @@ struct eth_hdr;
 
 struct netdev {
     uint32_t addr;
+    uint32_t mask;
     uint8_t addr_len;
     uint8_t hwaddr[6];
+    uint32_t mtu;
 };
 
-void netdev_init(char *addr, char *hwaddr);
+void netdev_init();
 int netdev_transmit(struct sk_buff *skb, uint8_t *dst, uint16_t ethertype);
 void *netdev_rx_loop();
 void free_netdev();

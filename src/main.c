@@ -68,9 +68,8 @@ static void init_signals()
 
 static void init_stack()
 {
-    tun_init("10.0.0.5", "10.0.0.0/24");
-    netdev_init("10.0.0.4", "00:0c:29:6d:50:25");
-
+    tun_init();
+    netdev_init();
     route_init();
     arp_init();
     tcp_init();
