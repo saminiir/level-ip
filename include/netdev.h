@@ -17,7 +17,6 @@ struct eth_hdr;
 
 struct netdev {
     uint32_t addr;
-    uint32_t mask;
     uint8_t addr_len;
     uint8_t hwaddr[6];
     uint32_t mtu;

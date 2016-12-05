@@ -12,7 +12,7 @@ struct netdev *loop;
 struct netdev *netdev;
 extern int running;
 
-static struct netdev *netdev_alloc(char *addr, char *netmask, char *hwaddr)
+static struct netdev *netdev_alloc(char *addr, char *hwaddr)
 {
     struct netdev *dev = malloc(sizeof(struct netdev));
 
@@ -32,8 +32,8 @@ static struct netdev *netdev_alloc(char *addr, char *netmask, char *hwaddr)
 
 void netdev_init(char *addr, char *hwaddr)
 {
-    loop = netdev_alloc("127.0.0.1", "255.0.0.0", "00:00:00:00:00:00");
-    netdev = netdev_alloc("10.0.0.4", "255.255.255.0", "00:0c:29:6d:50:25");
+    loop = netdev_alloc("127.0.0.1", "00:00:00:00:00:00");
+    netdev = netdev_alloc("10.0.0.4", "00:0c:29:6d:50:25");
 }
 
 int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
