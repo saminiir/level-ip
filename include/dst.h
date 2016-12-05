@@ -5,10 +5,6 @@
 
 struct sk_buff;
 
-struct dst_entry {
-    struct netdev *dev;
-};
-
 int dst_neigh_output(struct sk_buff *skb);
 
 #endif

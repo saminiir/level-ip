@@ -7,8 +7,6 @@
 
 static LIST_HEAD(routes);
 
-struct rtable main_rt;
-
 extern struct netdev *netdev;
 extern struct netdev *tap;
 
@@ -42,17 +40,19 @@ void route_init()
 {
     route_add(netdev->addr, 0, netdev->mask, 0, 0, netdev);
     route_add(0, ip_parse(tapaddr), 0, 0, 0, netdev);
-    
-    struct dst_entry dst = {
-        .dev = netdev
-    };
-    
-    main_rt.dst = dst;
 }
 
-struct rtable *route_lookup(uint32_t daddr)
+struct rtentry *route_lookup(uint32_t daddr)
 {
-    return &main_rt;
+    struct list_head *item;
+    struct rtentry *rt = NULL;
+
+    list_for_each(item, &routes) {
+        rt = list_entry(item, struct rtentry, list);
+
+    }
+    
+    return rt;
 }
 
 void free_routes()

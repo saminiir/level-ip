@@ -42,7 +42,7 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
     struct eth_hdr *hdr;
     int ret = 0;
 
-    dev = skb->netdev;
+    dev = skb->dev;
 
     skb_push(skb, ETH_HDR_LEN);
 

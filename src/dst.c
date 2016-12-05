@@ -6,7 +6,7 @@
 int dst_neigh_output(struct sk_buff *skb)
 {
     struct iphdr *iphdr = ip_hdr(skb);
-    struct netdev *netdev = skb->netdev;
+    struct netdev *netdev = skb->dev;
     uint32_t daddr = ntohl(iphdr->daddr);
     uint32_t saddr = ntohl(iphdr->saddr);
     uint8_t *dmac = arp_get_hwaddr(daddr);

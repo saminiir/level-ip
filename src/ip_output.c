@@ -13,19 +13,19 @@ void ip_send_check(struct iphdr *ihdr)
 
 int ip_output(struct sock *sk, struct sk_buff *skb)
 {
-    struct rtable *rt;
-    struct netdev *netdev;
+    struct rtentry *rt;
     struct iphdr *ihdr = ip_hdr(skb);
 
     rt = route_lookup(ihdr->daddr);
 
     if (!rt) {
         // Raise error
+        // TODO: dest_unreachable
+        free_skb(skb);
+        return -1;
     }
 
-    skb_dst_set(skb, &rt->dst);
-    netdev = rt->dst.dev;
-    skb->netdev = netdev;
+    skb->dev = rt->dev;
 
     skb_push(skb, IP_HDR_LEN);
 
@@ -38,7 +38,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->frag_offset = 0;
     ihdr->ttl = 64;
     ihdr->proto = skb->protocol;
-    ihdr->saddr = netdev->addr;
+    ihdr->saddr = skb->dev->addr;
     ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
 

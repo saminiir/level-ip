@@ -1,7 +1,6 @@
 #ifndef _ROUTE_H
 #define _ROUTE_H
 
-#include "dst.h"
 #include "list.h"
 
 struct rtentry {
@@ -14,12 +13,8 @@ struct rtentry {
     struct netdev *dev;
 };
 
-struct rtable {
-    struct dst_entry dst;
-};
-
 void route_init();
-struct rtable *route_lookup(uint32_t daddr);
+struct rtentry *route_lookup(uint32_t daddr);
 void free_routes();
 
 #endif

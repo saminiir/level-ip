@@ -2,14 +2,12 @@
 #define SKBUFF_H_
 
 #include "netdev.h"
-#include "dst.h"
 #include "list.h"
 #include <pthread.h>
 
 struct sk_buff {
     struct list_head list;
-    struct dst_entry *dst;
-    struct netdev *netdev;
+    struct netdev *dev;
     uint16_t protocol;
     uint32_t len;
     uint32_t dlen;
@@ -32,7 +30,6 @@ void free_skb(struct sk_buff *skb);
 uint8_t *skb_push(struct sk_buff *skb, unsigned int len);
 uint8_t *skb_head(struct sk_buff *skb);
 void *skb_reserve(struct sk_buff *skb, unsigned int len);
-void skb_dst_set(struct sk_buff *skb, struct dst_entry *dst);
 
 static inline uint32_t skb_queue_len(const struct sk_buff_head *list)
 {

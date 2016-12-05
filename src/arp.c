@@ -124,7 +124,7 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     struct arp_ipv4 *payload;
 
     skb = arp_alloc_skb();
-    skb->netdev = netdev;
+    skb->dev = netdev;
 
     payload = (struct arp_ipv4 *) skb_push(skb, ARP_DATA_LEN);
 
@@ -179,7 +179,7 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
     arpdata->sip = htonl(arpdata->sip);
     arpdata->dip = htonl(arpdata->dip);
 
-    skb->netdev = netdev;
+    skb->dev = netdev;
 
     netdev_transmit(skb, arpdata->dmac, ETH_P_ARP);
 }
