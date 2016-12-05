@@ -67,7 +67,7 @@ int tun_write(char *buf, int len)
     return write(tun_fd, buf, len);
 }
 
-void tun_init()
+void tun_init(char *addr, char *route)
 {
     dev = calloc(10, 1);
     tun_fd = tun_alloc(dev);
@@ -76,11 +76,11 @@ void tun_init()
         print_error("ERROR when setting up if\n");
     }
 
-    if (set_if_route(dev, "10.0.0.0/24") != 0) {
+    if (set_if_route(dev, route) != 0) {
         print_error("ERROR when setting route for if\n");
     }
 
-    if (set_if_address(dev, "10.0.0.5/24") != 0) {
+    if (set_if_address(dev, addr) != 0) {
         print_error("ERROR when setting addr for if\n");
     }
 }
