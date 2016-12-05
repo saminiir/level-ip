@@ -2,11 +2,13 @@
 #define SKBUFF_H_
 
 #include "netdev.h"
+#include "route.h"
 #include "list.h"
 #include <pthread.h>
 
 struct sk_buff {
     struct list_head list;
+    struct rtentry *rt;
     struct netdev *dev;
     uint16_t protocol;
     uint32_t len;

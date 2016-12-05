@@ -26,6 +26,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     }
 
     skb->dev = rt->dev;
+    skb->rt = rt;
 
     skb_push(skb, IP_HDR_LEN);
 
