@@ -18,7 +18,7 @@ static void usage(char *app)
     print_err("See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
     print_err("\n");
     print_err("Commands:\n");
-    print_err("  curl HOST - act like curl, HOST as the target.\n");
+    print_err("  curl HOST PORT - Do a HTTP GET to HOST:PORT.\n");
     print_err("\n");
     print_err("Options:\n");
     print_err("  -d Debug logging and tracing\n");
@@ -28,7 +28,7 @@ static void usage(char *app)
 }
 
 static struct command cmds[] = {
-    { 1, 0, NULL, curl, "curl" },
+    { 2, 0, NULL, curl, "curl" },
     { 0, 0, NULL, NULL, NULL }
 };
 

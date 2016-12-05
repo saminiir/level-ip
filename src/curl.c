@@ -13,15 +13,20 @@ void* curl(void *arg)
     int argc = cmd->argc;
     char **argv = cmd->argv;
     
-    if (argc != 1 || strnlen(argv[0], MAX_HOSTNAME) == MAX_HOSTNAME) {
-        print_error("Curl called but HOST not given or invalid\n");
+    if (argc != 2 || strnlen(argv[0], MAX_HOSTNAME) == MAX_HOSTNAME) {
+        print_error("Curl called but HOST or PORT not given or invalid\n");
         return NULL;
     }
 
     struct sockaddr addr;
     int sock;
 
-    if (get_address(argv[0], "8000", &addr) != 0) {
+    if (strnlen(argv[1], 6) == 6) {
+        print_error("Curl called but PORT malformed\n");
+        return NULL;
+    }
+
+    if (get_address(argv[0], argv[1], &addr) != 0) {
         print_error("Curl could not resolve hostname\n");
         return NULL;
     }
@@ -51,4 +56,6 @@ void* curl(void *arg)
     if (rlen == -1) {
         print_error("Read error\n");
     }
+
+    return NULL;
 }
