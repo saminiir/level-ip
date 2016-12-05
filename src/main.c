@@ -120,6 +120,7 @@ static void wait_for_threads()
 void free_stack()
 {
     free_sockets();
+    free_routes();
     free_netdev();
     free_tun();
 }

@@ -20,5 +20,6 @@ struct rtable {
 
 void route_init();
 struct rtable *route_lookup(uint32_t daddr);
+void free_routes();
 
 #endif
