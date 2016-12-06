@@ -65,4 +65,11 @@ static inline int skb_queue_empty(const struct sk_buff_head *list)
     return skb_queue_len(list) < 1;
 }
 
+static inline struct sk_buff *skb_peek(struct sk_buff_head *list)
+{
+    if (skb_queue_empty(list)) return NULL;
+        
+    return list_first_entry(&list->head, struct sk_buff, list);
+}
+
 #endif
