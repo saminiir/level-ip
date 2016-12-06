@@ -27,7 +27,6 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
 
         /* skb is fully eaten, process flags and drop it */
         if (skb->dlen == 0) {
-            if (th->fin) tsk->flags |= TCP_FIN;
             if (th->psh) tsk->flags |= TCP_PSH;
             skb_dequeue(&sk->receive_queue);
             free_skb(skb);

@@ -237,7 +237,8 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
         tcb->rcv_nxt += 1;
         tcp_send_finack(&tsk->sk);
-
+        tsk->flags |= TCP_FIN;
+        
         switch (sk->state) {
         case TCP_SYN_RECEIVED:
         case TCP_ESTABLISHED:
