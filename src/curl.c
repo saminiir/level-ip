@@ -38,7 +38,9 @@ void* curl(void *arg)
         return NULL;
     }
 
-    char *str = "GET / HTTP/1.1\n\r\n";
+    char str[512];
+
+    snprintf(str, 512, "GET / HTTP/1.1\r\nHost: %s:%s\r\nConnection: close\r\n\r\n", argv[0], argv[1]);
     int len = strlen(str);
 
     if (_write(sock, str, len) != len) {
