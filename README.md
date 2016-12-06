@@ -13,7 +13,7 @@ The results of the learning experience will be accompanied by explanatory blog p
 - Part 2, IPv4 & ICMPv4: http://www.saminiir.com/lets-code-tcp-ip-stack-2-ipv4-icmpv4
 - Part 3, TCP Basics & Handshake: http://www.saminiir.com/lets-code-tcp-ip-stack-3-tcp-handshake/
 
-Also, see [Development](Documentation/development.md).
+If you intend to compile and hack Level-IP, read [Development](Documentation/development.md).
 
 # Reference works
 

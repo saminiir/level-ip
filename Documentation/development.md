@@ -4,27 +4,36 @@ Level-IP is at a very alpha stage, has many hardcoded values and is not really i
 
 This document aims to provide information on the current features, roadmap and overall development routine. 
 
-# Current Features
-
-* One hardcoded interface/netdev (IP 10.0.0.4)
-* One hardcoded socket
-* Ethernet II frame handling
-* ARP request/reply, simple caching
-* ICMP pings and replies 
-* IPv4 packet handling, checksum
-* One hardcoded route table with default netdevice
-* TCPv4 Handshake
-
-# Upcoming features
-
-* TCP data transmission
-* TCP RFC793 "Segment Arrives"
-
 # Building
 
 Standard `make` stuff.
 
 `make debug` adds debugging symbols.
+
+# Setup
+
+Lvl-ip uses a Linux TAP device to communicate. In short, the tap device is initialized in the host Linux' networking stack, and lvl-ip can then read the L2 frames:
+
+```
+$ sudo mknod /dev/net/tap c 10 200
+```
+
+In essence, lvl-ip operates as a host inside the tap device's subnet. Therefore, in order to communicate with other hosts, the tap device needs to be set in a forwarding mode.
+
+An example from my (Arch) Linux machine, where `wlp2s0` is my outgoing interface, and `tap0` is the tap device for lvl-ip:
+
+```
+$ sysctl -w net.ipv4.ip_forward=1
+$ iptables -I INPUT --source 10.0.0.0/24 -j ACCEPT
+$ iptables -t nat -A POSTROUTING --out-interface wlp2s0 -j MASQUERADE
+$ iptables -A FORWARD --in-interface wlp2s0 --out-interface tap0 -j ACCEPT
+$ iptables -A FORWARD --in-interface tap0 --out-interface wlp2s0 -j ACCEPT
+```
+
+Now, packets coming from lvl-ip (e.g. 10.0.0.4) should be NATed by the host Linux interfaces and traverse the FORWARD chain correctly to host's outgoing gateway.
+
+See http://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-9.html for more info.
+
 
 # Developing
 
@@ -46,3 +55,19 @@ In the future, a logging/tracing framework could be introduced, but I have not y
 The foremost aim of Level-IP is to be an educational project on networking. Hence, source code readability should be focused on when developing Level-IP.
 
 TODO: Actual style guidelines, so far I have been just winging it.
+
+# Current Features
+
+* One hardcoded interface/netdev (IP 10.0.0.4)
+* One hardcoded socket
+* Ethernet II frame handling
+* ARP request/reply, simple caching
+* ICMP pings and replies 
+* IPv4 packet handling, checksum
+* One hardcoded route table with default netdevice
+* TCPv4 Handshake
+
+# Upcoming features
+
+* TCP data transmission
+* TCP RFC793 "Segment Arrives"
