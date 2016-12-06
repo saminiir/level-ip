@@ -278,7 +278,7 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
     memset(buf, 0, len);
 
     while (rlen < len) {
-        curlen = tcp_data_dequeue(tsk, buf + rlen, len - rlen);
+        curlen = tcp_data_dequeue(tsk, buf + rlen, len - 1 - rlen);
 
         rlen += curlen;
 
