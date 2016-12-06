@@ -232,7 +232,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         case TCP_LISTEN:
         case TCP_SYN_SENT:
             // Do not process, since SEG.SEQ cannot be validated
-            return tcp_drop(tsk, skb);
+            goto drop_and_unlock;
         }
 
         tcb->rcv_nxt += 1;
@@ -265,9 +265,12 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         }
     }
 
+unlock:
     pthread_mutex_unlock(&sk->receive_queue.lock);
-
     return 0;
+drop_and_unlock:
+    tcp_drop(tsk, skb);
+    goto unlock;
 }
 
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
