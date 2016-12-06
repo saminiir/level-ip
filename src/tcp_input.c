@@ -73,6 +73,7 @@ discard:
     tcp_drop(tsk, skb);
     return 0;
 reset_and_discard:
+    //TODO reset
     tcp_drop(tsk, skb);
     return 0;
 }
@@ -144,7 +145,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
     /* first check sequence number */
     if (tcp_verify_segment(tsk, th, seg) < 0) {
-        return 0;
+        return tcp_drop(tsk, skb);
     }
     
     /* second check the RST bit */
@@ -163,7 +164,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     
     /* fifth check the ACK field */
     if (!th->ack) {
-        tcp_drop(tsk, skb);
+        return tcp_drop(tsk, skb);
     }
 
     // ACK bit is on
