@@ -1,7 +1,7 @@
 #include "syshead.h"
 #include "tcp.h"
 
-int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int len)
+int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
 {
     struct sock *sk = &tsk->sk;
     struct tcphdr *th;
@@ -9,17 +9,29 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int len)
 
     pthread_mutex_lock(&sk->receive_queue.lock);
 
-    while (!skb_queue_empty(&sk->receive_queue)) {
-        struct sk_buff *skb = skb_dequeue(&sk->receive_queue);
+    while (!skb_queue_empty(&sk->receive_queue) && rlen < userlen) {
+        struct sk_buff *skb = skb_peek(&sk->receive_queue);
+        if (skb == NULL) break;
+        
         th = tcp_hdr(skb);
 
-        if (th->fin) tsk->flags |= TCP_FIN;
-        if (th->psh) tsk->flags |= TCP_PSH;
+        /* Guard datalen to not overflow userbuf */
+        int dlen = (rlen + skb->dlen) > userlen ? (userlen - rlen) : skb->dlen;
+        memcpy(user_buf, skb->payload, dlen);
 
-        memcpy(user_buf, skb->payload, skb->dlen);
-        rlen += skb->dlen;
-        user_buf += skb->dlen;
-        free_skb(skb);
+        /* Accommodate next round of data dequeue */
+        skb->dlen -= dlen;
+        skb->payload += dlen;
+        rlen += dlen;
+        user_buf += dlen;
+
+        /* skb is fully eaten, process flags and drop it */
+        if (skb->dlen == 0) {
+            if (th->fin) tsk->flags |= TCP_FIN;
+            if (th->psh) tsk->flags |= TCP_PSH;
+            skb_dequeue(&sk->receive_queue);
+            free_skb(skb);
+        }
     }
     
     pthread_mutex_unlock(&sk->receive_queue.lock);
