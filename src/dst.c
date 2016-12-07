@@ -25,6 +25,8 @@ int dst_neigh_output(struct sk_buff *skb)
     } else {
         rc = arp_request(saddr, daddr, netdev);
 
+        /* TODO: Get rid of this abomination. A simple solution is to have
+         * the retransmission mechanism just do its thing. */
         while ((dmac = arp_get_hwaddr(daddr)) == NULL) {
             sleep(1);
         }
