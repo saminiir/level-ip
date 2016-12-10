@@ -1,9 +1,13 @@
+#define _GNU_SOURCE
 #include <sys/socket.h>
 #include <stdio.h>
+#include <dlfcn.h>
+
+static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-    printf("hehe\n");
+    _connect = dlsym(RTLD_NEXT, "connect");
 
-    return -1;
+    return _connect(sockfd, addr, addrlen);
 }

@@ -1,5 +1,6 @@
-liblevelup: levelup.o
-	$(CC) -shared -Wl,-soname,liblevelup.so.1 -o liblevelup.so.1.0.1 levelup.o -lc
+liblevelup: levelup.c
+	$(CC) -fPIC -shared -o liblevelup.so.1.0.1 levelup.c -ldl
 
-levelup.o:
-	$(CC) -fPIC -g -c -Wall levelup.c
+.PHONY:
+clean:
+	rm levelup.o liblevelup*
