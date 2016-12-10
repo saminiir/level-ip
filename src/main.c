@@ -9,7 +9,6 @@
 #include "tcp.h"
 #include "netdev.h"
 #include "ip.h"
-#include "curl.h"
 
 #define MAX_CMD_LENGTH 6
 
@@ -17,14 +16,10 @@ typedef void (*sighandler_t)(int);
 
 #define THREAD_CORE 0
 #define THREAD_SIGNAL 1
-#define THREAD_APP 2
-static pthread_t threads[3];
+static pthread_t threads[2];
 
 int running = 1;
 sigset_t mask;
-
-static struct command *cmd_to_run;
-static int app_running = 0;
 
 static void *stop_stack_handler(void *arg)
 {
@@ -41,10 +36,6 @@ static void *stop_stack_handler(void *arg)
         case SIGQUIT:
             running = 0;
             pthread_cancel(threads[THREAD_CORE]);
-            
-            if (app_running) {
-                pthread_cancel(threads[THREAD_APP]);
-            }
             return 0;
         default:
             printf("Unexpected signal %d\n", signo);
@@ -87,26 +78,10 @@ static void run_threads()
         print_err("Could not create signal processor thread\n");
         return;
     }
-    
-    if (app_running && pthread_create(&threads[THREAD_APP], NULL,
-                                      cmd_to_run->cmd_func, cmd_to_run) != 0) {
-        print_err("Could not create app thread for %s\n", cmd_to_run->cmd_str);
-        return;
-    }
 }
 
 static void wait_for_threads()
 {
-    if (app_running) {
-        if (pthread_join(threads[THREAD_APP], NULL) != 0) {
-            print_err("Error when joining app thread\n");
-        };
-        
-        if (kill(0, SIGQUIT) == -1) {
-            print_err("Error when sending SIGQUIT to stack\n");
-        };
-    }
-
     for (int i = 0; i < 2; i++) {
         if (pthread_join(threads[i], NULL) != 0) {
             print_err("Error when joining threads\n");
@@ -127,9 +102,8 @@ void free_stack()
 
 int main(int argc, char** argv)
 {
-    cmd_to_run = parse_cli(argc, argv);
-    app_running = is_cmd_empty(cmd_to_run);
-
+    parse_cli(argc, argv);
+    
     init_signals();
     init_stack();
 
