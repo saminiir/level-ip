@@ -3,6 +3,7 @@
 #include "cli.h"
 #include "tuntap_if.h"
 #include "utils.h"
+#include "ipc.h"
 #include "route.h"
 #include "ethernet.h"
 #include "arp.h"
@@ -15,8 +16,9 @@
 typedef void (*sighandler_t)(int);
 
 #define THREAD_CORE 0
-#define THREAD_SIGNAL 1
-static pthread_t threads[2];
+#define THREAD_IPC 1
+#define THREAD_SIGNAL 2
+static pthread_t threads[3];
 
 int running = 1;
 sigset_t mask;
@@ -71,6 +73,12 @@ static void run_threads()
     if (pthread_create(&threads[THREAD_CORE], NULL,
                        netdev_rx_loop, NULL) != 0) {
         print_err("Could not create netdev rx loop thread\n");
+        return; 
+    }
+
+    if (pthread_create(&threads[THREAD_IPC], NULL,
+                       start_ipc_listener, NULL) != 0) {
+        print_err("Could not create ipc listener thread\n");
         return;
     }
 
@@ -82,7 +90,7 @@ static void run_threads()
 
 static void wait_for_threads()
 {
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
         if (pthread_join(threads[i], NULL) != 0) {
             print_err("Error when joining threads\n");
             exit(1);
