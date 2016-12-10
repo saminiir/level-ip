@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -eu
+
+prog="$1"
+shift
+
+LD_PRELOAD=./liblevelip.so "$prog" "$@"

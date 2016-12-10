@@ -1,6 +1,10 @@
-liblevelup: levelup.c
-	$(CC) -fPIC -shared -o liblevelup.so.1.0.1 levelup.c -ldl
+all: levelip liblevelip
+
+levelip: levelip.c
+
+liblevelip: liblevelip.c
+	$(CC) -fPIC -shared -o liblevelip.so liblevelip.c -ldl
 
 .PHONY:
 clean:
-	rm levelup.o liblevelup*
+	rm levelip.o liblevelip.so* levelip

@@ -1,8 +1,0 @@
-#!/bin/sh
-
-set -eu
-
-prog="$1"
-shift
-
-LD_PRELOAD=/home/saminiir/code/c/level-ip/tools/liblevelup.so.1.0.1 "$prog" "$@"
