@@ -37,6 +37,7 @@ static void *stop_stack_handler(void *arg)
         case SIGINT:
         case SIGQUIT:
             running = 0;
+            pthread_cancel(threads[THREAD_IPC]);
             pthread_cancel(threads[THREAD_CORE]);
             return 0;
         default:
