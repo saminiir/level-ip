@@ -1,14 +1,18 @@
 #include "syshead.h"
 #include "utils.h"
+#include "socket.h"
 
-#define BUFLEN 4096
+#define IPC_BUFLEN 4096
+
+static pthread_t sockets[256];
+static int cur_th = 0;
 
 void *start_ipc_listener()
 {
     int fd, len, err, rc, datasock;
     struct sockaddr_un un;
     char *sockname = "/tmp/lvlip.socket";
-    char buf[BUFLEN];
+    char buf[IPC_BUFLEN];
 
     unlink(sockname);
     
@@ -48,20 +52,10 @@ void *start_ipc_listener()
             exit(EXIT_FAILURE);
         }
 
-        for (;;) {
-            rc = read(datasock, buf, BUFLEN);
-            if (rc == -1) {
-                perror("IPC read");
-                exit(EXIT_FAILURE);
-            }
-
-            buf[BUFLEN - 1] = 0;
-
-            printf("%s\n", buf);
-            break;
-        }
-
-        close(datasock);
+        if (pthread_create(&sockets[cur_th++], NULL, &socket_ipc_open, &datasock) != 0) {
+            printf("Error on socket thread creation\n");
+            exit(1);
+        };
     }
 
     close(fd);

@@ -43,6 +43,7 @@ struct socket {
     struct wait_lock sleep;
 };
 
+void *socket_ipc_open(void *args);
 int _socket(int domain, int type, int protocol);
 int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int _write(int sockfd, const void *buf, const unsigned int count);

@@ -45,6 +45,51 @@ struct socket *socket_lookup(uint16_t sport, uint16_t dport)
     return &sockets[0];
 }
 
+static int demux_ipc_socket_call(char *cmdbuf, int blen)
+{
+    int p = 0;
+    
+    if (strncmp(cmdbuf, "socket", blen) == 0) {
+        printf("offloading to socket\n");
+        p += 7;
+
+        int domain = cmdbuf[p];
+        p += sizeof(int);
+        int type = cmdbuf[p];
+        p += sizeof(int);
+        int protocol = cmdbuf[p];
+        printf("domain %d\n", domain);
+        printf("type %d\n", type);
+        printf("protcol %d\n", protocol);
+    }
+    
+    return 0;
+}
+
+void *socket_ipc_open(void *args) {
+    int blen = 4096;
+    char buf[blen];
+    int sockfd = *(int *)args;
+    int rc;
+
+    printf("socket ipc opened\n");
+
+    while ((rc = read(sockfd, buf, blen)) > 0) {
+        rc = demux_ipc_socket_call(buf, blen);
+
+        if (rc == -1) {
+            printf("Error on demuxing IPC socket call\n");
+            return NULL;
+        };
+    }
+
+    if (rc == -1) {
+        perror("socket ipc read\n");
+    }
+    
+    return NULL;
+}
+
 int _socket(int domain, int type, int protocol)
 {
     struct socket *sock;
