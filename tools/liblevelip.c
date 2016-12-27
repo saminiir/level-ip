@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include "liblevelip.h"
 
 static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
                            char * * ubp_av, void (*init) (void), void (*fini) (void), \
@@ -57,52 +58,51 @@ static int init_socket(char *sockname)
     return data_socket;
 }
 
-static int send_socket_call(char *fmt, ...)
-{
-    va_list ap;
-    char buf[1024];
-    int blen = 0;
-    char *s;
-    int len;
-    int d;
-
-    va_start(ap, fmt);
-
-    while (*fmt) {
-        switch (*fmt++) {
-        case 's':
-            d = va_arg(ap, int);
-            s = va_arg(ap, char *);
-            
-            memcpy(&buf[blen], s, d);
-
-            // Ensure that the byte stream ends with 0
-            blen += d + 1;
-            buf[blen] = 0;
-            break;
-        case 'i':
-            d = va_arg(ap, int);
-
-            memcpy(&buf[blen], &d, sizeof(int));
-            blen += sizeof(int);
-            break;
-        }
-    }
-
-    va_end(ap);
-
-    return write(lvlfd, buf, 1024);
-}
-
 int socket(int domain, int type, int protocol)
 {
-    char buf[512];
-    int len = 0;
-    char *cmd = "socket";
-
-    send_socket_call("siii", strlen(cmd), cmd, domain, type, protocol);
+    if (domain != AF_INET || type != SOCK_STREAM || protocol != 0) {
+        printf("lvl-ip does not support these socket parameters, offloading to host stack\n");
+        return _socket(domain, type, protocol);
+    }
     
-    return _socket(domain, type, protocol);
+    int len = 512;
+    char *buf[len];
+
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_socket);
+
+    struct ipc_msg *msg = calloc(msglen, 1);
+    msg->type = IPC_SOCKET;
+
+    struct ipc_socket sock = {
+        .domain = domain,
+        .type = type,
+        .protocol = protocol
+    };
+    
+    memcpy(msg->data, &sock, sizeof(struct ipc_socket));
+
+    // Send mocked syscall to lvl-ip
+    if (write(lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing socket ");
+    }
+
+    free(msg);
+
+    // Read return value from lvl-ip
+    if (read(lvlfd, buf, len) == -1) {
+        perror("Could not read IPC socket response ");
+    }
+    
+    struct ipc_msg *response = (struct ipc_msg *) buf;
+
+    if (response->type != IPC_SOCKET) {
+        printf("Message did not contain socket\n");
+        return -1;
+    }
+
+    int rc = *(int *) response->data;
+        
+    return rc;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)

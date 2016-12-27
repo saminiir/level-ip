@@ -25,6 +25,16 @@ static struct socket *alloc_socket()
     return sock;
 }
 
+static int free_socket(struct socket *sock)
+{
+    if (sock->ops) {
+        sock->ops->free(sock);
+    }
+    
+    sock_amount--;
+    return 0;
+}
+
 int free_sockets() {
     struct socket *sock;
     if (sock_amount > 0) {
@@ -45,54 +55,10 @@ struct socket *socket_lookup(uint16_t sport, uint16_t dport)
     return &sockets[0];
 }
 
-static int demux_ipc_socket_call(char *cmdbuf, int blen)
-{
-    int p = 0;
-    
-    if (strncmp(cmdbuf, "socket", blen) == 0) {
-        printf("offloading to socket\n");
-        p += 7;
-
-        int domain = cmdbuf[p];
-        p += sizeof(int);
-        int type = cmdbuf[p];
-        p += sizeof(int);
-        int protocol = cmdbuf[p];
-        printf("domain %d\n", domain);
-        printf("type %d\n", type);
-        printf("protcol %d\n", protocol);
-    }
-    
-    return 0;
-}
-
-void *socket_ipc_open(void *args) {
-    int blen = 4096;
-    char buf[blen];
-    int sockfd = *(int *)args;
-    int rc;
-
-    printf("socket ipc opened\n");
-
-    while ((rc = read(sockfd, buf, blen)) > 0) {
-        rc = demux_ipc_socket_call(buf, blen);
-
-        if (rc == -1) {
-            printf("Error on demuxing IPC socket call\n");
-            return NULL;
-        };
-    }
-
-    if (rc == -1) {
-        perror("socket ipc read\n");
-    }
-    
-    return NULL;
-}
-
 int _socket(int domain, int type, int protocol)
 {
     struct socket *sock;
+    struct net_family *family;
 
     if ((sock = alloc_socket()) == NULL) {
         print_error("Could not alloc socket\n");
@@ -105,9 +71,23 @@ int _socket(int domain, int type, int protocol)
     printf("type %x\n", type);
     printf("protocol %x\n", protocol);
 
-    families[domain]->create(sock, protocol);
+    family = families[domain];
+
+    if (!family) {
+        print_err("Domain not supported: %d\n", domain);
+        goto abort_socket;
+    }
+    
+    if (family->create(sock, protocol) != 0) {
+        print_err("Creating domain failed\n");
+        goto abort_socket;
+    }
 
     return sock->fd;
+
+abort_socket:
+    free_socket(sock);
+    return -1;
 }
 
 int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)

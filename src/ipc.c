@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "utils.h"
+#include "ipc.h"
 #include "socket.h"
 
 #define IPC_BUFLEN 4096
@@ -7,12 +8,76 @@
 static pthread_t sockets[256];
 static int cur_th = 0;
 
+static int ipc_socket(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_socket *sock = (struct ipc_socket *)msg->data;
+    int rc = -1;
+
+    printf("domain %x\n", sock->domain);
+    printf("type %x\n", sock->type);
+    printf("protocol %x\n", sock->protocol);
+
+    rc = _socket(sock->domain, sock->type, sock->protocol);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(int);
+    struct ipc_msg *response = calloc(resplen, 1);
+    response->type = IPC_SOCKET;
+    memcpy(response->data, &rc, sizeof(int));
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC socket ");
+    }
+
+    free(response);
+
+    return rc;
+}
+
+static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
+{
+    struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
+
+    switch (msg->type) {
+    case IPC_SOCKET:
+        return ipc_socket(sockfd, msg);
+        break;
+    default:
+        print_err("No such IPC type %d\n", msg->type);
+        break;
+    };
+    
+    return 0;
+}
+
+void *socket_ipc_open(void *args) {
+    int blen = 4096;
+    char buf[blen];
+    int sockfd = *(int *)args;
+    int rc;
+
+    printf("socket ipc opened\n");
+
+    while ((rc = read(sockfd, buf, blen)) > 0) {
+        rc = demux_ipc_socket_call(sockfd, buf, blen);
+
+        if (rc == -1) {
+            printf("Error on demuxing IPC socket call\n");
+            return NULL;
+        };
+    }
+
+    if (rc == -1) {
+        perror("socket ipc read\n");
+    }
+    
+    return NULL;
+}
+
 void *start_ipc_listener()
 {
-    int fd, len, err, rc, datasock;
+    int fd, rc, datasock;
     struct sockaddr_un un;
     char *sockname = "/tmp/lvlip.socket";
-    char buf[IPC_BUFLEN];
 
     unlink(sockname);
     

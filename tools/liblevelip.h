@@ -1,6 +1,7 @@
-#ifndef IPC_H_
-#define IPC_H_
-void *start_ipc_listener();
+#ifndef LIBLEVELIP_H_
+#define LIBLEVELIP_H_
+
+#include <stdint.h>
 
 #define IPC_SOCKET 0x0001
 #define IPC_CONNECT 0x0002
