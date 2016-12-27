@@ -86,7 +86,7 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     struct net_family *family;
 
     if ((sock = alloc_socket(pid)) == NULL) {
-        print_error("Could not alloc socket\n");
+        print_err("Could not alloc socket\n");
         return -1;
     }
 
@@ -123,7 +123,7 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_error("Could not find socket for connection\n");
+        print_err("Connect: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -135,7 +135,7 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_error("Could not find socket for connection\n");
+        print_err("Write: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -147,7 +147,7 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_error("Could not find socket for connection\n");
+        print_err("Read: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -159,7 +159,7 @@ int _close(pid_t pid, int sockfd)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_error("Could not find socket for connection\n");
+        print_err("Close: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
