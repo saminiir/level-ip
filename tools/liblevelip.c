@@ -9,6 +9,8 @@
 #include <unistd.h>
 #include "liblevelip.h"
 
+#define LVLIP_FD_BOUNDARY 4096
+
 static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
                            char * * ubp_av, void (*init) (void), void (*fini) (void), \
                            void (*rtld_fini) (void), void (* stack_end));
@@ -110,6 +112,8 @@ int socket(int domain, int type, int protocol)
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
+    if (sockfd <= LVLIP_FD_BOUNDARY) return _connect(sockfd, addr, addrlen);
+    
     printf("connect with pid %d\n", getpid());
     return _connect(sockfd, addr, addrlen);
 }

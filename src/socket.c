@@ -15,7 +15,9 @@ static struct net_family *families[128] = {
 
 static struct socket *alloc_socket(pid_t pid)
 {
-    static int fd = 4;
+    // TODO: Figure out a way to not shadow kernel file descriptors.
+    // Now, we'll just expect the fds for a process to never exceed this.
+    static int fd = 4097;
     struct socket *sock = malloc(sizeof (struct socket));
     list_init(&sock->list);
 
