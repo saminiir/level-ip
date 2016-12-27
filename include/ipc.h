@@ -7,6 +7,7 @@ void *start_ipc_listener();
 
 struct ipc_msg {
     uint16_t type;
+    pid_t pid;
     uint8_t data[];
 } __attribute__((packed));
 

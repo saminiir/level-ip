@@ -3,6 +3,7 @@
 
 #include "sock.h"
 #include "wait.h"
+#include "list.h"
 
 struct socket;
 
@@ -35,7 +36,9 @@ struct net_family {
 };
 
 struct socket {
+    struct list_head list;
     int fd;
+    pid_t pid;
     enum socket_state state;
     short type;
     struct sock *sk;
@@ -44,12 +47,12 @@ struct socket {
 };
 
 void *socket_ipc_open(void *args);
-int _socket(int domain, int type, int protocol);
-int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int _write(int sockfd, const void *buf, const unsigned int count);
-int _read(int sockfd, void *buf, const unsigned int count);
-int _close(int sockfd);
+int _socket(pid_t pid, int domain, int type, int protocol);
+int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count);
+int _read(pid_t pid, int sockfd, void *buf, const unsigned int count);
+int _close(pid_t pid, int sockfd);
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
-int free_sockets();
+void free_sockets();
 
 #endif

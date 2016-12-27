@@ -61,7 +61,9 @@ static int init_socket(char *sockname)
 int socket(int domain, int type, int protocol)
 {
     if (domain != AF_INET || type != SOCK_STREAM || protocol != 0) {
-        printf("lvl-ip does not support these socket parameters, offloading to host stack\n");
+        printf("lvl-ip does not support socket parameters "
+               "(domain %x, type %x, prot %x), bouncing back to host stack\n",
+               domain, type, protocol);
         return _socket(domain, type, protocol);
     }
     
@@ -72,6 +74,7 @@ int socket(int domain, int type, int protocol)
 
     struct ipc_msg *msg = calloc(msglen, 1);
     msg->type = IPC_SOCKET;
+    msg->pid = getpid();
 
     struct ipc_socket sock = {
         .domain = domain,
@@ -107,6 +110,7 @@ int socket(int domain, int type, int protocol)
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
+    printf("connect with pid %d\n", getpid());
     return _connect(sockfd, addr, addrlen);
 }
 

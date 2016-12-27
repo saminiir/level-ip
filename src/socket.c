@@ -5,7 +5,7 @@
 #include "wait.h"
 
 static int sock_amount = 0;
-static struct socket sockets[12];
+static LIST_HEAD(sockets);
 
 extern struct net_family inet;
 
@@ -13,11 +13,14 @@ static struct net_family *families[128] = {
     [AF_INET] = &inet,
 };
 
-static struct socket *alloc_socket()
+static struct socket *alloc_socket(pid_t pid)
 {
-    struct socket *sock = &sockets[0];
+    static int fd = 4;
+    struct socket *sock = malloc(sizeof (struct socket));
+    list_init(&sock->list);
 
-    sock->fd = 5;
+    sock->pid = pid;
+    sock->fd = fd++;
     sock->state = SS_UNCONNECTED;
     wait_init(&sock->sleep);
     sock_amount++;
@@ -35,38 +38,59 @@ static int free_socket(struct socket *sock)
     return 0;
 }
 
-int free_sockets() {
+void free_sockets() {
+    struct list_head *item, *tmp;
     struct socket *sock;
-    if (sock_amount > 0) {
-        sock = &sockets[0];
-        sock->ops->free(sock);
-    }
 
-    return 0;
+    list_for_each_safe(item, tmp, &sockets) {
+        sock = list_entry(item, struct socket, list);
+        list_del(item);
+        sock->ops->free(sock);
+        free(sock);
+    }
 }
 
-static struct socket *get_socket(int fd)
+static struct socket *get_socket(pid_t pid, int fd)
 {
-    return &sockets[0];
+    struct list_head *item;
+    struct socket *sock = NULL;
+
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+        if (sock->pid == pid && sock->fd == fd) return sock;
+    }
+    
+    return NULL;
 }
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport)
 {
-    return &sockets[0];
+    struct list_head *item;
+    struct socket *sock = NULL;
+    struct sock *sk = NULL;
+
+    list_for_each(item, &sockets) {
+        sk = list_entry(item, struct socket, list)->sk;
+
+        if (sk != NULL && sk->sport == sport && sk->dport == dport) return sock;
+    }
+    
+    return NULL;
 }
 
-int _socket(int domain, int type, int protocol)
+int _socket(pid_t pid, int domain, int type, int protocol)
 {
     struct socket *sock;
     struct net_family *family;
 
-    if ((sock = alloc_socket()) == NULL) {
+    if ((sock = alloc_socket(pid)) == NULL) {
         print_error("Could not alloc socket\n");
         return -1;
     }
 
     sock->type = type;
-    
+
+    printf("pid %d\n", pid);
     printf("domain %x\n", domain);
     printf("type %x\n", type);
     printf("protocol %x\n", protocol);
@@ -83,6 +107,8 @@ int _socket(int domain, int type, int protocol)
         goto abort_socket;
     }
 
+    list_add_tail(&sock->list, &sockets);
+
     return sock->fd;
 
 abort_socket:
@@ -90,11 +116,11 @@ abort_socket:
     return -1;
 }
 
-int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
+int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
     struct socket *sock;
 
-    if ((sock = get_socket(sockfd)) == NULL) {
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
         return -1;
     }
@@ -102,11 +128,11 @@ int _connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
     return sock->ops->connect(sock, addr, addrlen, 0);
 }
 
-int _write(int sockfd, const void *buf, const unsigned int count)
+int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
 {
     struct socket *sock;
 
-    if ((sock = get_socket(sockfd)) == NULL) {
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
         return -1;
     }
@@ -114,11 +140,11 @@ int _write(int sockfd, const void *buf, const unsigned int count)
     return sock->ops->write(sock, buf, count);
 }
 
-int _read(int sockfd, void *buf, const unsigned int count)
+int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
 {
     struct socket *sock;
 
-    if ((sock = get_socket(sockfd)) == NULL) {
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
         return -1;
     }
@@ -126,11 +152,11 @@ int _read(int sockfd, void *buf, const unsigned int count)
     return sock->ops->read(sock, buf, count);
 }
 
-int _close(int sockfd)
+int _close(pid_t pid, int sockfd)
 {
     struct socket *sock;
 
-    if ((sock = get_socket(sockfd)) == NULL) {
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_error("Could not find socket for connection\n");
         return -1;
     }

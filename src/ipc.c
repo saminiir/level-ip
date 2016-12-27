@@ -13,11 +13,9 @@ static int ipc_socket(int sockfd, struct ipc_msg *msg)
     struct ipc_socket *sock = (struct ipc_socket *)msg->data;
     int rc = -1;
 
-    printf("domain %x\n", sock->domain);
-    printf("type %x\n", sock->type);
-    printf("protocol %x\n", sock->protocol);
+    pid_t pid = msg->pid;
 
-    rc = _socket(sock->domain, sock->type, sock->protocol);
+    rc = _socket(pid, sock->domain, sock->type, sock->protocol);
 
     int resplen = sizeof(struct ipc_msg) + sizeof(int);
     struct ipc_msg *response = calloc(resplen, 1);

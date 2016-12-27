@@ -137,7 +137,10 @@ int inet_read(struct socket *sock, void *buf, int len)
 
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 {
-    return socket_lookup(sport, dport)->sk;
+    struct socket *sock = socket_lookup(sport, dport);
+    if (sock == NULL) return NULL;
+    
+    return sock->sk;
 }
 
 int inet_close(struct socket *sock)
