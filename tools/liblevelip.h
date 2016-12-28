@@ -18,4 +18,10 @@ struct ipc_socket {
     int protocol;
 } __attribute__((packed));
 
+struct ipc_connect {
+    int sockfd;
+    const struct sockaddr addr;
+    socklen_t addrlen;
+} __attribute__((packed));
+
 #endif

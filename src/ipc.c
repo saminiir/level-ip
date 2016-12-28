@@ -8,6 +8,33 @@
 static pthread_t sockets[256];
 static int cur_th = 0;
 
+static int ipc_connect(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_connect *payload = (struct ipc_connect *)msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _connect(pid, payload->sockfd, payload->addr, payload->addrlen);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(int);
+    struct ipc_msg *response = calloc(resplen, 1);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC connect response\n");
+    }
+    
+    response->type = IPC_CONNECT;
+    memcpy(response->data, &rc, sizeof(int));
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC connect ");
+    }
+
+    free(response);
+
+    return rc;
+}
+
 static int ipc_socket(int sockfd, struct ipc_msg *msg)
 {
     struct ipc_socket *sock = (struct ipc_socket *)msg->data;
@@ -19,6 +46,11 @@ static int ipc_socket(int sockfd, struct ipc_msg *msg)
 
     int resplen = sizeof(struct ipc_msg) + sizeof(int);
     struct ipc_msg *response = calloc(resplen, 1);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC socket response\n");
+    }
+    
     response->type = IPC_SOCKET;
     memcpy(response->data, &rc, sizeof(int));
 
@@ -38,6 +70,9 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     switch (msg->type) {
     case IPC_SOCKET:
         return ipc_socket(sockfd, msg);
+        break;
+    case IPC_CONNECT:
+        return ipc_connect(sockfd, msg);
         break;
     default:
         print_err("No such IPC type %d\n", msg->type);

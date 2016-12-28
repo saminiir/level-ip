@@ -113,12 +113,51 @@ int socket(int domain, int type, int protocol)
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
     if (sockfd <= LVLIP_FD_BOUNDARY) return _connect(sockfd, addr, addrlen);
+
+    int len = 512;
+    char *buf[len];
+
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_connect);
+
+    struct ipc_msg *msg = calloc(msglen, 1);
+    msg->type = IPC_CONNECT;
+    msg->pid = getpid();
+
+    struct ipc_connect payload = {
+        .sockfd = sockfd,
+        .addr = *addr,
+        .addrlen = addrlen
+    };
+
+    memcpy(msg->data, &payload, sizeof(struct ipc_connect));
+
+    // Send mocked syscall to lvl-ip
+    if (write(lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing IPC connect ");
+    }
+
+    free(msg);
+
+    // Read return value from lvl-ip
+    if (read(lvlfd, buf, len) == -1) {
+        perror("Could not read IPC connect response ");
+    }
     
-    printf("connect with pid %d\n", getpid());
-    return _connect(sockfd, addr, addrlen);
+    struct ipc_msg *response = (struct ipc_msg *) buf;
+
+    if (response->type != IPC_CONNECT) {
+        printf("Message did not contain IPC connect\n");
+        return -1;
+    }
+
+    int rc = *(int *) response->data;
+        
+    return rc;
 }
 
-int __libc_start_main(int (*main) (int, char * *, char * *), int argc, char * * ubp_av, void (*init) (void), void (*fini) (void), void (*rtld_fini) (void), void (* stack_end))
+int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
+                      char * * ubp_av, void (*init) (void), void (*fini) (void),
+                      void (*rtld_fini) (void), void (* stack_end))
 {
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
 
