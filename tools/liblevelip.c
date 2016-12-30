@@ -36,7 +36,6 @@ static int init_socket(char *sockname)
     int i;
     int ret;
     int data_socket;
-    char buffer[BUFLEN];
 
     /* Create local socket. */
 
@@ -78,14 +77,14 @@ int socket(int domain, int type, int protocol)
         return _socket(domain, type, protocol);
     }
     
-    int len = 512;
-    char *buf[len];
+    char *buf[RCBUF_LEN];
 
+    int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_socket);
 
-    struct ipc_msg *msg = calloc(msglen, 1);
+    struct ipc_msg *msg = alloca(msglen);
     msg->type = IPC_SOCKET;
-    msg->pid = getpid();
+    msg->pid = pid;
 
     struct ipc_socket sock = {
         .domain = domain,
@@ -100,37 +99,38 @@ int socket(int domain, int type, int protocol)
         perror("Error on writing socket ");
     }
 
-    free(msg);
-
     // Read return value from lvl-ip
-    if (read(lvlfd, buf, len) == -1) {
+    if (read(lvlfd, buf, RCBUF_LEN) == -1) {
         perror("Could not read IPC socket response ");
     }
-    
+
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
     if (response->type != IPC_SOCKET) {
-        printf("Message did not contain socket\n");
+        printf("ERR: IPC socket response type %4x, pid %d\n",
+               response->type, response->pid);
         return -1;
     }
 
     int rc = *(int *) response->data;
+
+    printf("Got lvl-ip socket fd %d, our pid %d\n", rc, pid);
         
     return rc;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-    if (sockfd <= LVLIP_FD_BOUNDARY) return _connect(sockfd, addr, addrlen);
+    if (!is_fd_ours(sockfd)) return _connect(sockfd, addr, addrlen);
 
-    int len = 512;
-    char *buf[len];
+    char *buf[RCBUF_LEN];
 
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_connect);
-
-    struct ipc_msg *msg = calloc(msglen, 1);
+    int pid = getpid();
+    
+    struct ipc_msg *msg = alloca(msglen);
     msg->type = IPC_CONNECT;
-    msg->pid = getpid();
+    msg->pid = pid;
 
     struct ipc_connect payload = {
         .sockfd = sockfd,
@@ -145,23 +145,24 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
         perror("Error on writing IPC connect ");
     }
 
-    free(msg);
-
     // Read return value from lvl-ip
-    if (read(lvlfd, buf, len) == -1) {
+    if (read(lvlfd, buf, RCBUF_LEN) == -1) {
         perror("Could not read IPC connect response ");
     }
     
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
-    if (response->type != IPC_CONNECT) {
-        printf("Message did not contain IPC connect\n");
+    if (response->type != IPC_CONNECT || response->pid != pid) {
+        printf("ERR: IPC connect response type %d, pid %d\n",
+               response->type, response->pid);
         return -1;
     }
 
-    int rc = *(int *) response->data;
-        
-    return rc;
+    struct ipc_error *err = (struct ipc_error *) response->data;
+
+    if (err->rc == -1) errno = err->err;
+
+    return err->rc;
 }
 
 ssize_t write(int sockfd, const void *buf, size_t len)
@@ -171,15 +172,16 @@ ssize_t write(int sockfd, const void *buf, size_t len)
     char *rbuf[RCBUF_LEN] = { 0 };
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_write) + len;
 
-    struct ipc_msg *msg = calloc(msglen, 1);
+    struct ipc_msg *msg = alloca(msglen);
 
     if (msg == NULL) {
         printf("Could not allocate memory in IPC write\n");
         return -1;
     }
-    
+
+    int pid = getpid();
     msg->type = IPC_WRITE;
-    msg->pid = getpid();
+    msg->pid = pid;
 
     struct ipc_write payload = {
         .sockfd = sockfd,
@@ -194,8 +196,6 @@ ssize_t write(int sockfd, const void *buf, size_t len)
         perror("Error on writing IPC write ");
     }
 
-    free(msg);
-
     // Read return value from lvl-ip
     if (read(lvlfd, rbuf, RCBUF_LEN) == -1) {
         perror("Could not read IPC write response ");
@@ -203,8 +203,9 @@ ssize_t write(int sockfd, const void *buf, size_t len)
     
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
-    if (response->type != IPC_WRITE) {
-        printf("Message did not contain IPC write\n");
+    if (response->type != IPC_WRITE || response->pid != pid) {
+        printf("ERR: IPC write response type %d, pid %d\n",
+               response->type, response->pid);
         return -1;
     }
 
@@ -219,7 +220,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
 
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_read);
-    struct ipc_msg *msg = calloc(msglen, 1);
+    struct ipc_msg *msg = alloca(msglen);
 
     if (msg == NULL) {
         printf("Could not allocate memory in IPC read\n");
@@ -241,8 +242,6 @@ ssize_t read(int sockfd, void *buf, size_t len)
         perror("Error on writing IPC read ");
     }
 
-    free(msg);
-
     int rlen = msglen + len;
     char *rbuf[rlen];
     memset(rbuf, 0, rlen);
@@ -255,7 +254,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
     if (response->type != IPC_READ || response->pid != pid) {
-        printf("ERR: IPC write response type %d, pid %d\n",
+        printf("ERR: IPC read response type %d, pid %d\n",
                response->type, response->pid);
         return -1;
     }
