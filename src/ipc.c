@@ -11,7 +11,7 @@ static int cur_th = 0;
 
 static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
 {
-    int resplen = sizeof(struct ipc_msg) + sizeof(int);
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err);
     struct ipc_msg *response = alloca(resplen);
 
     if (response == NULL) {
@@ -19,10 +19,21 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
         return -1;
     }
 
-    printf("pid %d, sockfd %d, type %4x\n", pid, sockfd, type);
+    printf("pid %d, sockfd %d, type %4x, rc %d\n", pid, sockfd, type, rc);
     response->type = type;
     response->pid = pid;
-    memcpy(response->data, &rc, sizeof(int));
+
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
 
     if (write(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC write response ");

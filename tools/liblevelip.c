@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
+#include <errno.h>
 #include "liblevelip.h"
 
 #define LVLIP_FD_BOUNDARY 4096
