@@ -50,11 +50,11 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     char rbuf[requested->len];
     memset(rbuf, 0, requested->len);
 
-    rlen = _read(pid, sockfd, rbuf, requested->len);
+    rlen = _read(pid, requested->sockfd, rbuf, requested->len);
 
     if (rlen < 0 || requested->len < rlen) {
         printf("Error on IPC read, requested len %lu, actual len %d, sockfd %d, pid %d\n",
-               requested->len, rlen, sockfd, pid);
+               requested->len, rlen, requested->sockfd, pid);
     }
 
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_read) + rlen + 1;
@@ -68,9 +68,9 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     
     response->type = IPC_READ;
     response->pid = pid;
-    actual->sockfd = sockfd;
+    actual->sockfd = requested->sockfd;
     actual->len = rlen;
-    memcpy(actual->buf, rbuf, rlen);
+    memcpy(actual->buf, rbuf, rlen > 0 ? rlen : 0);
 
     if (write(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC write response ");
