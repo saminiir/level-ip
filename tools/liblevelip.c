@@ -95,12 +95,12 @@ int socket(int domain, int type, int protocol)
     memcpy(msg->data, &sock, sizeof(struct ipc_socket));
 
     // Send mocked syscall to lvl-ip
-    if (write(lvlfd, (char *)msg, msglen) == -1) {
+    if (_write(lvlfd, (char *)msg, msglen) == -1) {
         perror("Error on writing socket ");
     }
 
     // Read return value from lvl-ip
-    if (read(lvlfd, buf, RCBUF_LEN) == -1) {
+    if (_read(lvlfd, buf, RCBUF_LEN) == -1) {
         perror("Could not read IPC socket response ");
     }
 
@@ -143,12 +143,12 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
     memcpy(msg->data, &payload, sizeof(struct ipc_connect));
 
     // Send mocked syscall to lvl-ip
-    if (write(lvlfd, (char *)msg, msglen) == -1) {
+    if (_write(lvlfd, (char *)msg, msglen) == -1) {
         perror("Error on writing IPC connect ");
     }
 
     // Read return value from lvl-ip
-    if (read(lvlfd, buf, RCBUF_LEN) == -1) {
+    if (_read(lvlfd, buf, RCBUF_LEN) == -1) {
         perror("Could not read IPC connect response ");
     }
     
@@ -194,16 +194,16 @@ ssize_t write(int sockfd, const void *buf, size_t len)
     memcpy(((struct ipc_write *)msg->data)->buf, buf, len);
 
     // Send mocked syscall to lvl-ip
-    if (write(lvlfd, (char *)msg, msglen) == -1) {
+    if (_write(lvlfd, (char *)msg, msglen) == -1) {
         perror("Error on writing IPC write ");
     }
 
     // Read return value from lvl-ip
-    if (read(lvlfd, rbuf, RCBUF_LEN) == -1) {
+    if (_read(lvlfd, rbuf, RCBUF_LEN) == -1) {
         perror("Could not read IPC write response ");
     }
     
-    struct ipc_msg *response = (struct ipc_msg *) buf;
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_WRITE || response->pid != pid) {
         printf("ERR: IPC write response type %d, pid %d\n",
@@ -242,7 +242,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
     memcpy(msg->data, &payload, sizeof(struct ipc_read));
 
     // Send mocked syscall to lvl-ip
-    if (write(lvlfd, (char *)msg, msglen) == -1) {
+    if (_write(lvlfd, (char *)msg, msglen) == -1) {
         perror("Error on writing IPC read ");
     }
 
@@ -251,11 +251,11 @@ ssize_t read(int sockfd, void *buf, size_t len)
     memset(rbuf, 0, rlen);
 
     // Read return value from lvl-ip
-    if (read(lvlfd, rbuf, rlen) == -1) {
+    if (_read(lvlfd, rbuf, rlen) == -1) {
         perror("Could not read IPC read response ");
     }
     
-    struct ipc_msg *response = (struct ipc_msg *) buf;
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_READ || response->pid != pid) {
         printf("ERR: IPC read response type %d, pid %d\n",
