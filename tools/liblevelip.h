@@ -3,8 +3,10 @@
 
 #include <stdint.h>
 
-#define IPC_SOCKET 0x0001
+#define IPC_SOCKET  0x0001
 #define IPC_CONNECT 0x0002
+#define IPC_WRITE   0x0003
+#define IPC_READ    0x0004
 
 struct ipc_msg {
     uint16_t type;
@@ -22,6 +24,18 @@ struct ipc_connect {
     int sockfd;
     const struct sockaddr addr;
     socklen_t addrlen;
+} __attribute__((packed));
+
+struct ipc_write {
+    int sockfd;
+    size_t len;
+    uint8_t buf[];
+} __attribute__((packed));
+
+struct ipc_read {
+    int sockfd;
+    size_t len;
+    uint8_t buf[];
 } __attribute__((packed));
 
 #endif
