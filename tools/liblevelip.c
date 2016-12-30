@@ -112,7 +112,7 @@ int socket(int domain, int type, int protocol)
         return -1;
     }
 
-    struct ipc_error *err = (struct ipc_error *) response->data;
+    struct ipc_err *err = (struct ipc_err *) response->data;
 
     if (err->rc == -1) errno = err->err;
 
@@ -160,7 +160,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
         return -1;
     }
 
-    struct ipc_error *err = (struct ipc_error *) response->data;
+    struct ipc_err *err = (struct ipc_err *) response->data;
 
     if (err->rc == -1) errno = err->err;
 
@@ -211,7 +211,7 @@ ssize_t write(int sockfd, const void *buf, size_t len)
         return -1;
     }
 
-    struct ipc_error *err = (struct ipc_error *) response->data;
+    struct ipc_err *err = (struct ipc_err *) response->data;
 
     if (err->rc == -1) errno = err->err;
 
@@ -263,7 +263,13 @@ ssize_t read(int sockfd, void *buf, size_t len)
         return -1;
     }
 
-    struct ipc_read *data = (struct ipc_read *) msg->data;
+    struct ipc_err *error = (struct ipc_err *) msg->data;
+    if (error->rc < 0) {
+        errno = error->err;
+        return error->rc;
+    }
+
+    struct ipc_read *data = (struct ipc_read *) error->data;
 
     if (data->len < 0 || len < data->len) {
         printf("IPC read received len error: %d\n", data->len);

@@ -14,9 +14,10 @@ struct ipc_msg {
     uint8_t data[];
 } __attribute__((packed));
 
-struct ipc_error {
+struct ipc_err {
     int rc;
     int err;
+    uint8_t data[];
 } __attribute__((packed));
 
 struct ipc_socket {

@@ -57,9 +57,10 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
                requested->len, rlen, requested->sockfd, pid);
     }
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_read) + rlen + 1;
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen + 1;
     struct ipc_msg *response = alloca(resplen);
-    struct ipc_read *actual = (struct ipc_read *) response->data;
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    struct ipc_read *actual = (struct ipc_read *) error->data;
 
     if (response == NULL) {
         print_err("Could not allocate memory for IPC read response\n");
@@ -68,6 +69,10 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     
     response->type = IPC_READ;
     response->pid = pid;
+
+    error->rc = rlen < 0 ? -1 : rlen;
+    error->err = rlen < 0 ? -rlen : 0;
+
     actual->sockfd = requested->sockfd;
     actual->len = rlen;
     memcpy(actual->buf, rbuf, rlen > 0 ? rlen : 0);
