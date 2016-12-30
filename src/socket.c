@@ -65,16 +65,20 @@ static struct socket *get_socket(pid_t pid, int fd)
     return NULL;
 }
 
-struct socket *socket_lookup(uint16_t sport, uint16_t dport)
+struct socket *socket_lookup(uint16_t remoteport, uint16_t localport)
 {
     struct list_head *item;
     struct socket *sock = NULL;
     struct sock *sk = NULL;
 
     list_for_each(item, &sockets) {
-        sk = list_entry(item, struct socket, list)->sk;
+        sock = list_entry(item, struct socket, list);
 
-        if (sk != NULL && sk->sport == sport && sk->dport == dport) return sock;
+        if (sock == NULL || sock->sk == NULL) continue;
+
+        sk = sock->sk;
+
+        if (sk->sport == localport && sk->dport == remoteport) return sock;
     }
     
     return NULL;
