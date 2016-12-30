@@ -5,8 +5,79 @@
 
 #define IPC_BUFLEN 4096
 
+// TODO: dynamic socket pool
 static pthread_t sockets[256];
 static int cur_th = 0;
+
+static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
+{
+    int resplen = sizeof(struct ipc_msg) + sizeof(int);
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC write response\n");
+        return -1;
+    }
+
+    printf("pid %d, sockfd %d, type %4x\n", pid, sockfd, type);
+    response->type = type;
+    response->pid = pid;
+    memcpy(response->data, &rc, sizeof(int));
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC write response ");
+    }
+
+    return 0;
+}
+
+static int ipc_read(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_read *requested = (struct ipc_read *) msg->data;
+    pid_t pid = msg->pid;
+    int rlen = -1;
+    char rbuf[requested->len];
+    memset(rbuf, 0, requested->len);
+
+    rlen = _read(pid, sockfd, rbuf, requested->len);
+
+    if (rlen < 0 || requested->len < rlen) {
+        printf("Error on IPC read, requested len %lu, actual len %d, sockfd %d, pid %d\n",
+               requested->len, rlen, sockfd, pid);
+    }
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_read) + rlen + 1;
+    struct ipc_msg *response = alloca(resplen);
+    struct ipc_read *actual = (struct ipc_read *) response->data;
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC read response\n");
+        return -1;
+    }
+    
+    response->type = IPC_READ;
+    response->pid = pid;
+    actual->sockfd = sockfd;
+    actual->len = rlen;
+    memcpy(actual->buf, rbuf, rlen);
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC write response ");
+    }
+
+    return 0;
+}
+
+static int ipc_write(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_write *payload = (struct ipc_write *) msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _write(pid, payload->sockfd, payload->buf, payload->len);
+
+    return ipc_write_rc(sockfd, pid, IPC_WRITE, rc);
+}
 
 static int ipc_connect(int sockfd, struct ipc_msg *msg)
 {
@@ -16,51 +87,18 @@ static int ipc_connect(int sockfd, struct ipc_msg *msg)
 
     rc = _connect(pid, payload->sockfd, payload->addr, payload->addrlen);
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(int);
-    struct ipc_msg *response = calloc(resplen, 1);
-
-    if (response == NULL) {
-        print_err("Could not allocate memory for IPC connect response\n");
-    }
-    
-    response->type = IPC_CONNECT;
-    memcpy(response->data, &rc, sizeof(int));
-
-    if (write(sockfd, (char *)response, resplen) == -1) {
-        perror("Error on writing IPC connect ");
-    }
-
-    free(response);
-
-    return rc;
+    return ipc_write_rc(sockfd, pid, IPC_CONNECT, rc);
 }
 
 static int ipc_socket(int sockfd, struct ipc_msg *msg)
 {
     struct ipc_socket *sock = (struct ipc_socket *)msg->data;
-    int rc = -1;
-
     pid_t pid = msg->pid;
+    int rc = -1;
 
     rc = _socket(pid, sock->domain, sock->type, sock->protocol);
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(int);
-    struct ipc_msg *response = calloc(resplen, 1);
-
-    if (response == NULL) {
-        print_err("Could not allocate memory for IPC socket response\n");
-    }
-    
-    response->type = IPC_SOCKET;
-    memcpy(response->data, &rc, sizeof(int));
-
-    if (write(sockfd, (char *)response, resplen) == -1) {
-        perror("Error on writing IPC socket ");
-    }
-
-    free(response);
-
-    return rc;
+    return ipc_write_rc(sockfd, pid, IPC_SOCKET, rc);
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -74,6 +112,12 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     case IPC_CONNECT:
         return ipc_connect(sockfd, msg);
         break;
+    case IPC_WRITE:
+        return ipc_write(sockfd, msg);
+        break;
+    case IPC_READ:
+        return ipc_read(sockfd, msg);
+        break;
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;
@@ -83,10 +127,10 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 }
 
 void *socket_ipc_open(void *args) {
-    int blen = 4096;
+    int blen = 8192;
     char buf[blen];
     int sockfd = *(int *)args;
-    int rc;
+    int rc = -1;
 
     printf("socket ipc opened\n");
 
