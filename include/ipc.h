@@ -26,7 +26,7 @@ struct ipc_socket {
 
 struct ipc_connect {
     int sockfd;
-    struct sockaddr *addr;
+    struct sockaddr addr;
     socklen_t addrlen;
 } __attribute__((packed));
 

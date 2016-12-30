@@ -96,7 +96,7 @@ static int ipc_connect(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _connect(pid, payload->sockfd, payload->addr, payload->addrlen);
+    rc = _connect(pid, payload->sockfd, &payload->addr, payload->addrlen);
 
     return ipc_write_rc(sockfd, pid, IPC_CONNECT, rc);
 }
