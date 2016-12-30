@@ -112,11 +112,13 @@ int socket(int domain, int type, int protocol)
         return -1;
     }
 
-    int rc = *(int *) response->data;
+    struct ipc_error *err = (struct ipc_error *) response->data;
 
-    printf("Got lvl-ip socket fd %d, our pid %d\n", rc, pid);
+    if (err->rc == -1) errno = err->err;
+
+    printf("Got lvl-ip socket fd %d, our pid %d\n", err->rc, pid);
         
-    return rc;
+    return err->rc;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
@@ -209,9 +211,11 @@ ssize_t write(int sockfd, const void *buf, size_t len)
         return -1;
     }
 
-    int rc = *(int *) response->data;
-        
-    return rc;
+    struct ipc_error *err = (struct ipc_error *) response->data;
+
+    if (err->rc == -1) errno = err->err;
+
+    return err->rc;
 }
 
 ssize_t read(int sockfd, void *buf, size_t len)
