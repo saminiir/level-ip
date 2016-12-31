@@ -57,7 +57,7 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
                requested->len, rlen, requested->sockfd, pid);
     }
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen + 1;
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen;
     struct ipc_msg *response = alloca(resplen);
     struct ipc_err *error = (struct ipc_err *) response->data;
     struct ipc_read *actual = (struct ipc_read *) error->data;

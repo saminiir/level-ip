@@ -115,8 +115,6 @@ int socket(int domain, int type, int protocol)
     struct ipc_err *err = (struct ipc_err *) response->data;
 
     if (err->rc == -1) errno = err->err;
-
-    printf("Got lvl-ip socket fd %d, our pid %d\n", err->rc, pid);
         
     return err->rc;
 }
@@ -247,7 +245,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
     }
 
     int rlen = msglen + len;
-    char *rbuf[rlen];
+    char rbuf[rlen];
     memset(rbuf, 0, rlen);
 
     // Read return value from lvl-ip
@@ -263,14 +261,13 @@ ssize_t read(int sockfd, void *buf, size_t len)
         return -1;
     }
 
-    struct ipc_err *error = (struct ipc_err *) msg->data;
+    struct ipc_err *error = (struct ipc_err *) response->data;
     if (error->rc < 0) {
         errno = error->err;
         return error->rc;
     }
 
     struct ipc_read *data = (struct ipc_read *) error->data;
-
     if (data->len < 0 || len < data->len) {
         printf("IPC read received len error: %d\n", data->len);
         return -1;
