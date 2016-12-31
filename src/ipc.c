@@ -36,7 +36,7 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     if (write(sockfd, (char *)response, resplen) == -1) {
-        perror("Error on writing IPC write response ");
+        perror("Error on writing IPC write response");
     }
 
     return 0;
@@ -78,7 +78,7 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     memcpy(actual->buf, rbuf, rlen > 0 ? rlen : 0);
 
     if (write(sockfd, (char *)response, resplen) == -1) {
-        perror("Error on writing IPC write response ");
+        perror("Error on writing IPC write response");
     }
 
     return 0;
@@ -160,7 +160,7 @@ void *socket_ipc_open(void *args) {
     }
 
     if (rc == -1) {
-        perror("socket ipc read\n");
+        perror("socket ipc read");
     }
     
     return NULL;
@@ -181,7 +181,7 @@ void *start_ipc_listener()
     }
         
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        print_error("IPC listener UNIX socket\n");
+        perror("IPC listener UNIX socket");
         exit(EXIT_FAILURE);
     }
 

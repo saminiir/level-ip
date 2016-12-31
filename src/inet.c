@@ -45,7 +45,7 @@ int inet_create(struct socket *sock, int protocol)
     }
 
     if (!skt) {
-        perror("Could not find socktype for socket\n");
+        print_err("Could not find socktype for socket\n");
         return 1;
     }
 
@@ -151,7 +151,7 @@ int inet_close(struct socket *sock)
 //    err = sk->ops-close(sk);
 
     if (err) {
-        print_error("Error on socket closing\n");
+        print_err("Error on socket closing\n");
         return -1;
     }
 

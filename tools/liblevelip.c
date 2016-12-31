@@ -96,12 +96,12 @@ int socket(int domain, int type, int protocol)
 
     // Send mocked syscall to lvl-ip
     if (_write(lvlfd, (char *)msg, msglen) == -1) {
-        perror("Error on writing socket ");
+        perror("Error on writing socket");
     }
 
     // Read return value from lvl-ip
     if (_read(lvlfd, buf, RCBUF_LEN) == -1) {
-        perror("Could not read IPC socket response ");
+        perror("Could not read IPC socket response");
     }
 
     struct ipc_msg *response = (struct ipc_msg *) buf;
@@ -142,12 +142,12 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
     // Send mocked syscall to lvl-ip
     if (_write(lvlfd, (char *)msg, msglen) == -1) {
-        perror("Error on writing IPC connect ");
+        perror("Error on writing IPC connect");
     }
 
     // Read return value from lvl-ip
     if (_read(lvlfd, buf, RCBUF_LEN) == -1) {
-        perror("Could not read IPC connect response ");
+        perror("Could not read IPC connect response");
     }
     
     struct ipc_msg *response = (struct ipc_msg *) buf;
@@ -193,12 +193,12 @@ ssize_t write(int sockfd, const void *buf, size_t len)
 
     // Send mocked syscall to lvl-ip
     if (_write(lvlfd, (char *)msg, msglen) == -1) {
-        perror("Error on writing IPC write ");
+        perror("Error on writing IPC write");
     }
 
     // Read return value from lvl-ip
     if (_read(lvlfd, rbuf, RCBUF_LEN) == -1) {
-        perror("Could not read IPC write response ");
+        perror("Could not read IPC write response");
     }
     
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
@@ -241,7 +241,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
 
     // Send mocked syscall to lvl-ip
     if (_write(lvlfd, (char *)msg, msglen) == -1) {
-        perror("Error on writing IPC read ");
+        perror("Error on writing IPC read");
     }
 
     int rlen = msglen + len;
@@ -250,7 +250,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
 
     // Read return value from lvl-ip
     if (_read(lvlfd, rbuf, rlen) == -1) {
-        perror("Could not read IPC read response ");
+        perror("Could not read IPC read response");
     }
     
     struct ipc_msg *response = (struct ipc_msg *) rbuf;

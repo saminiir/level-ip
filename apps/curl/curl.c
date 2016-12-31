@@ -78,6 +78,7 @@ int main(int argc, char **argv)
     }
 
     if (rlen == -1) {
-        printf("Read error\n");
+        perror("Curl read error");
+        return 1;
     }
 }

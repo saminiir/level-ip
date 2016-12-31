@@ -15,7 +15,7 @@ void icmpv4_incoming(struct sk_buff *skb)
             icmpv4_reply(skb);
             return;
         default:
-            perror("ICMPv4 did not match supported types");
+            print_err("ICMPv4 did not match supported types\n");
             goto drop_pkt;
     }
 

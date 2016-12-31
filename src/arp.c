@@ -99,7 +99,7 @@ void arp_rcv(struct sk_buff *skb)
     }
 
     if (!merge && insert_arp_translation_table(arphdr, arpdata) != 0) {
-        perror("ERR: No free space in ARP translation table\n");
+        print_err("ERR: No free space in ARP translation table\n");
         goto drop_pkt;
     }
 
