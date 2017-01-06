@@ -24,6 +24,7 @@ static struct socket *alloc_socket(pid_t pid)
     sock->pid = pid;
     sock->fd = fd++;
     sock->state = SS_UNCONNECTED;
+    sock->ops = NULL;
     wait_init(&sock->sleep);
     sock_amount++;
     

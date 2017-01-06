@@ -39,8 +39,9 @@ int inet_create(struct socket *sock, int protocol)
     struct sock_type *skt = NULL;
 
     for (int i = 0; i < INET_OPS; i++) {
-        if (inet_ops[i].type == sock->type) {
-            skt = &inet_ops[i];           
+        if (inet_ops[i].type & sock->type) {
+            skt = &inet_ops[i];
+            break;
         }
     }
 
