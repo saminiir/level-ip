@@ -9,6 +9,8 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <poll.h>
 #include "liblevelip.h"
 
 #define LVLIP_FD_BOUNDARY 4096
@@ -18,10 +20,16 @@ static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
                            char * * ubp_av, void (*init) (void), void (*fini) (void), \
                            void (*rtld_fini) (void), void (* stack_end));
 
+static int (*_fcntl)(int fildes, int cmd, ...) = NULL;
+static int (*_setsockopt)(int fd, int level, int optname,
+                         const void *optval, socklen_t optlen) = NULL;
+static int (*_getsockopt)(int fd, int level, int optname,
+                         const void *optval, socklen_t *optlen) = NULL;
 static int (*_read)(int sockfd, void *buf, size_t len) = NULL;
 static int (*_write)(int sockfd, const void *buf, size_t len) = NULL;
 static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
 static int (*_socket)(int domain, int type, int protocol) = NULL;
+static int (*_poll)(struct pollfd fds[], nfds_t nfds, int timeout) = NULL;
 
 static int lvlfd = 0;
 #define BUFLEN 4096
@@ -237,12 +245,46 @@ ssize_t read(int sockfd, void *buf, size_t len)
     return data->len;
 }
 
+int poll(struct pollfd fds[], nfds_t nfds, int timeout)
+{
+    printf("Poll not supported yet\n");
+    return _poll(fds, nfds, timeout);
+}
+
+int setsockopt(int fd, int level, int optname,
+               const void *optval, socklen_t optlen)
+{
+    if (!is_fd_ours(fd)) return _setsockopt(fd, level, optname, optval, optlen);
+
+    printf("Setsockopt not supported yet\n");
+    return 0;
+}
+
+int getsockopt(int fd, int level, int optname,
+               void *optval, socklen_t *optlen)
+{
+    if (!is_fd_ours(fd)) return _getsockopt(fd, level, optname, optval, optlen);
+
+    printf("Getsockopt not supported yet\n");
+    return 0;
+}
+
+int fcntl(int fildes, int cmd, ...)
+{
+    printf("Fcntl not supported yet\n");
+    return 0;
+}
+
 int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
                       char * * ubp_av, void (*init) (void), void (*fini) (void),
                       void (*rtld_fini) (void), void (* stack_end))
 {
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
 
+    _poll = dlsym(RTLD_NEXT, "poll");
+    _fcntl = dlsym(RTLD_NEXT, "fcntl");
+    _setsockopt = dlsym(RTLD_NEXT, "setsockopt");
+    _getsockopt = dlsym(RTLD_NEXT, "getsockopt");
     _read = dlsym(RTLD_NEXT, "read");
     _write = dlsym(RTLD_NEXT, "write");
     _connect = dlsym(RTLD_NEXT, "connect");
