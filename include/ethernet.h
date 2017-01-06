@@ -33,7 +33,7 @@ struct eth_hdr
     uint8_t  payload[];
 } __attribute__((packed));
 
-inline struct eth_hdr *eth_hdr(struct sk_buff *skb)
+static inline struct eth_hdr *eth_hdr(struct sk_buff *skb)
 {
     struct eth_hdr *hdr = (struct eth_hdr *)skb_head(skb);
 
