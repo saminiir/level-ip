@@ -6,6 +6,7 @@
 #include <dlfcn.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
 #include <unistd.h>
 #include <errno.h>
 #include "liblevelip.h"
@@ -28,6 +29,17 @@ static int lvlfd = 0;
 static int is_fd_ours(int sockfd)
 {
     return sockfd > LVLIP_FD_BOUNDARY;
+}
+
+static int is_socket_supported(int domain, int type, int protocol)
+{
+    if (domain != AF_INET) return 0;
+
+    if (!(type & SOCK_STREAM)) return 0;
+
+    if (protocol != 0 && protocol != IPPROTO_TCP) return 0;
+
+    return 1;
 }
 
 static int init_socket(char *sockname)
@@ -99,7 +111,7 @@ static int transmit_lvlip(struct ipc_msg *msg, int msglen)
 
 int socket(int domain, int type, int protocol)
 {
-    if (domain != AF_INET || type != SOCK_STREAM || protocol != 0) {
+    if (!is_socket_supported(domain, type, protocol)) {
         printf("lvl-ip does not support socket parameters "
                "(domain %x, type %x, prot %x), bouncing back to host stack\n",
                domain, type, protocol);
