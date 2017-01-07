@@ -289,6 +289,17 @@ int getsockopt(int fd, int level, int optname,
 
 int fcntl(int fildes, int cmd, ...)
 {
+    va_list ap;
+    void *arg;
+
+    va_start(ap, cmd);
+
+    arg = va_arg(ap, void*);
+
+    va_end(ap);
+
+    if (!is_fd_ours(fildes)) return _fcntl(fildes, cmd, arg);
+    
     printf("Fcntl not supported yet\n");
     return 0;
 }
