@@ -33,6 +33,9 @@ static int (*_poll)(struct pollfd fds[], nfds_t nfds, int timeout) = NULL;
 static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
                           int flags, const struct sockaddr *dest_addr,
                           socklen_t dest_len) = NULL;
+static ssize_t (*_recvfrom)(int sockfd, void *buf, size_t len,
+                            int flags, struct sockaddr *restrict address,
+                            socklen_t *restrict addrlen) = NULL;
 
 static int lvlfd = 0;
 #define BUFLEN 4096
@@ -263,6 +266,21 @@ ssize_t sendto(int fd, const void *buf, size_t len,
     return write(fd, buf, len);
 }
 
+ssize_t recv(int fd, void *buf, size_t len, int flags)
+{
+    return recvfrom(fd, buf, len, flags, NULL, 0);
+}
+
+ssize_t recvfrom(int fd, void *restrict buf, size_t len,
+                 int flags, struct sockaddr *restrict address,
+                 socklen_t *restrict addrlen)
+{
+    if (!is_fd_ours(fd)) return _recvfrom(fd, buf, len,
+                                          flags, address, addrlen);
+
+    return read(fd, buf, len);
+}
+
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
     printf("Poll not supported yet\n");
@@ -311,6 +329,7 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
 
     _sendto = dlsym(RTLD_NEXT, "sendto");
+    _recvfrom = dlsym(RTLD_NEXT, "recvfrom");
     _poll = dlsym(RTLD_NEXT, "poll");
     _fcntl = dlsym(RTLD_NEXT, "fcntl");
     _setsockopt = dlsym(RTLD_NEXT, "setsockopt");
