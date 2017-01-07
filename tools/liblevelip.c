@@ -30,6 +30,9 @@ static int (*_write)(int sockfd, const void *buf, size_t len) = NULL;
 static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
 static int (*_socket)(int domain, int type, int protocol) = NULL;
 static int (*_poll)(struct pollfd fds[], nfds_t nfds, int timeout) = NULL;
+static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
+                          int flags, const struct sockaddr *dest_addr,
+                          socklen_t dest_len) = NULL;
 
 static int lvlfd = 0;
 #define BUFLEN 4096
@@ -245,6 +248,21 @@ ssize_t read(int sockfd, void *buf, size_t len)
     return data->len;
 }
 
+ssize_t send(int fd, const void *buf, size_t len, int flags)
+{
+    return sendto(fd, buf, len, flags, NULL, 0);
+}
+
+ssize_t sendto(int fd, const void *buf, size_t len,
+               int flags, const struct sockaddr *dest_addr,
+               socklen_t dest_len)
+{
+    if (!is_fd_ours(fd)) return _sendto(fd, buf, len,
+                                        flags, dest_addr, dest_len);
+
+    return write(fd, buf, len);
+}
+
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
     printf("Poll not supported yet\n");
@@ -281,6 +299,7 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
 {
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
 
+    _sendto = dlsym(RTLD_NEXT, "sendto");
     _poll = dlsym(RTLD_NEXT, "poll");
     _fcntl = dlsym(RTLD_NEXT, "fcntl");
     _setsockopt = dlsym(RTLD_NEXT, "setsockopt");
