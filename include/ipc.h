@@ -6,6 +6,7 @@ void *start_ipc_listener();
 #define IPC_CONNECT 0x0002
 #define IPC_WRITE   0x0003
 #define IPC_READ    0x0004
+#define IPC_CLOSE   0x0005
 
 struct ipc_msg {
     uint16_t type;

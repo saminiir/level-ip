@@ -6,6 +6,7 @@
 
 static int sock_amount = 0;
 static LIST_HEAD(sockets);
+static pthread_mutex_t slock = PTHREAD_MUTEX_INITIALIZER;
 
 extern struct net_family inet;
 
@@ -26,7 +27,6 @@ static struct socket *alloc_socket(pid_t pid)
     sock->state = SS_UNCONNECTED;
     sock->ops = NULL;
     wait_init(&sock->sleep);
-    sock_amount++;
     
     return sock;
 }
@@ -36,8 +36,14 @@ static int free_socket(struct socket *sock)
     if (sock->ops) {
         sock->ops->free(sock);
     }
-    
+
+    pthread_mutex_lock(&slock);
+
+    list_del(&sock->list);
     sock_amount--;
+
+    pthread_mutex_unlock(&slock);
+    
     return 0;
 }
 
@@ -45,12 +51,16 @@ void free_sockets() {
     struct list_head *item, *tmp;
     struct socket *sock;
 
+    pthread_mutex_lock(&slock);
+    
     list_for_each_safe(item, tmp, &sockets) {
         sock = list_entry(item, struct socket, list);
         list_del(item);
         sock->ops->free(sock);
         free(sock);
     }
+    
+    pthread_mutex_unlock(&slock);
 }
 
 static struct socket *get_socket(pid_t pid, int fd)
@@ -114,7 +124,12 @@ int _socket(pid_t pid, int domain, int type, int protocol)
         goto abort_socket;
     }
 
+    pthread_mutex_lock(&slock);
+    
     list_add_tail(&sock->list, &sockets);
+    sock_amount++;
+
+    pthread_mutex_unlock(&slock);
 
     return sock->fd;
 
@@ -168,5 +183,5 @@ int _close(pid_t pid, int sockfd)
         return -1;
     }
 
-    return sock->ops->free(sock);
+    return free_socket(sock);
 }

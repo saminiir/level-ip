@@ -29,6 +29,7 @@ static int (*_read)(int sockfd, void *buf, size_t len) = NULL;
 static int (*_write)(int sockfd, const void *buf, size_t len) = NULL;
 static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
 static int (*_socket)(int domain, int type, int protocol) = NULL;
+static int (*_close)(int fildes) = NULL;
 static int (*_poll)(struct pollfd fds[], nfds_t nfds, int timeout) = NULL;
 static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
                           int flags, const struct sockaddr *dest_addr,
@@ -146,6 +147,22 @@ int socket(int domain, int type, int protocol)
     };
     
     memcpy(msg->data, &sock, sizeof(struct ipc_socket));
+
+    return transmit_lvlip(msg, msglen);
+}
+
+int close(int fd)
+{
+    if (!is_fd_ours(fd)) return _close(fd);
+
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(int);
+
+    struct ipc_msg *msg = alloca(msglen);
+    msg->type = IPC_CLOSE;
+    msg->pid = pid;
+
+    memcpy(msg->data, &fd, sizeof(int));
 
     return transmit_lvlip(msg, msglen);
 }
@@ -283,7 +300,6 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    printf("Poll not supported yet\n");
     return _poll(fds, nfds, timeout);
 }
 
@@ -338,6 +354,7 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _write = dlsym(RTLD_NEXT, "write");
     _connect = dlsym(RTLD_NEXT, "connect");
     _socket = dlsym(RTLD_NEXT, "socket");
+    _close = dlsym(RTLD_NEXT, "close");
  
     lvlfd = init_socket("/tmp/lvlip.socket");
 
