@@ -10,7 +10,7 @@ lvl-ip: $(obj)
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-debug: CFLAGS+= -g
+debug: CFLAGS+= -g -fsanitize=address
 debug: lvl-ip
 
 clean:

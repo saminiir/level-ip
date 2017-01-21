@@ -91,7 +91,7 @@ void *netdev_rx_loop()
         struct sk_buff *skb = alloc_skb(BUFLEN);
         
         if (tun_read((char *)skb->data, BUFLEN) < 0) { 
-            print_error("ERR: Read from tun_fd: %s\n", strerror(errno));
+            perror("ERR: Read from tun_fd");
             free_skb(skb);
             return NULL;
         }

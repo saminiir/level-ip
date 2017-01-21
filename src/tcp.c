@@ -61,6 +61,13 @@ void tcp_in(struct sk_buff *skb)
     tcpseg_dbg("INPUT", dbg);
     
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
+
+    if (sk == NULL) {
+        print_err("No TCP socket for sport %d dport %d\n",
+                  tcph->sport, tcph->dport);
+        free_skb(skb);
+        return;
+    }
     
     /* if (tcp_checksum(iph, tcph) != 0) { */
     /*     goto discard; */

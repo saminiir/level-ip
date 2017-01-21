@@ -39,13 +39,14 @@ int inet_create(struct socket *sock, int protocol)
     struct sock_type *skt = NULL;
 
     for (int i = 0; i < INET_OPS; i++) {
-        if (inet_ops[i].type == sock->type) {
-            skt = &inet_ops[i];           
+        if (inet_ops[i].type & sock->type) {
+            skt = &inet_ops[i];
+            break;
         }
     }
 
     if (!skt) {
-        perror("Could not find socktype for socket\n");
+        print_err("Could not find socktype for socket\n");
         return 1;
     }
 
@@ -137,7 +138,10 @@ int inet_read(struct socket *sock, void *buf, int len)
 
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 {
-    return socket_lookup(sport, dport)->sk;
+    struct socket *sock = socket_lookup(sport, dport);
+    if (sock == NULL) return NULL;
+    
+    return sock->sk;
 }
 
 int inet_close(struct socket *sock)
@@ -148,7 +152,7 @@ int inet_close(struct socket *sock)
 //    err = sk->ops-close(sk);
 
     if (err) {
-        print_error("Error on socket closing\n");
+        print_err("Error on socket closing\n");
         return -1;
     }
 

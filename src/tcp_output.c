@@ -78,7 +78,7 @@ int tcp_send_ack(struct sock *sk)
 static int tcp_send_syn(struct sock *sk)
 {
     if (sk->state != TCP_CLOSE && sk->state != TCP_LISTEN) {
-        print_error("Socket was not in correct state (closed or listen)");
+        print_err("Socket was not in correct state (closed or listen)\n");
         return 1;
     }
 

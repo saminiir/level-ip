@@ -20,18 +20,18 @@ int ip_rcv(struct sk_buff *skb)
     uint16_t csum = -1;
 
     if (ih->version != IPV4) {
-        perror("Datagram version was not IPv4\n");
+        print_err("Datagram version was not IPv4\n");
         goto drop_pkt;
     }
 
     if (ih->ihl < 5) {
-        perror("IPv4 header length must be at least 5\n");
+        print_err("IPv4 header length must be at least 5\n");
         goto drop_pkt;
     }
 
     if (ih->ttl == 0) {
         //TODO: Send ICMP error
-        perror("Time to live of datagram reached 0\n");
+        print_err("Time to live of datagram reached 0\n");
         goto drop_pkt;
     }
 
@@ -56,7 +56,7 @@ int ip_rcv(struct sk_buff *skb)
         tcp_in(skb);
         return 0;
     default:
-        perror("Unknown IP header proto\n");
+        print_err("Unknown IP header proto\n");
         goto drop_pkt;
     }
 

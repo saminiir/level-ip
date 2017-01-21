@@ -5,7 +5,6 @@
 
 int run_cmd(char *cmd, ...);
 void print_hexdump(char *str, int len);
-void print_error(char *str, ...);
 void print_err(char *str, ...);
 void print_debug(char *str, ...);
 uint32_t sum_every_16bits(void *addr, int count);

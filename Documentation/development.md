@@ -4,23 +4,31 @@ Level-IP is at a very alpha stage, has many hardcoded values and is not really i
 
 This document aims to provide information on the current features, roadmap and overall development routine. 
 
+# General
+
+Level-IP is a TCP/IP stack that is run as a single daemon process on your Linux host. Networking is achieved by configuring your Linux host to forward packets to/from Level-IP.
+
+To interface applications against Level-IP, a wrapper library for standard libc calls is provided. This can then be used against existing binaries such as `curl` and `ip` to redirect communications to Level-IP.
+
 # Building
 
 Standard `make` stuff.
 
 `make debug` adds debugging symbols.
 
+The socket API wrapper is located under `tools` and is likewise `make`able.
+
 # Setup
 
-Lvl-ip uses a Linux TAP device to communicate. In short, the tap device is initialized in the host Linux' networking stack, and lvl-ip can then read the L2 frames:
+`lvl-ip` uses a Linux TAP device to communicate to the outside world. In short, the tap device is initialized in the host Linux' networking stack, and `lvl-ip` can then read the L2 frames:
 
 ```
 $ sudo mknod /dev/net/tap c 10 200
 ```
 
-In essence, lvl-ip operates as a host inside the tap device's subnet. Therefore, in order to communicate with other hosts, the tap device needs to be set in a forwarding mode.
+In essence, `lvl-ip` operates as a host inside the tap device's subnet. Therefore, in order to communicate with other hosts, the tap device needs to be set in a forwarding mode.
 
-An example from my (Arch) Linux machine, where `wlp2s0` is my outgoing interface, and `tap0` is the tap device for lvl-ip:
+An example from my (Arch) Linux machine, where `wlp2s0` is my outgoing interface, and `tap0` is the tap device for `lvl-ip`:
 
 ```
 $ sysctl -w net.ipv4.ip_forward=1
@@ -30,10 +38,24 @@ $ iptables -A FORWARD --in-interface wlp2s0 --out-interface tap0 -j ACCEPT
 $ iptables -A FORWARD --in-interface tap0 --out-interface wlp2s0 -j ACCEPT
 ```
 
-Now, packets coming from lvl-ip (e.g. 10.0.0.4) should be NATed by the host Linux interfaces and traverse the FORWARD chain correctly to host's outgoing gateway.
+Now, packets coming from `lvl-ip` (e.g. 10.0.0.4) should be NATed by the host Linux interfaces and traverse the FORWARD chain correctly to host's outgoing gateway.
 
 See http://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-9.html for more info.
 
+# Usage
+
+Level-IP is run as a daemon process:
+
+```
+$ sudo ./lvl-ip
+```
+
+Then, existing binaries and their socket API calls can be redirected to level-ip with:
+
+```
+$ cd tools
+$ sudo ./level-ip curl google.com
+```
 
 # Developing
 

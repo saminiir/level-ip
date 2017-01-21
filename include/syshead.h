@@ -19,5 +19,7 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <time.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #endif

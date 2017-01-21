@@ -42,18 +42,6 @@ void print_err(char *str, ...)
     fprintf(stderr, buf);
 }
 
-void print_error(char *str, ...)
-{
-    va_list ap;
-    char buf[200];
-    va_start(ap, str);
-    vsnprintf(buf, 200, str, ap);
-
-    va_end(ap);
-
-    perror(buf);
-}
-
 void print_debug(char *str, ...)
 {
     if (!debug) return;
@@ -116,7 +104,7 @@ int get_address(char *host, char *port, struct sockaddr *addr)
     s = getaddrinfo(host, port, &hints, &result);
 
     if (s != 0) {
-        print_error("getaddrinfo: %s\n", gai_strerror(s));
+        print_err("getaddrinfo: %s\n", gai_strerror(s));
         exit(EXIT_FAILURE);
     }
 

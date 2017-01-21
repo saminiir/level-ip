@@ -32,9 +32,9 @@ static int tun_alloc(char *dev)
     int fd, err;
 
     if( (fd = open("/dev/net/tap", O_RDWR)) < 0 ) {
-        print_error("Cannot open TUN/TAP dev\n"
+        perror("Cannot open TUN/TAP dev\n"
                     "Make sure one exists with " 
-                    "'$ mknod /dev/net/tap c 10 200'\n");
+                    "'$ mknod /dev/net/tap c 10 200'");
         exit(1);
     }
 
@@ -51,7 +51,7 @@ static int tun_alloc(char *dev)
     }
 
     if( (err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0 ){
-        print_error("ERR: Could not ioctl tun: %s\n", strerror(errno));
+        perror("ERR: Could not ioctl tun");
         close(fd);
         return err;
     }
@@ -76,15 +76,15 @@ void tun_init()
     tun_fd = tun_alloc(dev);
 
     if (set_if_up(dev) != 0) {
-        print_error("ERROR when setting up if\n");
+        print_err("ERROR when setting up if\n");
     }
 
     if (set_if_route(dev, taproute) != 0) {
-        print_error("ERROR when setting route for if\n");
+        print_err("ERROR when setting route for if\n");
     }
 
     if (set_if_address(dev, tapaddr) != 0) {
-        print_error("ERROR when setting addr for if\n");
+        print_err("ERROR when setting addr for if\n");
     }
 }
 
