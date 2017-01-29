@@ -4,14 +4,6 @@ language: c
 
 compiler:
   - clang
-  - gcc
-
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - gcc-4.8
 
 script:
   - make debug
