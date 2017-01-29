@@ -23,6 +23,14 @@ static pthread_t threads[3];
 int running = 1;
 sigset_t mask;
 
+static void create_thread(pthread_t id, void *(*func) (void *))
+{
+    if (pthread_create(&threads[id], NULL,
+                       func, NULL) != 0) {
+        print_err("Could not create core thread\n");
+    }
+}
+
 static void *stop_stack_handler(void *arg)
 {
     int err, signo;
@@ -71,22 +79,9 @@ static void init_stack()
 
 static void run_threads()
 {
-    if (pthread_create(&threads[THREAD_CORE], NULL,
-                       netdev_rx_loop, NULL) != 0) {
-        print_err("Could not create netdev rx loop thread\n");
-        return; 
-    }
-
-    if (pthread_create(&threads[THREAD_IPC], NULL,
-                       start_ipc_listener, NULL) != 0) {
-        print_err("Could not create ipc listener thread\n");
-        return;
-    }
-
-    if (pthread_create(&threads[THREAD_SIGNAL], NULL, stop_stack_handler, 0)) {
-        print_err("Could not create signal processor thread\n");
-        return;
-    }
+    create_thread(THREAD_CORE, netdev_rx_loop);
+    create_thread(THREAD_IPC, start_ipc_listener);
+    create_thread(THREAD_SIGNAL, stop_stack_handler);
 }
 
 static void wait_for_threads()
