@@ -263,6 +263,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
         return -1;
     }
 
+    memset(buf, 0, len);
     memcpy(buf, data->buf, data->len);
         
     return data->len;
