@@ -157,7 +157,7 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 }
 
 void *socket_ipc_open(void *args) {
-    int blen = 8192;
+    int blen = IPC_BUFLEN;
     char buf[blen];
     int sockfd = *(int *)args;
     int rc = -1;
