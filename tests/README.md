@@ -8,4 +8,13 @@
 
 * Activate a virtualenv
 * Install requirements from `requirements.txt`
-* Start running test suites!
+
+# Usage
+
+Run 
+
+    ./test-run-all
+
+Or a specific test-suite
+
+    ./suites/arp/launch
