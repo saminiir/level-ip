@@ -89,8 +89,24 @@ static int ipc_write(int sockfd, struct ipc_msg *msg)
     struct ipc_write *payload = (struct ipc_write *) msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
-
-    rc = _write(pid, payload->sockfd, payload->buf, payload->len);
+    int dlen = payload->len - IPC_BUFLEN;
+    char buf[payload->len];
+    
+    memset(buf, 0, payload->len);
+    memcpy(buf, payload->buf, payload->len > IPC_BUFLEN ? IPC_BUFLEN : payload->len);
+    
+    // Guard for payload that is longer than IPC_BUFLEN
+    if (payload->len > IPC_BUFLEN) {
+        int res = read(sockfd, buf + IPC_BUFLEN, payload->len - IPC_BUFLEN);
+        if (res == -1) {
+            perror("Read on IPC payload guard");
+            return -1;
+        } else if (res != dlen) {
+            print_err("Hmm, we did not read exact payload amount in IPC write\n");
+        }
+    }
+        
+    rc = _write(pid, payload->sockfd, buf, payload->len);
 
     return ipc_write_rc(sockfd, pid, IPC_WRITE, rc);
 }
