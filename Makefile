@@ -13,5 +13,9 @@ build/%.o: src/%.c ${headers}
 debug: CFLAGS+= -g -fsanitize=address
 debug: lvl-ip
 
+all: lvl-ip
+	$(MAKE) -C tools
+	$(MAKE) -C apps/curl
+
 clean:
 	rm build/*.o lvl-ip
