@@ -2,7 +2,7 @@
 
 set -eu
 
-for suite in suites/*.txt; do
-    echo "Running: ./test-runner -F -t "$suite""
-    ./test-runner -F -t "$suite"
+for suite in suites/*/launch; do
+    echo "Running $suite"
+    "$suite"
 done

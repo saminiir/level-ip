@@ -1,0 +1,20 @@
+#!/bin/bash
+
+set -eu
+
+folder="$(dirname $0)"
+repo="$(git rev-parse --show-toplevel)"
+UTSCAPY="$repo/tests/venv/lib/python2.7/site-packages/scapy/tools/UTscapy.py"
+
+function cleanup {
+    kill "$stack_pid"
+}
+
+trap cleanup EXIT ERR
+
+"$repo/lvl-ip" 1>/dev/null &
+stack_pid="$!"
+
+sleep 3
+
+/usr/bin/env python2.7 "$UTSCAPY" -F -t "$folder/arp.txt"
