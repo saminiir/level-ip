@@ -1,0 +1,25 @@
+#!/bin/bash
+
+source "$(dirname $0)/../../utils/common"
+# Simple end-to-end test for an application's curl
+
+function setup {
+    "$repo/lvl-ip" > /dev/null &
+    stackip="$!"
+
+    /usr/bin/env python2.7 -m SimpleHTTPServer &
+    httpserver="$!"
+
+    sleep 3
+}
+
+function teardown {
+    kill "$stackip"
+    kill "$httpserver"
+}
+
+setup
+trap teardown EXIT ERR
+
+response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 192.168.0.13 8000 | strip_date)"
+diff "$folder/curl-fixture.txt" <(echo "$response")

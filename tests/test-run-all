@@ -2,7 +2,7 @@
 
 set -eu
 
-for suite in suites/*/launch; do
+for suite in suites/*/suite-*; do
     echo "Running $suite"
     "$suite"
 done

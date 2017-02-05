@@ -5,4 +5,4 @@ set -eu
 prog="$1"
 shift
 
-LD_PRELOAD=./liblevelip.so "$prog" "$@"
+LD_PRELOAD="$(dirname $0)/liblevelip.so" "$prog" "$@"

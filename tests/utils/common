@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -eu
+
+repo="$(git rev-parse --show-toplevel)"
+folder="$(dirname $0)"
+
+function strip_date {
+    sed 's/Date:.*/Date:/'
+}
