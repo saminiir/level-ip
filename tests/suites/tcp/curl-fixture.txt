@@ -1,5 +1,5 @@
 HTTP/1.0 200 OK
-Server: SimpleHTTP/0.6 Python/2.7.12
+Server:
 Date:
 Content-type: text/html; charset=UTF-8
 Content-Length: 326

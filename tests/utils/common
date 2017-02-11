@@ -5,8 +5,11 @@ set -eu
 repo="$(git rev-parse --show-toplevel)"
 folder="$(dirname $0)"
 
-function strip_date {
-    sed 's/Date:.*/Date:/'
+function start_stack {
+    "$repo/lvl-ip" >/dev/null &
+    stackip="$!"
+
+    sleep 3
 }
 
 function test_pass {

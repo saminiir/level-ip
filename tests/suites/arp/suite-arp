@@ -5,10 +5,7 @@ set -eu
 source "$(dirname $0)/../../utils/common"
 
 function setup {
-    "$repo/lvl-ip" >/dev/null &
-    stackip="$!"
-
-    sleep 1
+    start_stack
 }
 
 function teardown {
