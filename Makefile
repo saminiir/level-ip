@@ -17,5 +17,8 @@ all: lvl-ip
 	$(MAKE) -C tools
 	$(MAKE) -C apps/curl
 
+test: all
+	cd tests && sudo ./test-run-all
+
 clean:
 	rm build/*.o lvl-ip

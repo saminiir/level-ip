@@ -6,6 +6,5 @@ compiler:
   - clang
 
 script:
-  - make debug
   - sudo mknod /dev/net/tap c 10 200
-  - sudo ./lvl-ip
+  - make test
