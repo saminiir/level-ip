@@ -5,6 +5,10 @@ language: c
 compiler:
   - clang
 
+before_install:
+  - sudo apt-get -qq update
+  - sudo apt-get install -qqy arping
+
 script:
   - sudo mknod /dev/net/tap c 10 200
   - make test
