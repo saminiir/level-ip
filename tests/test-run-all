@@ -2,6 +2,11 @@
 
 set -eu
 
+if [ "$EUID" -ne 0 ]; then
+    echo "Need root privileges" >&2
+    exit 1
+fi
+
 for suite in suites/*/suite-*; do
     echo "Running $suite"
     "$suite"
