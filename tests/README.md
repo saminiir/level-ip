@@ -1,20 +1,17 @@
-# Requirements
+# Tests
 
-* Python 2
-* virtualenv
-* pip
+Level-IP test suites consist currently of end-to-end tests, where the Linux host's applications are used to test traffic flow.
 
-# Setup
-
-* Activate a virtualenv
-* Install requirements from `requirements.txt`
+In the future, a separate unit/packet flow test framework could be integrated into the stack.
 
 # Usage
 
-Run 
+In the project's root folder, run
 
-    ./test-run-all
+    make test
 
 Or a specific test-suite
 
-    ./suites/arp/launch
+    ./suites/arp/suite-arp
+
+Root privileges are required.
