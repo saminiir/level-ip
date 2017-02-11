@@ -13,7 +13,7 @@ function teardown {
 }
 
 function test_arp {
-    arping -c3 -w3 -I tap0 10.0.0.4 > /dev/null
+    arping -c3 -I tap0 10.0.0.4 >/dev/null
 }
 
 setup
