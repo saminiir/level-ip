@@ -9,7 +9,13 @@ function start_stack {
     "$repo/lvl-ip" >/dev/null &
     stackip="$!"
 
-    sleep 3
+    for i in {1..10}; do
+        ping -c1 -w1 10.0.0.5 >/dev/null || continue
+
+        return 0
+    done
+
+    return 1
 }
 
 function test_pass {
