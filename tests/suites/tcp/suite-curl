@@ -23,15 +23,12 @@ function teardown {
 }
 
 function test_normal_http_get {
-    testname="Normal HTTP GET"
     response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 8000 | strip_date)"
 
-    diff "$folder/curl-fixture.txt" <(echo "$response") || test_fail "$testname"
-
-    test_pass "$testname"
+    diff "$folder/curl-fixture.txt" <(echo "$response")
 }
 
 setup
 trap teardown EXIT ERR
 
-test_normal_http_get
+test_run "test_normal_http_get"
