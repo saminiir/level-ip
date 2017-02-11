@@ -8,3 +8,12 @@ folder="$(dirname $0)"
 function strip_date {
     sed 's/Date:.*/Date:/'
 }
+
+function test_pass {
+    echo -e "\t Test pass: $1"
+}
+
+function test_fail {
+    echo -e "\tTest fail: $1" 2>&1
+    exit 1
+}

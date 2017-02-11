@@ -1,16 +1,20 @@
 #!/bin/bash
 
+set -eu
+
 source "$(dirname $0)/../../utils/common"
 # Simple end-to-end test for an application's curl
 
 function setup {
-    "$repo/lvl-ip" > /dev/null &
+    "$repo/lvl-ip" >/dev/null &
     stackip="$!"
 
-    /usr/bin/env python2.7 -m SimpleHTTPServer &
+    sleep 1
+
+    /usr/bin/env python2.7 -m SimpleHTTPServer >/dev/null 2>&1 &
     httpserver="$!"
 
-    sleep 3
+    sleep 1
 }
 
 function teardown {
@@ -18,8 +22,16 @@ function teardown {
     kill "$httpserver"
 }
 
+function test_normal_http_get {
+    testname="Normal HTTP GET"
+    response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 8000 | strip_date)"
+
+    diff "$folder/curl-fixture.txt" <(echo "$response") || test_fail "$testname"
+
+    test_pass "$testname"
+}
+
 setup
 trap teardown EXIT ERR
 
-response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 192.168.0.13 8000 | strip_date)"
-diff "$folder/curl-fixture.txt" <(echo "$response")
+test_normal_http_get
