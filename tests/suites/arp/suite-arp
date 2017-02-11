@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -eu
+
+source "$(dirname $0)/../../utils/common"
+
+function setup {
+    "$repo/lvl-ip" >/dev/null &
+    stackip="$!"
+
+    sleep 1
+}
+
+function teardown {
+    kill "$stackip"
+}
+
+function test_arp {
+    arping -c3 -w3 -I tap0 10.0.0.4 > /dev/null
+}
+
+setup
+trap teardown EXIT ERR
+
+test_run "test_arp"
