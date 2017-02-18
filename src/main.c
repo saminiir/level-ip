@@ -4,6 +4,7 @@
 #include "tuntap_if.h"
 #include "utils.h"
 #include "ipc.h"
+#include "timer.h"
 #include "route.h"
 #include "ethernet.h"
 #include "arp.h"
@@ -16,9 +17,10 @@
 typedef void (*sighandler_t)(int);
 
 #define THREAD_CORE 0
-#define THREAD_IPC 1
-#define THREAD_SIGNAL 2
-static pthread_t threads[3];
+#define THREAD_TIMERS 1
+#define THREAD_IPC 2
+#define THREAD_SIGNAL 3
+static pthread_t threads[4];
 
 int running = 1;
 sigset_t mask;
@@ -47,6 +49,7 @@ static void *stop_stack_handler(void *arg)
             running = 0;
             pthread_cancel(threads[THREAD_IPC]);
             pthread_cancel(threads[THREAD_CORE]);
+            pthread_cancel(threads[THREAD_TIMERS]);
             return 0;
         default:
             printf("Unexpected signal %d\n", signo);
@@ -80,6 +83,7 @@ static void init_stack()
 static void run_threads()
 {
     create_thread(THREAD_CORE, netdev_rx_loop);
+    create_thread(THREAD_TIMERS, timers_start);
     create_thread(THREAD_IPC, start_ipc_listener);
     create_thread(THREAD_SIGNAL, stop_stack_handler);
 }

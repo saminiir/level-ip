@@ -3,6 +3,7 @@
 #include "tcp.h"
 #include "ip.h"
 #include "skbuff.h"
+#include "timer.h"
 
 static struct sk_buff *tcp_alloc_skb(int size)
 {
@@ -99,6 +100,15 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
     *rcv_wnd = 29200;
 }
 
+/**
+ * TCP connection retransmission timeout
+ */
+static void tcp_connect_rto(uint32_t ts, void *arg)
+{
+    struct tcp_sock *tsk = (struct tcp_sock *) arg;
+    printf("TCP connect RTO called\n");
+}
+
 int tcp_connect(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
@@ -116,6 +126,8 @@ int tcp_connect(struct sock *sk)
     tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
+    timer_add(1000, &tcp_connect_rto, tsk);
+    
     return tcp_send_syn(sk);
 }
 
