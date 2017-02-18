@@ -2,7 +2,13 @@
 #define TIMER_H_
 
 #include "syshead.h"
+#include "utils.h"
 #include "list.h"
+
+#define timer_dbg(msg, t)                                               \
+    do {                                                                \
+        print_debug("Timer at %d: "msg": expires %d\n", tick, t->expires); \
+    } while (0)
 
 struct timer {
     struct list_head list;

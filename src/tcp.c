@@ -102,6 +102,7 @@ struct sock *tcp_alloc_sock()
     memset(tsk, 0, sizeof(struct tcp_sock));
     tsk->sk.state = TCP_CLOSE;
     tsk->flags = 0;
+    tsk->backoff = 0;
     
     return (struct sock *)tsk;
 }

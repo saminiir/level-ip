@@ -15,6 +15,9 @@
 #define TCP_ECN 0x40
 #define TCP_WIN 0x80
 
+#define TCP_SYN_BACKOFF 2000
+#define TCP_CONN_RETRIES 3
+
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
@@ -143,6 +146,7 @@ struct tcp_sock {
     uint16_t tcp_header_len;
     struct tcb tcb;
     uint8_t flags;
+    uint8_t backoff;
 };
 
 static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)

@@ -44,6 +44,8 @@ void timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
     t->arg = arg;
 
     list_add_tail(&t->list, &timers);
+
+    timer_dbg("add", t);
 }
 
 void *timers_start()

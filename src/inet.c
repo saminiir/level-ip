@@ -75,7 +75,7 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
                         int addr_len, int flags)
 {
     struct sock *sk = sock->sk;
-    int err;
+    int err = 0;
     
     if (addr_len < sizeof(addr->sa_family)) {
         return -EINVAL;
@@ -106,6 +106,10 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         err = sk->ops->connect(sk, addr, addr_len, flags);
         wait_sleep(&sock->sleep);
 
+        if (sock->rc != 0) {
+            err = sock->rc;
+        }
+
         if (err < 0) {
             goto out;
         }
@@ -116,8 +120,6 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         break;
     }
     
-    return 0;
-
 out:
     return err;
 }

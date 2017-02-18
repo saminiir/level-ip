@@ -109,7 +109,12 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
     struct sock *sk = &tsk->sk;
 
     if (sk->state != TCP_ESTABLISHED) {
-        tcp_connect(sk);
+        if (tsk->backoff > TCP_CONN_RETRIES) {
+            tsk->sk.sock->rc = -ECONNREFUSED;
+            wait_wakeup(&tsk->sk.sock->sleep);
+        } else {
+            tcp_connect(sk);
+        }
     }
 }
 
@@ -130,7 +135,8 @@ int tcp_connect(struct sock *sk)
     tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
-    timer_add(4000, &tcp_connect_rto, tsk);
+    tsk->backoff++;
+    timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
     
     return tcp_send_syn(sk);
 }
