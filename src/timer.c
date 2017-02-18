@@ -25,8 +25,6 @@ static void timers_tick()
     list_for_each_safe(item, tmp, &timers) {
         t = list_entry(item, struct timer, list);
 
-        printf("tick %d, t->expire: %d\n", tick, t->expires);
-
         if (t->expires < tick) {
             t->handler(tick, t->arg);
 

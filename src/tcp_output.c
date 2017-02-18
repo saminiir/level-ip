@@ -78,7 +78,7 @@ int tcp_send_ack(struct sock *sk)
 
 static int tcp_send_syn(struct sock *sk)
 {
-    if (sk->state != TCP_CLOSE && sk->state != TCP_LISTEN) {
+    if (sk->state != TCP_SYN_SENT && sk->state != TCP_CLOSE && sk->state != TCP_LISTEN) {
         print_err("Socket was not in correct state (closed or listen)\n");
         return 1;
     }
@@ -106,7 +106,11 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
 static void tcp_connect_rto(uint32_t ts, void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
-    printf("TCP connect RTO called\n");
+    struct sock *sk = &tsk->sk;
+
+    if (sk->state != TCP_ESTABLISHED) {
+        tcp_connect(sk);
+    }
 }
 
 int tcp_connect(struct sock *sk)
@@ -126,7 +130,7 @@ int tcp_connect(struct sock *sk)
     tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
-    timer_add(1000, &tcp_connect_rto, tsk);
+    timer_add(4000, &tcp_connect_rto, tsk);
     
     return tcp_send_syn(sk);
 }
