@@ -75,6 +75,9 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         goto discard;
     }
 
+    /* third check the security and precedence -> ignored */
+
+    /* fourth check the SYN bit */
     if (!th->syn) {
         goto discard;
     }
@@ -82,8 +85,8 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     tcb->rcv_nxt = th->seq + 1;
     tcb->irs = th->seq;
     if (th->ack) {
-        /* Any packets in RTO queue that are acknowledged here should be removed */
         tcb->snd_una = th->ack_seq;
+        /* Any packets in RTO queue that are acknowledged here should be removed */
     }
 
     if (tcb->snd_una > tcb->iss) {
@@ -92,6 +95,10 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tcp_send_ack(&tsk->sk);
         tsk->sk.err = 0;
         wait_wakeup(&tsk->sk.sock->sleep);
+    } else {
+        tcp_set_state(sk, TCP_SYN_RECEIVED);
+        tcb->seq = tcb->iss;
+        tcp_send_ack(&tsk->sk);
     }
     
 discard:
