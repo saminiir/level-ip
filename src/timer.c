@@ -3,10 +3,13 @@
 
 static LIST_HEAD(timers);
 static int tick = 0;
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void timer_free(struct timer *t)
 {
+    pthread_mutex_lock(&lock);
     list_del(&t->list);
+    pthread_mutex_unlock(&lock);
     free(t);
 }
 
@@ -43,8 +46,10 @@ struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void
     t->handler = handler;
     t->arg = arg;
 
+    pthread_mutex_lock(&lock);
     list_add_tail(&t->list, &timers);
-
+    pthread_mutex_unlock(&lock);
+    
     timer_dbg("add", t);
 
     return t;

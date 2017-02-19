@@ -41,7 +41,7 @@ int main(int argc, char **argv)
     }
 
     struct sockaddr addr;
-	int sock;
+    int sock;
 
     if (strnlen(argv[2], 6) == 6) {
         printf("Curl called but PORT malformed\n");
