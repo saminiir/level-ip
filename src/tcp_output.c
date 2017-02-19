@@ -110,7 +110,7 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
 
     if (sk->state != TCP_ESTABLISHED) {
         if (tsk->backoff > TCP_CONN_RETRIES) {
-            tsk->sk.sock->rc = -ECONNREFUSED;
+            tsk->sk.err = -ECONNREFUSED;
             wait_wakeup(&tsk->sk.sock->sleep);
         } else {
             tcp_connect(sk);

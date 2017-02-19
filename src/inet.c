@@ -75,53 +75,49 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
                         int addr_len, int flags)
 {
     struct sock *sk = sock->sk;
-    int err = 0;
     
     if (addr_len < sizeof(addr->sa_family)) {
         return -EINVAL;
     }
 
     if (addr->sa_family == AF_UNSPEC) {
-        err = sk->ops->disconnect(sk, flags);
-        sock->state = err ? SS_DISCONNECTING : SS_UNCONNECTED;
+        sk->ops->disconnect(sk, flags);
+        sock->state = sk->err ? SS_DISCONNECTING : SS_UNCONNECTED;
         goto out;
     }
 
     switch (sock->state) {
     default:
-        err = -EINVAL;
+        sk->err = -EINVAL;
         goto out;
     case SS_CONNECTED:
-        err = -EISCONN;
+        sk->err = -EISCONN;
         goto out;
     case SS_CONNECTING:
-        err = -EALREADY;
+        sk->err = -EALREADY;
         goto out;
     case SS_UNCONNECTED:
-        err = -EISCONN;
+        sk->err = -EISCONN;
         if (sk->state != TCP_CLOSE) {
             goto out;
         }
 
-        err = sk->ops->connect(sk, addr, addr_len, flags);
+        sk->ops->connect(sk, addr, addr_len, flags);
+        sock->state = SS_CONNECTING;
+        sk->err = -EINPROGRESS;
+        
         wait_sleep(&sock->sleep);
 
-        if (sock->rc != 0) {
-            err = sock->rc;
-        }
-
-        if (err < 0) {
+        if (sk->err != 0) {
             goto out;
         }
 
-        sock->state = SS_CONNECTING;
-
-        err = -EINPROGRESS;
+        sock->state = SS_CONNECTED;
         break;
     }
     
 out:
-    return err;
+    return sk->err;
 }
 
 int inet_write(struct socket *sock, const void *buf, int len)

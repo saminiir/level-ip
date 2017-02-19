@@ -26,6 +26,7 @@ struct sock {
     struct sk_buff_head receive_queue;
     int protocol;
     int state;
+    int err;
     uint16_t sport;
     uint16_t dport;
     uint32_t saddr;

@@ -66,6 +66,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tsk->sk.state = TCP_ESTABLISHED;
         tcb->seq = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
+        tsk->sk.err = 0;
         wait_wakeup(&tsk->sk.sock->sleep);
     }
     

@@ -38,7 +38,6 @@ struct net_family {
 struct socket {
     struct list_head list;
     int fd;
-    int rc;
     pid_t pid;
     enum socket_state state;
     short type;

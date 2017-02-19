@@ -148,6 +148,7 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
 
 int tcp_disconnect(struct sock *sk, int flags)
 {
+    sk->err = 0;
     return 0;
 }
 
