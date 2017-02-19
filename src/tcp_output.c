@@ -185,3 +185,9 @@ int tcp_send_reset(struct tcp_sock *tsk)
     
     return tcp_transmit_skb(&tsk->sk, skb);
 }
+
+int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
+{
+    // TODO: implement me
+    return 0;
+}

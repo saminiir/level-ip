@@ -191,7 +191,9 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
     /* fourth check the SYN bit */
     if (th->syn) {
-
+        /* RFC 5961 Section 4.2 */
+        tcp_send_challenge_ack(sk, skb);
+        return tcp_drop(tsk, skb);
     }
     
     /* fifth check the ACK field */

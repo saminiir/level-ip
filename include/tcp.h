@@ -181,6 +181,7 @@ int tcp_send_ack(struct sock *sk);
 int tcp_send_finack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
 int tcp_send_reset(struct tcp_sock *tsk);
+int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb);
 int tcp_recv_notify(struct sock *sk);
 int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
