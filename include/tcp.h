@@ -2,6 +2,7 @@
 #define TCP_H_
 #include "syshead.h"
 #include "ip.h"
+#include "timer.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
 
@@ -147,6 +148,9 @@ struct tcp_sock {
     struct tcb tcb;
     uint8_t flags;
     uint8_t backoff;
+    struct timer *retransmit;
+    struct timer *delack;
+    struct timer *keepalive;
 };
 
 static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)

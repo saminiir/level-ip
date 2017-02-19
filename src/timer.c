@@ -35,7 +35,7 @@ static void timers_tick()
     }
 }
 
-void timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
+struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
 {
     struct timer *t = timer_alloc();
 
@@ -46,6 +46,8 @@ void timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
     list_add_tail(&t->list, &timers);
 
     timer_dbg("add", t);
+
+    return t;
 }
 
 void *timers_start()

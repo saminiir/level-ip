@@ -136,7 +136,7 @@ int tcp_connect(struct sock *sk)
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
     tsk->backoff++;
-    timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
+    tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
     
     return tcp_send_syn(sk);
 }
