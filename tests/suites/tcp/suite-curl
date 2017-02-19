@@ -29,7 +29,12 @@ function test_normal_http_get {
     diff "$folder/curl-fixture.txt" <(echo "$response")
 }
 
+function test_tcp_connection_refused {
+    "$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 9999 2>&1 | grep -q "Connection refused"
+}
+
 setup
 trap teardown EXIT ERR
 
 test_run "test_normal_http_get"
+test_run "test_tcp_connection_refused"

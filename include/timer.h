@@ -18,6 +18,7 @@ struct timer {
 };
 
 struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg);
+void timer_cancel(struct timer *t);
 void *timers_start();
                    
 #endif

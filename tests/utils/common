@@ -19,7 +19,7 @@ function start_stack {
 }
 
 function test_pass {
-    echo -e "\t Test pass: $1"
+    echo -e "\tTest pass: $1"
 }
 
 function test_fail {

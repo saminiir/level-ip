@@ -242,3 +242,17 @@ int tcp_abort(struct sock *sk)
     struct tcp_sock *tsk = tcp_sk(sk);
     return tcp_send_reset(tsk);
 }
+
+void tcp_done(struct sock *sk)
+{
+    tcp_set_state(sk, TCP_CLOSE);
+    tcp_clear_timers(sk);
+}
+
+void tcp_clear_timers(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    timer_cancel(tsk->retransmit);
+    timer_cancel(tsk->delack);
+    timer_cancel(tsk->keepalive);
+}

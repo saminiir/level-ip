@@ -55,6 +55,13 @@ struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void
     return t;
 }
 
+void timer_cancel(struct timer *t)
+{
+    if (t) {
+        timer_free(t);
+    }
+}
+
 void *timers_start()
 {
     while (1) {

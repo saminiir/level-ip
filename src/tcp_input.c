@@ -17,6 +17,26 @@ static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tc
     return 0;
 }
 
+/* TCP RST received */
+static void tcp_reset(struct sock *sk)
+{
+    switch (sk->state) {
+    case TCP_SYN_SENT:
+        sk->err = -ECONNREFUSED;
+        wait_wakeup(&sk->sock->sleep);
+        break;
+    case TCP_CLOSE_WAIT:
+        sk->err = -EPIPE;
+        break;
+    case TCP_CLOSE:
+        return;
+    default:
+        sk->err = -ECONNRESET;
+    }
+
+    tcp_done(sk);
+}
+
 static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
     free_skb(skb);
@@ -48,8 +68,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
             goto reset_and_discard;
     }
 
+    /* ACK is acceptable */
+    
     if (th->rst) {
-        goto reset_and_discard;
+        tcp_reset(&tsk->sk);
+        goto discard;
     }
 
     if (!th->syn) {

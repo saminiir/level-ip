@@ -184,5 +184,7 @@ int tcp_send_reset(struct tcp_sock *tsk);
 int tcp_recv_notify(struct sock *sk);
 int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
+void tcp_done(struct sock *sk);
+void tcp_clear_timers(struct sock *sk);
 
 #endif
