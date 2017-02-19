@@ -108,6 +108,12 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         
         wait_sleep(&sock->sleep);
 
+        switch (sk->err) {
+        case -ETIMEDOUT:
+        case -ECONNREFUSED:
+            goto sock_error;
+        }
+
         if (sk->err != 0) {
             goto out;
         }
@@ -118,6 +124,9 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
     
 out:
     return sk->err;
+sock_error:
+    sk->ops->disconnect(sk, flags);
+    goto out;
 }
 
 int inet_write(struct socket *sock, const void *buf, int len)

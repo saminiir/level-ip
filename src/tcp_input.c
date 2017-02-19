@@ -33,6 +33,7 @@ static int tcp_listen(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
 static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
     struct tcb *tcb = &tsk->tcb;
+    struct sock *sk = &tsk->sk;
 
     tcpstate_dbg("state is synsent");
     
@@ -63,7 +64,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     }
 
     if (tcb->snd_una > tcb->iss) {
-        tsk->sk.state = TCP_ESTABLISHED;
+        tcp_set_state(sk, TCP_ESTABLISHED);
         tcb->seq = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
         tsk->sk.err = 0;

@@ -119,6 +119,11 @@ int tcp_init_sock(struct sock *sk)
     return 0;
 }
 
+void tcp_set_state(struct sock *sk, uint32_t state)
+{
+    sk->state = state;
+}
+
 static uint16_t generate_port()
 {
     return 10000 + (time(NULL) % 3000);
@@ -148,7 +153,6 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
 
 int tcp_disconnect(struct sock *sk, int flags)
 {
-    sk->err = 0;
     return 0;
 }
 
