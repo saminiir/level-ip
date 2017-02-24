@@ -21,7 +21,6 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     if (!rt) {
         // Raise error
         // TODO: dest_unreachable
-        free_skb(skb);
         return -1;
     }
 
@@ -43,7 +42,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->daddr = sk->daddr;
     ihdr->csum = 0;
 
-    ip_dbg("OUTPUT", ihdr);
+    ip_dbg("Output", ihdr);
 
     ihdr->len = htons(ihdr->len);
     ihdr->id = htons(ihdr->id);

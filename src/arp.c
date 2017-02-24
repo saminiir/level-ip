@@ -122,8 +122,12 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     struct sk_buff *skb;
     struct arp_hdr *arp;
     struct arp_ipv4 *payload;
+    int rc = 0;
 
     skb = arp_alloc_skb();
+
+    if (!skb) return -1;
+    
     skb->dev = netdev;
 
     payload = (struct arp_ipv4 *) skb_push(skb, ARP_DATA_LEN);
@@ -136,18 +140,20 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     
     arp = (struct arp_hdr *) skb_push(skb, ARP_HDR_LEN);
 
-    arp_dbg("REQUEST", arp);
+    arp_dbg("Request", arp);
     arp->opcode = htons(ARP_REQUEST);
     arp->hwtype = htons(ARP_ETHERNET); 
     arp->protype = htons(ETH_P_IP);
     arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
 
-    arpdata_dbg("request", payload);
+    arpdata_dbg("Request", payload);
     payload->sip = htonl(payload->sip);
     payload->dip = htonl(payload->dip);
     
-    return netdev_transmit(skb, broadcast_hw, ETH_P_ARP);    
+    rc = netdev_transmit(skb, broadcast_hw, ETH_P_ARP);
+    free_skb(skb);
+    return rc;
 }
 
 void arp_reply(struct sk_buff *skb, struct netdev *netdev) 
@@ -182,6 +188,7 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
     skb->dev = netdev;
 
     netdev_transmit(skb, arpdata->dmac, ETH_P_ARP);
+    free_skb(skb);
 }
 
 /*

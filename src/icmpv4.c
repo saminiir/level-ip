@@ -29,6 +29,8 @@ void icmpv4_reply(struct sk_buff *skb)
     struct iphdr *iphdr = ip_hdr(skb);
     struct icmp_v4 *icmp;
     struct sock sk;
+    memset(&sk, 0, sizeof(struct sock));
+    
     uint16_t icmp_len = iphdr->len - (iphdr->ihl * 4);
 
     skb_reserve(skb, ETH_HDR_LEN + IP_HDR_LEN + icmp_len);
@@ -44,4 +46,5 @@ void icmpv4_reply(struct sk_buff *skb)
     sk.daddr = iphdr->saddr;
 
     ip_output(&sk, skb);
+    free_skb(skb);
 }

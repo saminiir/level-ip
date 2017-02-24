@@ -57,8 +57,6 @@ int netdev_transmit(struct sk_buff *skb, uint8_t *dst_hw, uint16_t ethertype)
 
     ret = tun_write((char *)skb->data, skb->len);
 
-    free_skb(skb);
-
     return ret;
 }
 
