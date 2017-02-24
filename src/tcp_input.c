@@ -12,9 +12,14 @@ static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
 
 static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
 {
-    /* struct tcb *tcb = &tsk->tcb; */
+    struct tcb *tcb = &tsk->tcb;
 
-    return 0;
+    if (seg->dlen > 0 && tcb->rcv_wnd == 0) return 0;
+
+    if (th->seq < tcb->rcv_nxt ||
+        th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) return 0;
+
+    return 1;
 }
 
 /* TCP RST received */
@@ -176,7 +181,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     /* "Otherwise" section in RFC793 */
 
     /* first check sequence number */
-    if (tcp_verify_segment(tsk, th, seg) < 0) {
+    if (!tcp_verify_segment(tsk, th, seg)) {
         return tcp_drop(tsk, skb);
     }
     
