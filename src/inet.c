@@ -153,10 +153,7 @@ struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 
 int inet_close(struct socket *sock)
 {
-    struct sock *sk = sock->sk;
     int err = 0;
-
-//    err = sk->ops-close(sk);
 
     if (err) {
         print_err("Error on socket closing\n");

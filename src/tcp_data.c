@@ -42,7 +42,6 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
                    struct tcphdr *th, struct tcp_segment *seg)
 {
     struct sock *sk = &tsk->sk;
-    struct tcb *tcb = &tsk->tcb;
     int rc = 0;
     
     /* if (seg->seq == tcb->rcv_nxt) { */
