@@ -30,7 +30,7 @@
 
 #define arpdata_dbg(str, data)                                          \
     do {                                                                \
-        print_debug("\tArpData "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
+        print_debug("\tArp Data "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
                     ":%.2hhx:%.2hhx, sip: %hhu.%hhu.%hhu.%hhu, dmac: %.2hhx:%.2hhx" \
                     ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu\n", \
                     data->smac[0], data->smac[1], data->smac[2], data->smac[3], \
@@ -42,7 +42,7 @@
 
 #define arpcache_dbg(str, entry) \
     do { \
-    print_debug("\tArpCache: "str" hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
+    print_debug("\tArp Cache: "str" hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
     "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, state: %d\n", entry->hwtype, \
         entry->sip >> 24, entry->sip >> 16, entry->sip >> 8, entry->sip >> 0, \
         entry->smac[0], entry->smac[1], entry->smac[2], entry->smac[3], entry->smac[4], \

@@ -75,7 +75,7 @@ void arp_rcv(struct sk_buff *skb)
     arphdr->hwtype = ntohs(arphdr->hwtype);
     arphdr->protype = ntohs(arphdr->protype);
     arphdr->opcode = ntohs(arphdr->opcode);
-    arp_dbg("INPUT", arphdr);
+    arp_dbg("Input", arphdr);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
         printf("Unsupported HW type\n");

@@ -24,9 +24,10 @@
 
 #define tcphdr_dbg(msg, hdr) \
     do { \
-        print_debug("TCP "msg": sport: %hu, dport: %hu, seq: %u, ack: %hu " \
-                    "rsvd: %hhu, hl: %hhu, CEUAPRSF: %hhu%hhu%hhu%hhu%hhu%hhu%hhu%hhu, " \
-                    "win: %hu, csum: %.4hx, urp: %hu\n", hdr->sport, hdr->dport, hdr->seq, \
+        print_debug("\t\t\tTCP "msg": sport: %hu, dport: %hu, seq: %u, ack: %hu\n" \
+                    "\t\t\t            rsvd: %hhu, hl: %hhu, CEUAPRSF: %hhu%hhu%hhu%hhu%hhu%hhu%hhu%hhu,\n" \
+                    "\t\t\t            win: %hu, csum: %.4hx, urp: %hu\n\n", \
+                    hdr->sport, hdr->dport, hdr->seq,                 \
                     hdr->ack_seq, hdr->rsvd, hdr->hl, hdr->cwr, hdr->ece, hdr->urg, \
                     hdr->ack, hdr->psh, hdr->rst, hdr->syn, hdr->fin, hdr->win, \
                     hdr->csum, hdr->urp);                               \
@@ -34,23 +35,33 @@
 
 #define tcpseg_dbg(msg, seg) \
     do {                                                                \
-        print_debug("TCPSEGMENT "msg": seq: %u, ack: %u, dlen: %u, len: %u, win: %u, " \
-                    "up: %u, prc: %u, seq_last: %u\n", seg->seq, seg->ack, seg->dlen, seg->len, \
+        print_debug("\t\t\t\tTCP Seg "msg": seq: %u, ack: %u, dlen: %u,\n" \
+                    "\t\t\t\t                len: %u, win: %u,\n" \
+                    "\t\t\t\t                up: %u, prc: %u, seq_last: %u\n\n", \
+                    seg->seq, seg->ack, seg->dlen, seg->len,            \
                     seg->win, seg->up, seg->prc, seg->seq_last);        \
     } while (0)
 
 #define tcptcb_dbg(msg, tcb) \
     do {                                                                \
-        print_debug("TCPTCB "msg": seq: %u, snd_una: %u, snd_nxt: %u, snd_wnd: %u, snd_up: %u " \
-                    "snd_wl1: %u, snd_wl2: %u, iss: %u, rcv_nxt: %u, rcv_wnd: %u, rcv_up: %u, irs: %u\n", \
+        print_debug("\t\t\t\tTCP TCB "msg": seq: %u, snd_una: %u, snd_nxt: %u,\n" \
+                    "\t\t\t\t                snd_wnd: %u, snd_up: %u,\n" \
+                    "\t\t\t\t                snd_wl1: %u, snd_wl2: %u, iss: %u, rcv_nxt: %u,\n" \
+                    "\t\t\t\t                rcv_wnd: %u, rcv_up: %u, irs: %u\n\n", \
                     tcb->seq, tcb->snd_una, tcb->snd_nxt, tcb->snd_wnd, tcb->snd_up, tcb->snd_wl1, \
                     tcb->snd_wl2, tcb->iss, tcb->rcv_nxt, tcb->rcv_wnd, tcb->rcv_up, tcb->irs); \
     } while (0)
 
 #define tcpstate_dbg(msg)                       \
     do {                                        \
-        print_debug("TCPSTATE: "msg"\n");       \
+        print_debug("\t\t\t\tTCPSTATE: "msg"\n");       \
     } while (0)
+
+#define tcpsock_dbg(msg, sock)                       \
+    do {                                        \
+        print_debug("\t\t\t\tTCPSOCK "msg": %d\n", sock->fd);       \
+    } while (0)
+
 
 struct tcphdr {
     uint16_t sport;
@@ -156,7 +167,6 @@ struct tcp_sock {
 static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)
 {
     return (struct tcphdr *)(skb->head + ETH_HDR_LEN + IP_HDR_LEN);
-
 }
 
 void tcp_init();

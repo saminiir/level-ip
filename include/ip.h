@@ -14,10 +14,11 @@
 
 #define ip_dbg(msg, hdr)                                                \
     do {                                                                \
-        print_debug("IP "msg": ihl: %hhu, version: %hhu, tos: %hhu, "   \
-                    "len: %hu, id: %hu, flags: %hhu, frag_offset: %hu, ttl: %hhu, " \
-                    "proto: %hhu, csum: %hx, saddr: %hhu.%hhu.%hhu.%hhu, " \
-                    "daddr: %hhu.%hhu.%hhu.%hhu\n", hdr->ihl,           \
+        print_debug("\t\tIP "msg": ihl: %hhu, version: %hhu, tos: %hhu,\n"   \
+                    "\t\t           len: %hu, id: %hu, flags: %hhu, frag_offset: %hu, ttl: %hhu,\n" \
+                    "\t\t           proto: %hhu, csum: %hx,\n" \
+                    "\t\t           saddr: %hhu.%hhu.%hhu.%hhu, daddr: %hhu.%hhu.%hhu.%hhu\n\n",  \
+                    hdr->ihl,                                           \
                     hdr->version, hdr->tos, hdr->len, hdr->id, hdr->flags, \
                     hdr->frag_offset, hdr->ttl, hdr->proto, hdr->csum,   \
                     hdr->saddr >> 24, hdr->saddr >> 16, hdr->saddr >> 8, hdr->saddr >> 0, \
