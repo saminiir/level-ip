@@ -128,6 +128,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
 
     if (tcb->snd_una > tcb->iss) {
         tcp_set_state(sk, TCP_ESTABLISHED);
+        timer_cancel(tsk->retransmit);
         tcb->seq = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
         tsk->sk.err = 0;
@@ -262,7 +263,9 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         if (seg->ack > tcb->snd_nxt) {
             // If the ACK acks something not yet sent, then send an ACK, drop segment
             // and return
-            tcp_send_ack(&tsk->sk);
+            // TODO: Dropping the seg here, why would I respond with an ACK? Linux
+            // does not respond either
+            //tcp_send_ack(&tsk->sk);
             return tcp_drop(tsk, skb);
         }
 

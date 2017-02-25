@@ -65,6 +65,7 @@ int tcp_send_finack(struct sock *sk)
 {
     struct sk_buff *skb;
     struct tcphdr *th;
+    int rc = 0;
 
     skb = tcp_alloc_skb(0);
 
@@ -72,7 +73,11 @@ int tcp_send_finack(struct sock *sk)
     th->fin = 1;
     th->ack = 1;
 
-    return tcp_transmit_skb(sk, skb);
+    rc = tcp_transmit_skb(sk, skb);
+
+    free_skb(skb);
+
+    return rc;
 }
 
 int tcp_send_ack(struct sock *sk)
@@ -81,13 +86,17 @@ int tcp_send_ack(struct sock *sk)
     
     struct sk_buff *skb;
     struct tcphdr *th;
+    int rc = 0;
 
     skb = tcp_alloc_skb(0);
     
     th = tcp_hdr(skb);
     th->ack = 1;
 
-    return tcp_transmit_skb(sk, skb);
+    rc = tcp_transmit_skb(sk, skb);
+    free_skb(skb);
+
+    return rc;
 }
 
 static int tcp_send_syn(struct sock *sk)
@@ -145,6 +154,8 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
         } else {
             tcp_connect(sk);
         }
+    } else {
+        print_err("TCP connect RTO triggered even when Established\n");
     }
 }
 

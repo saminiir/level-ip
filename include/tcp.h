@@ -16,8 +16,8 @@
 #define TCP_ECN 0x40
 #define TCP_WIN 0x80
 
-#define TCP_SYN_BACKOFF 2000
-#define TCP_CONN_RETRIES 3
+#define TCP_SYN_BACKOFF 1000
+#define TCP_CONN_RETRIES 5
 
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
