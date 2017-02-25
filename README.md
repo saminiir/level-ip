@@ -18,9 +18,9 @@ If you intend to compile and run Level-IP, read [Development](Documentation/deve
 
 # Reference works
 
-* Linux kernel IP stack, [source code](https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/net/ipv4)
-* Xiaochen Wang's TAP device & TCP/IP implementation, [source code](https://github.com/chobits/tapip)
-* QEMU Userspace IP stack, [source code](http://git.qemu.org/?p=qemu.git;a=tree;f=slirp;h=d3a7ee58fa839b55f8cbcc5aa4800db19afac75e;hb=HEAD)
+* Linux kernel TCP/IP stack, [source code](https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/net/ipv4)
+* picoTCP, [source code](https://github.com/tass-belgium/picotcp)
+* Xiaochen Wang's TCP/IP stack, [source code](https://github.com/chobits/tapip)
 
 # License
 
