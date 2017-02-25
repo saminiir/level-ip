@@ -5,6 +5,8 @@
 #include "skbuff.h"
 #include "timer.h"
 
+static void tcp_retransmission_timeout(uint32_t ts, void *arg);
+
 static struct sk_buff *tcp_alloc_skb(int size)
 {
     struct sk_buff *skb = alloc_skb(size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
@@ -115,7 +117,7 @@ static int tcp_send_syn(struct sock *sk)
     sk->state = TCP_SYN_SENT;
     th->syn = 1;
     
-    return tcp_transmit_skb(sk, skb);
+    return tcp_queue_transmit_skb(sk, skb);
 }
 
 void tcp_select_initial_window(uint32_t *rcv_wnd)
@@ -123,27 +125,11 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
     *rcv_wnd = 29200;
 }
 
-static void tcp_retransmission_timeout(uint32_t ts, void *arg)
-{
-    struct tcp_sock *tsk = (struct tcp_sock *) arg;
-    struct sock *sk = &tsk->sk;
-    struct sk_buff *skb = write_queue_head(sk);
-
-    printf("write queue len %d\n", sk->write_queue.qlen);
-
-    if (!skb) return;
-
-    skb_reset_header(skb);
-    tcp_transmit_skb(sk, skb);
-    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
-}
-
 /**
  * TCP connection retransmission timeout
  */
-static void tcp_connect_rto(uint32_t ts, void *arg)
+static void tcp_connect_rto(struct tcp_sock *tsk)
 {
-    struct tcp_sock *tsk = (struct tcp_sock *) arg;
     struct sock *sk = &tsk->sk;
 
     if (sk->state != TCP_ESTABLISHED) {
@@ -151,12 +137,36 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
             tsk->sk.err = -ETIMEDOUT;
             tcp_set_state(sk, TCP_CLOSE);
             wait_wakeup(&tsk->sk.sock->sleep);
+            //free_socket
         } else {
-            tcp_connect(sk);
+            tsk->backoff++;
+            tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
         }
     } else {
         print_err("TCP connect RTO triggered even when Established\n");
     }
+}
+
+static void tcp_retransmission_timeout(uint32_t ts, void *arg)
+{
+    struct tcp_sock *tsk = (struct tcp_sock *) arg;
+    struct sock *sk = &tsk->sk;
+    struct sk_buff *skb = write_queue_head(sk);
+    struct tcphdr *th = tcp_hdr(skb);
+
+    printf("write queue len %d\n", sk->write_queue.qlen);
+
+    if (!skb) return;
+
+    skb_reset_header(skb);
+    tcp_transmit_skb(sk, skb);
+
+    if (th->syn) {
+        tcp_connect_rto(tsk);
+        return;
+    }
+    
+    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 }
 
 int tcp_connect(struct sock *sk)
@@ -176,9 +186,9 @@ int tcp_connect(struct sock *sk)
     tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
-    tsk->backoff++;
-    tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
     
+    tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
+
     return tcp_send_syn(sk);
 }
 

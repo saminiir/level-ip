@@ -124,11 +124,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     if (th->ack) {
         tcb->snd_una = th->ack_seq;
         /* Any packets in RTO queue that are acknowledged here should be removed */
+        tcp_clean_rto_queue(sk, tcb->snd_una);
     }
 
     if (tcb->snd_una > tcb->iss) {
         tcp_set_state(sk, TCP_ESTABLISHED);
-        timer_cancel(tsk->retransmit);
         tcb->seq = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
         tsk->sk.err = 0;
