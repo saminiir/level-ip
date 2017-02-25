@@ -1,13 +1,14 @@
 #include "arp.h"
 #include "netdev.h"
 #include "skbuff.h"
+#include "list.h"
 
 /*
  * https://tools.ietf.org/html/rfc826
  */
 
 static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
-static struct arp_cache_entry arp_cache[ARP_CACHE_LEN];
+static LIST_HEAD(arp_cache);
 
 static struct sk_buff *arp_alloc_skb()
 {
@@ -18,34 +19,35 @@ static struct sk_buff *arp_alloc_skb()
     return skb;
 }
 
+static struct arp_cache_entry *arp_entry_alloc(struct arp_hdr *hdr, struct arp_ipv4 *data)
+{
+    struct arp_cache_entry *entry = malloc(sizeof(struct arp_cache_entry));
+    list_init(&entry->list);
+
+    entry->state = ARP_RESOLVED;
+    entry->hwtype = hdr->hwtype;
+    entry->sip = data->sip;
+    memcpy(entry->smac, data->smac, sizeof(entry->smac));
+
+    return entry;
+}
+
 static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
-    struct arp_cache_entry *entry;
-    for (int i = 0; i<ARP_CACHE_LEN; i++) {
-        entry = &arp_cache[i];
+    struct arp_cache_entry *entry = arp_entry_alloc(hdr, data);
 
-        if (entry->state == ARP_FREE) {
-            entry->state = ARP_RESOLVED;
+    list_add_tail(&entry->list, &arp_cache);
 
-            entry->hwtype = hdr->hwtype;
-            entry->sip = data->sip;
-            memcpy(entry->smac, data->smac, sizeof(entry->smac));
-
-            return 0;
-        }
-    }
-
-    return -1;
+    return 0;
 }
 
 static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *data)
 {
+    struct list_head *item;
     struct arp_cache_entry *entry;
 
-    for (int i = 0; i<ARP_CACHE_LEN; i++) {
-        entry = &arp_cache[i];
-
-        if (entry->state == ARP_FREE) continue;
+    list_for_each(item, &arp_cache) {
+        entry = list_entry(item, struct arp_cache_entry, list);
 
         if (entry->hwtype == hdr->hwtype && entry->sip == data->sip) {
             memcpy(entry->smac, data->smac, 6);
@@ -58,7 +60,7 @@ static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
 
 void arp_init()
 {
-    memset(arp_cache, 0, ARP_CACHE_LEN * sizeof(struct arp_cache_entry));
+
 }
 
 void arp_rcv(struct sk_buff *skb)
@@ -197,22 +199,36 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
  */
 unsigned char* arp_get_hwaddr(uint32_t sip)
 {
+    struct list_head *item;
     struct arp_cache_entry *entry;
     
-    print_debug("ARPCACHE: Searching for ARP entry with sip "
+    print_debug("\tARP: Searching for ARP entry with sip "
                 "%hhu.%hhu.%hhu.%hhu\n", sip >> 24, sip >> 16,
                 sip >> 8, sip >> 0);
 
-    for (int i = 0; i < ARP_CACHE_LEN; i++) {
-        entry = &arp_cache[i];
-        arpcache_dbg("entry", entry);
+    list_for_each(item, &arp_cache) {
+        entry = list_entry(item, struct arp_cache_entry, list);
 
         if (entry->state == ARP_RESOLVED && 
             entry->sip == sip) {
+            arpcache_dbg("entry", entry);
 
             return entry->smac;
         }
     }
 
     return NULL;
+}
+
+void free_arp()
+{
+    struct list_head *item, *tmp;
+    struct arp_cache_entry *entry;
+
+    list_for_each_safe(item, tmp, &arp_cache) {
+        entry = list_entry(item, struct arp_cache_entry, list);
+        list_del(item);
+
+        free(entry);
+    }
 }

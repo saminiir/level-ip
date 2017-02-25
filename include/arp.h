@@ -4,6 +4,7 @@
 #include "ethernet.h"
 #include "netdev.h"
 #include "skbuff.h"
+#include "list.h"
 #include "utils.h"
 
 #define ARP_ETHERNET    0x0001
@@ -21,7 +22,7 @@
 
 #define arp_dbg(str, hdr)                                               \
     do {                                                                \
-        print_debug("ARP "str": hwtype: %hu, protype: %.4hx, "          \
+        print_debug("\tArp "str": hwtype: %hu, protype: %.4hx, "          \
                     "hwsize: %d, opcode: %.4hx\n",                      \
                     hdr->hwtype, hdr->protype, hdr->hwsize,             \
                     hdr->prosize, hdr->opcode);                         \
@@ -29,7 +30,7 @@
 
 #define arpdata_dbg(str, data)                                          \
     do {                                                                \
-        print_debug("ARPDATA "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
+        print_debug("\tArpData "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
                     ":%.2hhx:%.2hhx, sip: %hhu.%hhu.%hhu.%hhu, dmac: %.2hhx:%.2hhx" \
                     ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu\n", \
                     data->smac[0], data->smac[1], data->smac[2], data->smac[3], \
@@ -41,7 +42,7 @@
 
 #define arpcache_dbg(str, entry) \
     do { \
-    print_debug("ARPCACHE: "str" hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
+    print_debug("\tArpCache: "str" hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
     "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, state: %d\n", entry->hwtype, \
         entry->sip >> 24, entry->sip >> 16, entry->sip >> 8, entry->sip >> 0, \
         entry->smac[0], entry->smac[1], entry->smac[2], entry->smac[3], entry->smac[4], \
@@ -68,6 +69,7 @@ struct arp_ipv4
 
 struct arp_cache_entry
 {
+    struct list_head list;
     uint16_t hwtype;
     uint32_t sip;
     unsigned char smac[6];
@@ -75,6 +77,7 @@ struct arp_cache_entry
 };
 
 void arp_init();
+void free_arp();
 void arp_rcv(struct sk_buff *skb);
 void arp_reply(struct sk_buff *skb, struct netdev *netdev);
 int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev);
