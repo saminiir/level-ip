@@ -10,6 +10,7 @@ static struct sk_buff *tcp_alloc_skb(int size)
     struct sk_buff *skb = alloc_skb(size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
     skb_reserve(skb, size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
     skb->protocol = IP_TCP;
+    skb->dlen = size;
 
     return skb;
 }
@@ -33,8 +34,12 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     thdr->csum = 0;
     thdr->urp = 0;
 
-    tcphdr_dbg("OUTPUT", thdr);
+    tcphdr_dbg("Output", thdr);
 
+    /* Store sequence information into the socket buffer */
+    skb->seq = tcb->seq;
+    skb->end_seq = tcb->seq + skb->dlen;
+    
     thdr->sport = htons(thdr->sport);
     thdr->dport = htons(thdr->dport);
     thdr->seq = htonl(thdr->seq);
@@ -45,6 +50,15 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     thdr->csum = tcp_v4_checksum(skb, htonl(sk->saddr), htonl(sk->daddr));
     
     return ip_output(sk, skb);
+}
+
+static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
+{
+    pthread_mutex_lock(&sk->write_queue.lock);
+    skb_queue_tail(&sk->write_queue, skb);
+    pthread_mutex_unlock(&sk->write_queue.lock);
+
+    return tcp_transmit_skb(sk, skb);
 }
 
 int tcp_send_finack(struct sock *sk)
@@ -98,6 +112,21 @@ static int tcp_send_syn(struct sock *sk)
 void tcp_select_initial_window(uint32_t *rcv_wnd)
 {
     *rcv_wnd = 29200;
+}
+
+static void tcp_retransmission_timeout(uint32_t ts, void *arg)
+{
+    struct tcp_sock *tsk = (struct tcp_sock *) arg;
+    struct sock *sk = &tsk->sk;
+    struct sk_buff *skb = write_queue_head(sk);
+
+    printf("write queue len %d\n", sk->write_queue.qlen);
+
+    if (!skb) return;
+
+    skb_reset_header(skb);
+    tcp_transmit_skb(sk, skb);
+    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 }
 
 /**
@@ -159,7 +188,8 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
     tcb->seq = tcb->snd_nxt;
     tcb->snd_nxt += len;
 
-    ret = tcp_transmit_skb(&tsk->sk, skb);
+    ret = tcp_queue_transmit_skb(&tsk->sk, skb);
+    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 
     ret -= (ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
 
@@ -191,3 +221,4 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
     // TODO: implement me
     return 0;
 }
+

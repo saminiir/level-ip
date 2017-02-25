@@ -4,6 +4,38 @@
 #include "skbuff.h"
 #include "sock.h"
 
+/*
+ * Acks all segments from retransmissionn queue that are "older"
+ * than current unacknowledged sequence
+ */ 
+static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct sk_buff *skb;
+    int rc = 0;
+    
+    pthread_mutex_lock(&sk->write_queue.lock);
+
+    while ((skb = skb_peek(&sk->write_queue)) != NULL) {
+        if (skb->end_seq <= una) {
+            /* skb fully acknowledged */
+            skb_dequeue(&sk->write_queue);
+            free_skb(skb);
+        } else {
+            break;
+        }
+    };
+
+    pthread_mutex_unlock(&sk->write_queue.lock);
+
+    if (skb == NULL) {
+        /* No unacknowledged skbs, stop rto timer */
+        timer_cancel(tsk->retransmit);
+    }
+
+    return rc;
+}
+
 static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
 {
     free_skb(skb);
@@ -167,7 +199,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
 
-    tcptcb_dbg("INPUT", tcb);
+    tcptcb_dbg("Input", tcb);
 
     switch (sk->state) {
     case TCP_CLOSE:
@@ -214,8 +246,9 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
             tcb->snd_una = seg->ack;
             tcb->seq = tcb->snd_una;
-            /* TODO: Any segments on the retransmission queue which are thereby
+            /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
+            tcp_clean_rto_queue(sk, tcb->snd_una);
 
             /* TODO: Users should receive positive acknowledgements for buffers
                which have been sent and fully acknowledged */

@@ -13,7 +13,8 @@ struct sk_buff {
     uint16_t protocol;
     uint32_t len;
     uint32_t dlen;
-    uint8_t *tail;
+    uint32_t seq;
+    uint32_t end_seq;
     uint8_t *end;
     uint8_t *head;
     uint8_t *data;
@@ -32,6 +33,7 @@ void free_skb(struct sk_buff *skb);
 uint8_t *skb_push(struct sk_buff *skb, unsigned int len);
 uint8_t *skb_head(struct sk_buff *skb);
 void *skb_reserve(struct sk_buff *skb, unsigned int len);
+void skb_reset_header(struct sk_buff *skb);
 
 static inline uint32_t skb_queue_len(const struct sk_buff_head *list)
 {
