@@ -187,6 +187,7 @@ int tcp_write(struct sock *sk, const void *buf, int len);
 int tcp_read(struct sock *sk, void *buf, int len);
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len);
 int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *seg);
+int tcp_send_synack(struct sock *sk);
 int tcp_send_ack(struct sock *sk);
 int tcp_send_finack(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);

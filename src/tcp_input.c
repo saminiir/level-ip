@@ -101,7 +101,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
             goto reset_and_discard;
         }
 
-        if (!(tcb->snd_una <= th->ack_seq && th->ack_seq <= tcb->snd_nxt))
+        if (th->ack_seq < tcb->snd_una || th->ack_seq > tcb->snd_nxt)
             goto reset_and_discard;
     }
 
@@ -136,7 +136,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
         tcb->seq = tcb->iss;
-        tcp_send_ack(&tsk->sk);
+        tcp_send_synack(&tsk->sk);
     }
     
 discard:
@@ -175,6 +175,7 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
 
     if (th->rst) {
         tcp_discard(tsk, skb, th);
+        return 0;
     }
 
     if (th->ack) {
@@ -185,7 +186,6 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     }
     
     rc = tcp_send_reset(tsk);
-
     free_skb(skb);
     
     return rc;
@@ -219,7 +219,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     }
     
     /* second check the RST bit */
-
     if (th->rst) {
 
     }

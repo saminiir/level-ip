@@ -82,6 +82,29 @@ int tcp_send_finack(struct sock *sk)
     return rc;
 }
 
+int tcp_send_synack(struct sock *sk)
+{
+    if (sk->state != TCP_SYN_SENT) {
+        print_err("TCP synack: Socket was not in correct state (SYN_SENT)\n");
+        return 1;
+    }
+
+    struct sk_buff *skb;
+    struct tcphdr *th;
+    int rc = 0;
+
+    skb = tcp_alloc_skb(0);
+    th = tcp_hdr(skb);
+
+    th->syn = 1;
+    th->ack = 1;
+
+    rc = tcp_transmit_skb(sk, skb);
+    free_skb(skb);
+
+    return rc;
+}
+
 int tcp_send_ack(struct sock *sk)
 {
     if (sk->state == TCP_CLOSE) return 0;
@@ -226,6 +249,7 @@ int tcp_send_reset(struct tcp_sock *tsk)
     struct sk_buff *skb;
     struct tcphdr *th;
     struct tcb *tcb;
+    int rc = 0;
 
     skb = tcp_alloc_skb(0);
     th = tcp_hdr(skb);
@@ -233,8 +257,11 @@ int tcp_send_reset(struct tcp_sock *tsk)
 
     th->rst = 1;
     tcb->seq = tcb->snd_nxt;
-    
-    return tcp_transmit_skb(&tsk->sk, skb);
+
+    rc = tcp_transmit_skb(&tsk->sk, skb);
+    free_skb(skb);
+
+    return rc;
 }
 
 int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
@@ -242,4 +269,3 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
     // TODO: implement me
     return 0;
 }
-
