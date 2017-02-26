@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
-#include "liblevelip.h"
+#include "ipc.h"
 
 #define LVLIP_FD_BOUNDARY 4096
 #define RCBUF_LEN 512
