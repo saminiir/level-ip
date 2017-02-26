@@ -174,13 +174,17 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
     struct sock *sk = &tsk->sk;
+
+    pthread_mutex_lock(&sk->write_queue.lock);
+
     struct sk_buff *skb = write_queue_head(sk);
+    if (!skb) goto unlock;
+
     struct tcphdr *th = tcp_hdr(skb);
-
-    if (!skb) return;
-
     skb_reset_header(skb);
     tcp_transmit_skb(sk, skb);
+    
+    pthread_mutex_unlock(&sk->write_queue.lock);
 
     if (th->syn) {
         tcp_connect_rto(tsk);
@@ -188,6 +192,10 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     }
     
     tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+    return;
+
+unlock:
+    pthread_mutex_unlock(&sk->write_queue.lock);
 }
 
 int tcp_connect(struct sock *sk)
