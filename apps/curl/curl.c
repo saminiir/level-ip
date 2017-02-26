@@ -6,6 +6,7 @@
 #include <netdb.h>
 
 #define MAX_HOSTNAME 50
+#define RLEN 4096
 
 int get_address(char *host, char *port, struct sockaddr *addr)
 {
@@ -70,10 +71,10 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    char buf[4096] = { 0 };
+    char buf[RLEN] = { 0 };
     int rlen = 0;
 
-    while ((rlen = read(sock, buf, 4096)) > 0) {
+    while ((rlen = read(sock, buf, RLEN)) > 0) {
         printf("%s", buf);
     }
 
