@@ -8,9 +8,11 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static void timer_free(struct timer *t)
 {
     pthread_mutex_lock(&lock);
-    list_del(&t->list);
+    if (t) {
+        list_del(&t->list);
+        free(t);
+    }
     pthread_mutex_unlock(&lock);
-    free(t);
 }
 
 static struct timer *timer_alloc()
@@ -31,9 +33,7 @@ static void timers_tick()
         if (t->expires < tick) {
             t->handler(tick, t->arg);
 
-            if (t) {
-                timer_free(t);
-            }
+            timer_cancel(t);
         }
     }
 }
@@ -57,9 +57,7 @@ struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void
 
 void timer_cancel(struct timer *t)
 {
-    if (t) {
-        timer_free(t);
-    }
+    timer_free(t);
 }
 
 void *timers_start()
