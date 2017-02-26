@@ -73,3 +73,8 @@ void *timers_start()
         timers_tick();
     }
 }
+
+int timer_get_tick()
+{
+    return tick;
+}

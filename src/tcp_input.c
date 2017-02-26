@@ -317,7 +317,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         switch (sk->state) {
         case TCP_SYN_RECEIVED:
         case TCP_ESTABLISHED:
-            tsk->sk.state = TCP_CLOSE_WAIT;
+            tcp_set_state(sk, TCP_CLOSE_WAIT);
             break;
         case TCP_FIN_WAIT_1:
             /* TODO:  If our FIN has been ACKed (perhaps in this segment), then

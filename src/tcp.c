@@ -4,7 +4,7 @@
 #include "ip.h"
 #include "sock.h"
 #include "utils.h"
-#include "tcp_timer.h"
+#include "timer.h"
 #include "wait.h"
 
 struct net_ops tcp_ops = {
@@ -115,7 +115,6 @@ int tcp_v4_init_sock(struct sock *sk)
 
 int tcp_init_sock(struct sock *sk)
 {
-    tcp_init_timers(sk);
     return 0;
 }
 
@@ -126,7 +125,9 @@ void tcp_set_state(struct sock *sk, uint32_t state)
 
 static uint16_t generate_port()
 {
-    return 10000 + (time(NULL) % 3000);
+    /* TODO: Generate a proper port */
+    static int port = 40000;
+    return ++port + (timer_get_tick() % 10000);
 }
 
 int generate_iss()
