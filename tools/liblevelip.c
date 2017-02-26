@@ -111,8 +111,9 @@ static int transmit_lvlip(struct ipc_msg *msg, int msglen)
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
     if (response->type != msg->type || response->pid != msg->pid) {
-        printf("ERR: IPC msg type %d, IPC response type %d, pid %d\n",
-               msg->type, response->type, response->pid);
+        printf("ERR: IPC msg response expected type %d, pid %d\n"
+               "                      actual type %d, pid %d\n",
+               msg->type, msg->pid, response->type, response->pid);
         return -1;
     }
 
@@ -245,8 +246,9 @@ ssize_t read(int sockfd, void *buf, size_t len)
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_READ || response->pid != pid) {
-        printf("ERR: IPC read response type %d, pid %d\n",
-               response->type, response->pid);
+        printf("ERR: IPC read response expected: type %d, pid %d\n"
+               "                       actual: type %d, pid %d\n",
+               IPC_READ, pid, response->type, response->pid);
         return -1;
     }
 
@@ -300,6 +302,7 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
+    /* TODO: Implement poll semantics. Curl uses this, won't work without it */
     return _poll(fds, nfds, timeout);
 }
 
