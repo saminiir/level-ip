@@ -103,6 +103,8 @@ struct sock *tcp_alloc_sock()
     tsk->sk.state = TCP_CLOSE;
     tsk->flags = 0;
     tsk->backoff = 0;
+
+    skb_queue_init(&tsk->ofo_queue);
     
     return (struct sock *)tsk;
 }

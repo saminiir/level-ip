@@ -162,6 +162,7 @@ struct tcp_sock {
     struct timer *retransmit;
     struct timer *delack;
     struct timer *keepalive;
+    struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
 
 static inline struct tcphdr *tcp_hdr(const struct sk_buff *skb)

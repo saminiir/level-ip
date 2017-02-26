@@ -51,9 +51,6 @@ static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tc
     if (th->seq < tcb->rcv_nxt ||
         th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) return 0;
 
-    /* TODO make accepting more flexible by slicing and out-of-order queuing */
-    if (th->seq != tcb->rcv_nxt) return 0;
-
     return 1;
 }
 
@@ -289,8 +286,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
         tcp_data_queue(tsk, skb, th, seg);
-        tcb->rcv_nxt += seg->dlen;
-        tcp_send_ack(&tsk->sk);
         tsk->sk.ops->recv_notify(&tsk->sk);
             
         break;
