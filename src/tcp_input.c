@@ -359,7 +359,7 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
     memset(buf, 0, len);
 
     while (rlen < len) {
-        curlen = tcp_data_dequeue(tsk, buf + rlen, len - 1 - rlen);
+        curlen = tcp_data_dequeue(tsk, buf + rlen, len - rlen);
 
         rlen += curlen;
 
@@ -368,7 +368,7 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             break;
         }
 
-        if (tsk->flags & TCP_FIN) break;
+        if (tsk->flags & TCP_FIN || rlen == len) break;
 
         wait_sleep(&tsk->sk.recv_wait);
     }

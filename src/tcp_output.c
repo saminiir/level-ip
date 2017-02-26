@@ -177,8 +177,6 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     struct sk_buff *skb = write_queue_head(sk);
     struct tcphdr *th = tcp_hdr(skb);
 
-    printf("write queue len %d\n", sk->write_queue.qlen);
-
     if (!skb) return;
 
     skb_reset_header(skb);

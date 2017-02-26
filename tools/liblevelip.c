@@ -39,7 +39,6 @@ static ssize_t (*_recvfrom)(int sockfd, void *buf, size_t len,
                             socklen_t *restrict addrlen) = NULL;
 
 static int lvlfd = 0;
-#define BUFLEN 4096
 
 static int is_fd_ours(int sockfd)
 {
