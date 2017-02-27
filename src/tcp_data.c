@@ -92,11 +92,13 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
         if (!tcb->rcv_wnd) {
             return -1;
         }
-        
+
         tcb->rcv_nxt += seg->dlen;
         skb_queue_tail(&sk->receive_queue, skb);
         tcp_consume_ofo_queue(tsk);
-        tcp_send_ack(&tsk->sk);
+
+        timer_cancel(tsk->delack);
+        tsk->delack = timer_add(200, &tcp_send_delack, &tsk->sk);
     } else {
         /* Segment is in-window but not the left-most sequence */
         tcp_data_insert_ordered(&tsk->ofo_queue, skb);

@@ -104,6 +104,10 @@ struct sock *tcp_alloc_sock()
     tsk->flags = 0;
     tsk->backoff = 0;
 
+    tsk->retransmit = NULL;
+    tsk->delack = NULL;
+    tsk->keepalive = NULL;
+
     skb_queue_init(&tsk->ofo_queue);
     
     return (struct sock *)tsk;

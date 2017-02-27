@@ -105,6 +105,14 @@ int tcp_send_synack(struct sock *sk)
     return rc;
 }
 
+/* Routine for timer-invoked delayed acknowledgment */
+void tcp_send_delack(uint32_t ts, void *arg)
+{
+    struct sock *sk = (struct sock *) arg;
+
+    tcp_send_ack(sk);
+}
+
 int tcp_send_ack(struct sock *sk)
 {
     if (sk->state == TCP_CLOSE) return 0;
