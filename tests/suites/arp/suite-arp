@@ -16,7 +16,7 @@ function test_arp {
     arping -c3 -I tap0 10.0.0.4 >/dev/null
 }
 
-setup
 trap teardown EXIT ERR
+setup
 
 test_run "test_arp"

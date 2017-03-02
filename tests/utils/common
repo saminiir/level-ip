@@ -9,6 +9,8 @@ function start_stack {
     "$repo/lvl-ip" >/dev/null &
     stackip="$!"
 
+    sleep 1
+
     for i in {1..10}; do
         ping -c1 -w1 10.0.0.5 >/dev/null || continue
 
