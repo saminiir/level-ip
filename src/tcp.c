@@ -263,3 +263,23 @@ void tcp_clear_timers(struct sock *sk)
     timer_cancel(tsk->delack);
     timer_cancel(tsk->keepalive);
 }
+
+void tcp_stop_rto_timer(struct tcp_sock *tsk) {
+    timer_cancel(tsk->retransmit);
+    tsk->retransmit = NULL;
+}
+
+void tcp_release_rto_timer(struct tcp_sock *tsk) {
+    timer_release(tsk->retransmit);
+    tsk->retransmit = NULL;
+}
+
+void tcp_stop_delack_timer(struct tcp_sock *tsk) {
+    timer_cancel(tsk->delack);
+    tsk->delack = NULL;
+}
+
+void tcp_release_delack_timer(struct tcp_sock *tsk) {
+    timer_release(tsk->delack);
+    tsk->delack = NULL;
+}

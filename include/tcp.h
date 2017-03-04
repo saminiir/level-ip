@@ -200,5 +200,9 @@ int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
 void tcp_done(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);
+void tcp_stop_rto_timer(struct tcp_sock *tsk);
+void tcp_release_rto_timer(struct tcp_sock *tsk);
+void tcp_stop_delack_timer(struct tcp_sock *tsk);
+void tcp_release_delack_timer(struct tcp_sock *tsk);
 
 #endif

@@ -56,11 +56,14 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
 static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
+    int rc = 0;
+    
     pthread_mutex_lock(&sk->write_queue.lock);
     skb_queue_tail(&sk->write_queue, skb);
+    rc = tcp_transmit_skb(sk, skb);
     pthread_mutex_unlock(&sk->write_queue.lock);
 
-    return tcp_transmit_skb(sk, skb);
+    return rc;
 }
 
 int tcp_send_finack(struct sock *sk)
@@ -109,6 +112,9 @@ int tcp_send_synack(struct sock *sk)
 void tcp_send_delack(uint32_t ts, void *arg)
 {
     struct sock *sk = (struct sock *) arg;
+    struct tcp_sock *tsk = tcp_sk(sk);
+
+    tcp_release_delack_timer(tsk);
 
     tcp_send_ack(sk);
 }
@@ -185,6 +191,8 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 
     pthread_mutex_lock(&sk->write_queue.lock);
 
+    tcp_release_rto_timer(tsk);
+
     struct sk_buff *skb = write_queue_head(sk);
     if (!skb) goto unlock;
 
@@ -192,15 +200,11 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     skb_reset_header(skb);
     tcp_transmit_skb(sk, skb);
     
-    pthread_mutex_unlock(&sk->write_queue.lock);
-
     if (th->syn) {
         tcp_connect_rto(tsk);
-        return;
+    } else {
+        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
     }
-    
-    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
-    return;
 
 unlock:
     pthread_mutex_unlock(&sk->write_queue.lock);
@@ -247,6 +251,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
     tcb->snd_nxt += len;
 
     ret = tcp_queue_transmit_skb(&tsk->sk, skb);
+
     tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 
     ret -= (ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);

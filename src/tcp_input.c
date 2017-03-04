@@ -26,12 +26,12 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
         }
     };
 
-    pthread_mutex_unlock(&sk->write_queue.lock);
-
     if (skb == NULL) {
         /* No unacknowledged skbs, stop rto timer */
-        timer_cancel(tsk->retransmit);
+        tcp_stop_rto_timer(tsk);
     }
+
+    pthread_mutex_unlock(&sk->write_queue.lock);
 
     return rc;
 }

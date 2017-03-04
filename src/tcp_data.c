@@ -97,7 +97,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
         skb_queue_tail(&sk->receive_queue, skb);
         tcp_consume_ofo_queue(tsk);
 
-        timer_cancel(tsk->delack);
+        tcp_stop_delack_timer(tsk);
         tsk->delack = timer_add(200, &tcp_send_delack, &tsk->sk);
     } else {
         /* Segment is in-window but not the left-most sequence */
