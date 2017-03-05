@@ -74,7 +74,6 @@ void tcp_in(struct sk_buff *skb)
     /* } */
         
     tcp_input_state(sk, skb, &seg);
-    return;
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -153,8 +152,6 @@ int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, in
     /* TODO: Do not hardcode lvl-ip local interface */
     sk->saddr = parse_ipv4_string("10.0.0.4"); 
 
-    printf("Connecting socket to %hhu.%hhu.%hhu.%hhu:%d\n", addr->sa_data[2], addr->sa_data[3], addr->sa_data[4], addr->sa_data[5], sk->dport);
-
     return tcp_connect(sk);
 }
 
@@ -189,7 +186,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
 
     switch (sk->state) {
     case TCP_CLOSE:
-        printf("error:  connection does not exist\n");
+        print_err("error:  connection does not exist\n");
         goto out;
     case TCP_LISTEN:
     case TCP_SYN_SENT:
@@ -216,7 +213,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
-        printf("error:  connection closing\n");
+        print_err("error:  connection closing\n");
         goto out;
     default:
         goto out;

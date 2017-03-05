@@ -107,11 +107,6 @@ int _socket(pid_t pid, int domain, int type, int protocol)
 
     sock->type = type;
 
-    printf("pid %d\n", pid);
-    printf("domain %x\n", domain);
-    printf("type %x\n", type);
-    printf("protocol %x\n", protocol);
-
     family = families[domain];
 
     if (!family) {

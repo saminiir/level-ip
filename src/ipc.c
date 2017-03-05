@@ -19,7 +19,6 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
         return -1;
     }
 
-    printf("pid %d, sockfd %d, type %4x, rc %d\n", pid, sockfd, type, rc);
     response->type = type;
     response->pid = pid;
 
@@ -177,8 +176,6 @@ void *socket_ipc_open(void *args) {
     char buf[blen];
     int sockfd = *(int *)args;
     int rc = -1;
-
-    printf("socket ipc opened\n");
 
     while ((rc = read(sockfd, buf, blen)) > 0) {
         rc = demux_ipc_socket_call(sockfd, buf, blen);

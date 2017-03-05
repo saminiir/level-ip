@@ -94,6 +94,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
     int rc = 0;
 
     if (!tcb->rcv_wnd) {
+        free_skb(skb);
         return -1;
     }
 
