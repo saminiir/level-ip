@@ -12,8 +12,16 @@ static void tcp_data_insert_ordered(struct sk_buff_head *queue, struct sk_buff *
         next = list_entry(item, struct sk_buff, list);
 
         if (skb->seq < next->seq) {
-            list_add(&skb->list, &next->list);
+            if (skb->end_seq > next->seq) {
+                /* TODO: We need to join skbs */
+                print_err("Could not join skbs\n");
+            } else {
+                list_add(&skb->list, &next->list);
+            }
 
+            return;
+        } else if (skb->seq == next->seq) {
+            /* We already have this segment! */
             return;
         }
     }
@@ -36,6 +44,8 @@ static void tcp_consume_ofo_queue(struct tcp_sock *tsk)
        skb_queue_tail(&sk->receive_queue, skb);
        skb_dequeue(&tsk->ofo_queue);
        skb = skb_peek(&tsk->ofo_queue);
+
+       if (skb == NULL) break;
     }
 }
 
@@ -83,24 +93,28 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
     struct tcb *tcb = &tsk->tcb;
     int rc = 0;
 
+    if (!tcb->rcv_wnd) {
+        return -1;
+    }
+
     skb->dlen = seg->dlen;
     skb->payload = th->data;
     skb->seq = seg->seq;
     skb->end_seq = seg->seq + seg->dlen;
-    
-    if (seg->seq == tcb->rcv_nxt) {
-        if (!tcb->rcv_wnd) {
-            return -1;
-        }
 
+    int expected = seg->seq == tcb->rcv_nxt;
+    if (expected) {
         tcb->rcv_nxt += seg->dlen;
+
         skb_queue_tail(&sk->receive_queue, skb);
         tcp_consume_ofo_queue(tsk);
 
         tcp_stop_delack_timer(tsk);
         tsk->delack = timer_add(200, &tcp_send_delack, &tsk->sk);
     } else {
-        /* Segment is in-window but not the left-most sequence */
+        /* Segment passed validation, hence it is in-window
+           but not the left-most sequence. Put into out-of-order queue
+           for later processing */
         tcp_data_insert_ordered(&tsk->ofo_queue, skb);
     }
     
