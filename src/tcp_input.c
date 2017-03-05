@@ -308,14 +308,15 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             goto drop_and_unlock;
         }
 
-        tcb->rcv_nxt += 1;
-        tcp_send_finack(&tsk->sk);
-        tsk->flags |= TCP_FIN;
-        
         switch (sk->state) {
         case TCP_SYN_RECEIVED:
         case TCP_ESTABLISHED:
-            tcp_set_state(sk, TCP_CLOSE_WAIT);
+            if (tcb->rcv_nxt == seg->seq) {
+                tcb->rcv_nxt += 1;
+                tcp_send_finack(&tsk->sk);
+                tsk->flags |= TCP_FIN;
+                tcp_set_state(sk, TCP_CLOSE_WAIT);
+            }
             break;
         case TCP_FIN_WAIT_1:
             /* TODO:  If our FIN has been ACKed (perhaps in this segment), then
@@ -359,6 +360,7 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
         rlen += curlen;
 
         if (tsk->flags & TCP_PSH) {
+
             tsk->flags &= ~TCP_PSH;
             break;
         }
