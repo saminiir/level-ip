@@ -153,6 +153,7 @@ struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 
 int inet_close(struct socket *sock)
 {
+    struct sock *sk = sock->sk;
     int err = 0;
 
     if (err) {
@@ -161,7 +162,9 @@ int inet_close(struct socket *sock)
     }
 
     sock->state = SS_DISCONNECTING;
-    wait_sleep(&sock->sleep);
+    sock->sk->ops->close(sk);
+    
+    /* wait_sleep(&sock->sleep); */
 
     return 0;
 }

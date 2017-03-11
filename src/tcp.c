@@ -45,6 +45,19 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_seg
     seg->seq_last = seg->seq + seg->len - 1;
 }
 
+static void tcp_clear_queues(struct tcp_sock *tsk) {
+    struct sk_buff *skb;
+    
+    pthread_mutex_lock(&tsk->ofo_queue.lock);
+
+    while ((skb = skb_peek(&tsk->ofo_queue)) != NULL) {
+        skb_dequeue(&tsk->ofo_queue);
+        free_skb(skb);
+    }
+
+    pthread_mutex_unlock(&tsk->ofo_queue.lock);
+}
+
 void tcp_in(struct sk_buff *skb)
 {
     struct sock *sk;
@@ -237,8 +250,8 @@ int tcp_recv_notify(struct sock *sk)
 
 int tcp_close(struct sock *sk)
 {
-    // TODO: Properly handle TCP socket closing
-    return -1;
+    tcp_done(sk);
+    return 0;
 }
 
 int tcp_abort(struct sock *sk)
@@ -249,8 +262,10 @@ int tcp_abort(struct sock *sk)
 
 void tcp_done(struct sock *sk)
 {
+    struct tcp_sock *tsk = tcp_sk(sk);
     tcp_set_state(sk, TCP_CLOSE);
     tcp_clear_timers(sk);
+    tcp_clear_queues(tsk);
 }
 
 void tcp_clear_timers(struct sock *sk)

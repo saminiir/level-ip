@@ -178,5 +178,5 @@ int _close(pid_t pid, int sockfd)
         return -1;
     }
 
-    return free_socket(sock);
+    return sock->ops->close(sock);
 }

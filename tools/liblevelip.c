@@ -179,13 +179,14 @@ int close(int fd)
     }
 
     int pid = getpid();
-    int msglen = sizeof(struct ipc_msg) + sizeof(int);
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_close);
 
     struct ipc_msg *msg = alloca(msglen);
     msg->type = IPC_CLOSE;
     msg->pid = pid;
 
-    memcpy(msg->data, &fd, sizeof(int));
+    struct ipc_close *payload = (struct ipc_close *)msg->data;
+    payload->sockfd = fd;
 
     return transmit_lvlip(sock->lvlfd, msg, msglen);
 }

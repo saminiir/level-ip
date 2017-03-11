@@ -134,11 +134,11 @@ static int ipc_socket(int sockfd, struct ipc_msg *msg)
 
 static int ipc_close(int sockfd, struct ipc_msg *msg)
 {
-    int fd = *msg->data;
+    struct ipc_close *payload = (struct ipc_close *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _close(pid, fd);
+    rc = _close(pid, payload->sockfd);
 
     return ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
 }

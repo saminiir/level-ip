@@ -44,4 +44,8 @@ struct ipc_read {
     uint8_t buf[];
 } __attribute__((packed));
 
+struct ipc_close {
+    int sockfd;
+} __attribute__((packed));
+
 #endif
