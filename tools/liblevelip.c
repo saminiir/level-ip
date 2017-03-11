@@ -351,7 +351,8 @@ int setsockopt(int fd, int level, int optname,
     if (!lvlip_get_sock(fd)) return _setsockopt(fd, level, optname, optval, optlen);
 
     printf("Setsockopt not supported yet\n");
-    return 0;
+    errno = ENOPROTOOPT;
+    return -1;
 }
 
 int getsockopt(int fd, int level, int optname,
@@ -360,7 +361,8 @@ int getsockopt(int fd, int level, int optname,
     if (!lvlip_get_sock(fd)) return _getsockopt(fd, level, optname, optval, optlen);
 
     printf("Getsockopt not supported yet\n");
-    return 0;
+    errno = ENOPROTOOPT;
+    return -1;
 }
 
 int fcntl(int fildes, int cmd, ...)
@@ -375,9 +377,10 @@ int fcntl(int fildes, int cmd, ...)
     va_end(ap);
 
     if (!lvlip_get_sock(fildes)) return _fcntl(fildes, cmd, arg);
-    
     printf("Fcntl not supported yet\n");
-    return 0;
+
+    errno = EINVAL;
+    return -1;
 }
 
 int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
