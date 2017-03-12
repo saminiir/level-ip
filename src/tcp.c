@@ -271,8 +271,11 @@ void tcp_done(struct sock *sk)
 void tcp_clear_timers(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    timer_cancel(tsk->retransmit);
-    timer_cancel(tsk->delack);
+    pthread_mutex_lock(&sk->write_queue.lock);
+    tcp_stop_rto_timer(tsk);
+    tcp_stop_delack_timer(tsk);
+    pthread_mutex_unlock(&sk->write_queue.lock);
+
     timer_cancel(tsk->keepalive);
 }
 

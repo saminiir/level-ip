@@ -33,7 +33,7 @@ static void timers_tick()
     list_for_each_safe(item, tmp, &timers) {
         t = list_entry(item, struct timer, list);
 
-        if (t->expires < tick) {
+        if (!t->cancelled && t->expires < tick) {
             t->cancelled = 1;
             t->handler(tick, t->arg);
         }
