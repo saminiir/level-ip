@@ -162,6 +162,8 @@ struct tcp_sock {
     struct timer *delack;
     struct timer *keepalive;
     struct timer *linger;
+    uint8_t delacks;
+    uint16_t mss;
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
 

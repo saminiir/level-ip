@@ -115,6 +115,9 @@ struct sock *tcp_alloc_sock()
     tsk->delack = NULL;
     tsk->keepalive = NULL;
 
+    tsk->delacks = 0;
+    tsk->mss = 536;
+
     skb_queue_init(&tsk->ofo_queue);
     
     return (struct sock *)tsk;

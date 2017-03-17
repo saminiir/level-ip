@@ -114,6 +114,7 @@ void tcp_send_delack(uint32_t ts, void *arg)
     struct sock *sk = (struct sock *) arg;
     struct tcp_sock *tsk = tcp_sk(sk);
 
+    tsk->delacks = 0;
     tcp_release_delack_timer(tsk);
 
     tcp_send_ack(sk);
