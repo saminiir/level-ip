@@ -69,9 +69,10 @@ static void tcp_reset(struct sock *sk)
         return;
     default:
         sk->err = -ECONNRESET;
+        break;
     }
 
-    tcp_done(sk);
+    tcp_free(sk);
 }
 
 static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)

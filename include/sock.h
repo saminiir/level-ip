@@ -40,6 +40,7 @@ static inline struct sk_buff *write_queue_head(struct sock *sk)
 }
 
 struct sock *sk_alloc(struct net_ops *ops, int protocol);
+void sock_free(struct sock *sk);
 void sock_init_data(struct socket *sock, struct sock *sk);
 
 #endif

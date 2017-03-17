@@ -22,6 +22,7 @@ static struct sock_ops inet_stream_ops = {
     .read = &inet_read,
     .close = &inet_close,
     .free = &inet_free,
+    .abort = &inet_abort,
 };
 
 static struct sock_type inet_ops[] = {
@@ -75,6 +76,7 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
                         int addr_len, int flags)
 {
     struct sock *sk = sock->sk;
+    int rc = 0;
     
     if (addr_len < sizeof(addr->sa_family)) {
         return -EINVAL;
@@ -125,8 +127,9 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
 out:
     return sk->err;
 sock_error:
-    sk->ops->disconnect(sk, flags);
-    goto out;
+    rc = sk->err;
+    socket_free(sock);
+    return rc;
 }
 
 int inet_write(struct socket *sock, const void *buf, int len)
@@ -172,8 +175,21 @@ int inet_close(struct socket *sock)
 int inet_free(struct socket *sock)
 {
     struct sock *sk = sock->sk;
-    sk->ops->abort(sk);
-
+    sock_free(sk);
     free(sock->sk);
+    
+    return 0;
+}
+
+int inet_abort(struct socket *sock)
+{
+    struct sock *sk = sock->sk;
+    
+    if (sk) {
+        sk->ops->abort(sk);
+    }
+
+    socket_free(sock);
+    
     return 0;
 }

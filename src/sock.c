@@ -24,3 +24,9 @@ void sock_init_data(struct socket *sock, struct sock *sk)
 
     sk->ops->init(sk);
 }
+
+void sock_free(struct sock *sk)
+{
+    skb_queue_free(&sk->receive_queue);
+    skb_queue_free(&sk->write_queue);
+}

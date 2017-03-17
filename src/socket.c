@@ -31,7 +31,7 @@ static struct socket *alloc_socket(pid_t pid)
     return sock;
 }
 
-static int free_socket(struct socket *sock)
+int socket_free(struct socket *sock)
 {
     if (sock->ops) {
         sock->ops->free(sock);
@@ -40,6 +40,7 @@ static int free_socket(struct socket *sock)
     pthread_mutex_lock(&slock);
 
     list_del(&sock->list);
+    free(sock);
     sock_amount--;
 
     pthread_mutex_unlock(&slock);
@@ -47,7 +48,7 @@ static int free_socket(struct socket *sock)
     return 0;
 }
 
-void free_sockets() {
+void abort_sockets() {
     struct list_head *item, *tmp;
     struct socket *sock;
 
@@ -56,7 +57,7 @@ void free_sockets() {
     list_for_each_safe(item, tmp, &sockets) {
         sock = list_entry(item, struct socket, list);
         list_del(item);
-        sock->ops->free(sock);
+        sock->ops->abort(sock);
         free(sock);
     }
     
@@ -129,7 +130,7 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     return sock->fd;
 
 abort_socket:
-    free_socket(sock);
+    socket_free(sock);
     return -1;
 }
 

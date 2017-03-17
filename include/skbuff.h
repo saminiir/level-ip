@@ -74,4 +74,14 @@ static inline struct sk_buff *skb_peek(struct sk_buff_head *list)
     return list_first_entry(&list->head, struct sk_buff, list);
 }
 
+static inline void skb_queue_free(struct sk_buff_head *list)
+{
+    struct sk_buff *skb = NULL;
+    
+    while ((skb = skb_peek(list)) != NULL) {
+        skb_dequeue(list);
+        free_skb(skb);
+    }
+}
+
 #endif

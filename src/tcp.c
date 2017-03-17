@@ -46,14 +46,9 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_seg
 }
 
 static void tcp_clear_queues(struct tcp_sock *tsk) {
-    struct sk_buff *skb;
-    
     pthread_mutex_lock(&tsk->ofo_queue.lock);
 
-    while ((skb = skb_peek(&tsk->ofo_queue)) != NULL) {
-        skb_dequeue(&tsk->ofo_queue);
-        free_skb(skb);
-    }
+    skb_queue_free(&tsk->ofo_queue);
 
     pthread_mutex_unlock(&tsk->ofo_queue.lock);
 }
@@ -265,17 +260,15 @@ int tcp_close(struct sock *sk)
     case TCP_SYN_SENT:
     case TCP_SYN_RECEIVED:
     case TCP_ESTABLISHED:
-        tcp_queue_fin(sk);
+        /* Queue this until all preceding SENDs have been segmentized, then
+           form a FIN segment and send it.  In any case, enter FIN-WAIT-1
+           state. */
         tcp_set_state(sk, TCP_FIN_WAIT_1);
-
+        tcp_queue_fin(sk);
         break;
     case TCP_CLOSE_WAIT:
-        if (!skb_queue_empty(&sk->write_queue)) {
-            wait_sleep(&sk->sock->sleep);
-        }
-
-        tcp_send_fin(sk);
-        tcp_set_state(sk, TCP_LAST_ACK);
+        tcp_queue_fin(sk);
+        
         break;
     default:
         print_err("Unknown TCP state for close\n");
@@ -288,10 +281,11 @@ int tcp_close(struct sock *sk)
 int tcp_abort(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    return tcp_send_reset(tsk);
+    tcp_send_reset(tsk);
+    return tcp_done(sk);
 }
 
-int tcp_done(struct sock *sk)
+int tcp_free(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     tcp_set_state(sk, TCP_CLOSE);
@@ -299,6 +293,12 @@ int tcp_done(struct sock *sk)
     tcp_clear_queues(tsk);
 
     return 0;
+}
+
+int tcp_done(struct sock *sk)
+{
+    tcp_free(sk);
+    return socket_free(sk->sock);
 }
 
 void tcp_clear_timers(struct sock *sk)
@@ -312,22 +312,38 @@ void tcp_clear_timers(struct sock *sk)
     timer_cancel(tsk->keepalive);
 }
 
-void tcp_stop_rto_timer(struct tcp_sock *tsk) {
+void tcp_stop_rto_timer(struct tcp_sock *tsk)
+{
     timer_cancel(tsk->retransmit);
     tsk->retransmit = NULL;
 }
 
-void tcp_release_rto_timer(struct tcp_sock *tsk) {
+void tcp_release_rto_timer(struct tcp_sock *tsk)
+{
     timer_release(tsk->retransmit);
     tsk->retransmit = NULL;
 }
 
-void tcp_stop_delack_timer(struct tcp_sock *tsk) {
+void tcp_stop_delack_timer(struct tcp_sock *tsk)
+{
     timer_cancel(tsk->delack);
     tsk->delack = NULL;
 }
 
-void tcp_release_delack_timer(struct tcp_sock *tsk) {
+void tcp_release_delack_timer(struct tcp_sock *tsk)
+{
     timer_release(tsk->delack);
     tsk->delack = NULL;
+}
+
+void tcp_handle_fin_state(struct sock *sk)
+{
+    switch (sk->state) {
+    case TCP_CLOSE_WAIT:
+        tcp_set_state(sk, TCP_LAST_ACK);
+        break;
+    case TCP_ESTABLISHED:
+        tcp_set_state(sk, TCP_FIN_WAIT_1);
+        break;
+    }
 }

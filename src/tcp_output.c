@@ -242,6 +242,10 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
         tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
     }
 
+    if (th->fin) {
+        tcp_handle_fin_state(sk);
+    }
+
 unlock:
     pthread_mutex_unlock(&sk->write_queue.lock);
 }
@@ -351,6 +355,8 @@ int tcp_queue_fin(struct sock *sk)
         /* If nothing in write queue, send FIN immediately */
         tcb->snd_nxt++;
         rc = tcp_transmit_skb(sk, skb);
+
+        tcp_handle_fin_state(sk);
     }
 
     pthread_mutex_unlock(&sk->write_queue.lock);
