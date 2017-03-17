@@ -239,10 +239,19 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     }
 
     // ACK bit is on
-    
     switch (sk->state) {
     case TCP_SYN_RECEIVED:
+        if (tcb->snd_una <= seg->ack && seg->ack < tcb->snd_nxt) {
+            tcp_set_state(sk, TCP_ESTABLISHED);
+        } else {
+            return tcp_drop(tsk, skb);
+        }
     case TCP_ESTABLISHED:
+    case TCP_FIN_WAIT_1:
+    case TCP_FIN_WAIT_2:
+    case TCP_CLOSE_WAIT:
+    case TCP_CLOSING:
+    case TCP_LAST_ACK:
         if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
             tcb->snd_una = seg->ack;
             tcb->seq = tcb->snd_una;
@@ -272,6 +281,42 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             // Send window should be updated
 
         }
+
+        break;
+    }
+
+    switch (sk->state) {
+    case TCP_LAST_ACK:
+        /* The only thing that can arrive in this state is an acknowledgment of our FIN.  
+         * If our FIN is now acknowledged, delete the TCB, enter the CLOSED state, and return. */
+        free_skb(skb);
+        return tcp_done(sk);
+    }
+
+    if (skb_queue_empty(&sk->write_queue)) {
+        switch (sk->state) {
+        case TCP_FIN_WAIT_1:
+            printf("Setting TCP state to tcp_fin_wait_2\n");
+            printf("%s:%d Setting TCP state to tcp_closing\n", __FUNCTION__, __LINE__);
+            tcp_set_state(sk, TCP_FIN_WAIT_2);
+        case TCP_FIN_WAIT_2:
+            wait_wakeup(&tsk->sk.sock->sleep);
+            break;
+        case TCP_CLOSING:
+            printf("%s:%d Setting TCP state to tcp_closing\n", __FUNCTION__, __LINE__);
+            tcp_set_state(sk, TCP_TIME_WAIT);
+        case TCP_LAST_ACK:
+            return tcp_done(sk);
+        case TCP_TIME_WAIT:
+            /* TODO: The only thing that can arrive in this state is a
+               retransmission of the remote FIN.  Acknowledge it, and restart
+               the 2 MSL timeout. */
+            if (tcb->rcv_nxt == seg->seq) {
+                tcb->rcv_nxt += 1;
+                tsk->flags |= TCP_FIN;
+                tcp_send_ack(sk);
+            }
+        }
     }
     
     /* sixth, check the URG bit */
@@ -285,9 +330,11 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
-        tcp_data_queue(tsk, skb, th, seg);
-        tsk->sk.ops->recv_notify(&tsk->sk);
-            
+        if (seg->dlen > 0) {
+            tcp_data_queue(tsk, skb, th, seg);
+            tsk->sk.ops->recv_notify(&tsk->sk);
+        }
+        
         break;
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:
@@ -308,20 +355,26 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             goto drop_and_unlock;
         }
 
+        if ((tcb->rcv_nxt - seg->dlen) == seg->seq) {
+            tcb->rcv_nxt += 1;
+            tsk->flags |= TCP_FIN;
+        }
+
         switch (sk->state) {
         case TCP_SYN_RECEIVED:
         case TCP_ESTABLISHED:
-            if (tcb->rcv_nxt == seg->seq) {
-                tcb->rcv_nxt += 1;
-                tcp_send_finack(&tsk->sk);
-                tsk->flags |= TCP_FIN;
-                tcp_set_state(sk, TCP_CLOSE_WAIT);
-            }
+            tcp_set_state(sk, TCP_CLOSE_WAIT);
             break;
         case TCP_FIN_WAIT_1:
             /* TODO:  If our FIN has been ACKed (perhaps in this segment), then
                enter TIME-WAIT, start the time-wait timer, turn off the other
                timers; otherwise enter the CLOSING state. */
+            if (skb_queue_empty(&sk->write_queue)) {
+                tcp_set_state(sk, TCP_TIME_WAIT);
+            } else {
+                tcp_set_state(sk, TCP_CLOSING);
+            }
+            
             break;
         case TCP_FIN_WAIT_2:
             /* TODO: Enter the TIME-WAIT state.  Start the time-wait timer, turn

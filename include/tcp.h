@@ -62,7 +62,6 @@
         print_debug("\t\t\t\tTCPSOCK "msg": %d\n", sock->fd);       \
     } while (0)
 
-
 struct tcphdr {
     uint16_t sport;
     uint16_t dport;
@@ -192,13 +191,15 @@ int tcp_send_synack(struct sock *sk);
 int tcp_send_ack(struct sock *sk);
 void tcp_send_delack(uint32_t ts, void *arg);
 int tcp_send_finack(struct sock *sk);
+int tcp_queue_fin(struct sock *sk);
+int tcp_send_fin(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
 int tcp_send_reset(struct tcp_sock *tsk);
 int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb);
 int tcp_recv_notify(struct sock *sk);
 int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
-void tcp_done(struct sock *sk);
+int tcp_done(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);
 void tcp_stop_rto_timer(struct tcp_sock *tsk);
 void tcp_release_rto_timer(struct tcp_sock *tsk);

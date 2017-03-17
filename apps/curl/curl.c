@@ -82,4 +82,6 @@ int main(int argc, char **argv)
         perror("Curl read error");
         return 1;
     }
+
+    close(sock);
 }

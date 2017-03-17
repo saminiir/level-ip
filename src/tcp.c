@@ -223,6 +223,8 @@ int tcp_read(struct sock *sk, void *buf, int len)
             tsk->flags &= ~TCP_FIN;
             return 0;
         }
+
+        break;
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
@@ -250,7 +252,36 @@ int tcp_recv_notify(struct sock *sk)
 
 int tcp_close(struct sock *sk)
 {
-    tcp_done(sk);
+    switch (sk->state) {
+    case TCP_CLOSE:
+    case TCP_CLOSING:
+    case TCP_LAST_ACK:
+    case TCP_TIME_WAIT:
+    case TCP_FIN_WAIT_1:
+    case TCP_FIN_WAIT_2:
+        sk->err = -EBADF;
+        return -1;
+    case TCP_LISTEN:
+    case TCP_SYN_SENT:
+    case TCP_SYN_RECEIVED:
+    case TCP_ESTABLISHED:
+        tcp_queue_fin(sk);
+        tcp_set_state(sk, TCP_FIN_WAIT_1);
+
+        break;
+    case TCP_CLOSE_WAIT:
+        if (!skb_queue_empty(&sk->write_queue)) {
+            wait_sleep(&sk->sock->sleep);
+        }
+
+        tcp_send_fin(sk);
+        tcp_set_state(sk, TCP_LAST_ACK);
+        break;
+    default:
+        print_err("Unknown TCP state for close\n");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -260,12 +291,14 @@ int tcp_abort(struct sock *sk)
     return tcp_send_reset(tsk);
 }
 
-void tcp_done(struct sock *sk)
+int tcp_done(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     tcp_set_state(sk, TCP_CLOSE);
     tcp_clear_timers(sk);
     tcp_clear_queues(tsk);
+
+    return 0;
 }
 
 void tcp_clear_timers(struct sock *sk)

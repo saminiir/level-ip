@@ -157,6 +157,28 @@ static int tcp_send_syn(struct sock *sk)
     return tcp_queue_transmit_skb(sk, skb);
 }
 
+int tcp_send_fin(struct sock *sk)
+{
+    if (sk->state == TCP_CLOSE) return 0;
+
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
+    struct sk_buff *skb;
+    struct tcphdr *th;
+    int rc = 0;
+
+    skb = tcp_alloc_skb(0);
+    
+    th = tcp_hdr(skb);
+    th->fin = 1;
+    th->ack = 1;
+    tcb->snd_nxt++;
+
+    rc = tcp_queue_transmit_skb(sk, skb);
+
+    return rc;
+}
+
 void tcp_select_initial_window(uint32_t *rcv_wnd)
 {
     *rcv_wnd = 29200;
@@ -184,6 +206,17 @@ static void tcp_connect_rto(struct tcp_sock *tsk)
     }
 }
 
+static void tcp_notify_user(struct sock *sk)
+{
+    struct tcp_sock *tsk = (struct tcp_sock *) sk;
+
+    switch (sk->state) {
+    case TCP_CLOSE_WAIT:
+        wait_wakeup(&sk->sock->sleep);
+        break;
+    }
+}
+
 static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
@@ -194,7 +227,10 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     tcp_release_rto_timer(tsk);
 
     struct sk_buff *skb = write_queue_head(sk);
-    if (!skb) goto unlock;
+    if (!skb) {
+        tcp_notify_user(sk);
+        goto unlock;
+    }
 
     struct tcphdr *th = tcp_hdr(skb);
     skb_reset_header(skb);
@@ -287,4 +323,37 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
 {
     // TODO: implement me
     return 0;
+}
+
+int tcp_queue_fin(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
+    struct sk_buff *skb;
+    struct tcphdr *th;
+    int ready = 0;
+    int rc = 0;
+
+    skb = tcp_alloc_skb(0);
+    th = tcp_hdr(skb);
+
+    th->fin = 1;
+    th->ack = 1;
+    
+    pthread_mutex_lock(&sk->write_queue.lock);
+
+    ready = skb_queue_empty(&sk->write_queue);
+    skb_queue_tail(&sk->write_queue, skb);
+
+    if (ready) {
+        tcp_release_rto_timer(tsk);
+        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        /* If nothing in write queue, send FIN immediately */
+        tcb->snd_nxt++;
+        rc = tcp_transmit_skb(sk, skb);
+    }
+
+    pthread_mutex_unlock(&sk->write_queue.lock);
+
+    return rc;
 }

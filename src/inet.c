@@ -162,11 +162,11 @@ int inet_close(struct socket *sock)
     }
 
     sock->state = SS_DISCONNECTING;
-    sock->sk->ops->close(sk);
+    if (sock->sk->ops->close(sk) != 0) {
+        print_err("Error on sock op close\n");
+    }
     
-    /* wait_sleep(&sock->sleep); */
-
-    return 0;
+    return sk->err;
 }
 
 int inet_free(struct socket *sock)
