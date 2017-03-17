@@ -189,7 +189,5 @@ int inet_abort(struct socket *sock)
         sk->ops->abort(sk);
     }
 
-    socket_free(sock);
-    
     return 0;
 }

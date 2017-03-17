@@ -40,6 +40,9 @@ int socket_free(struct socket *sock)
     pthread_mutex_lock(&slock);
 
     list_del(&sock->list);
+
+    wait_free(&sock->sleep);
+    
     free(sock);
     sock_amount--;
 
@@ -52,16 +55,10 @@ void abort_sockets() {
     struct list_head *item, *tmp;
     struct socket *sock;
 
-    pthread_mutex_lock(&slock);
-    
     list_for_each_safe(item, tmp, &sockets) {
         sock = list_entry(item, struct socket, list);
-        list_del(item);
         sock->ops->abort(sock);
-        free(sock);
     }
-    
-    pthread_mutex_unlock(&slock);
 }
 
 static struct socket *get_socket(pid_t pid, int fd)

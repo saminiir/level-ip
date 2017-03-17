@@ -286,27 +286,22 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         break;
     }
 
-    switch (sk->state) {
-    case TCP_LAST_ACK:
-        /* The only thing that can arrive in this state is an acknowledgment of our FIN.  
-         * If our FIN is now acknowledged, delete the TCB, enter the CLOSED state, and return. */
-        free_skb(skb);
-        return tcp_done(sk);
-    }
-
     if (skb_queue_empty(&sk->write_queue)) {
         switch (sk->state) {
         case TCP_FIN_WAIT_1:
-            printf("Setting TCP state to tcp_fin_wait_2\n");
-            printf("%s:%d Setting TCP state to tcp_closing\n", __FUNCTION__, __LINE__);
             tcp_set_state(sk, TCP_FIN_WAIT_2);
         case TCP_FIN_WAIT_2:
-            wait_wakeup(&tsk->sk.sock->sleep);
             break;
         case TCP_CLOSING:
-            printf("%s:%d Setting TCP state to tcp_closing\n", __FUNCTION__, __LINE__);
+            /* In addition to the processing for the ESTABLISHED state, if
+             * the ACK acknowledges our FIN then enter the TIME-WAIT state,
+               otherwise ignore the segment. */
             tcp_set_state(sk, TCP_TIME_WAIT);
+            break;
         case TCP_LAST_ACK:
+            /* The only thing that can arrive in this state is an acknowledgment of our FIN.  
+             * If our FIN is now acknowledged, delete the TCB, enter the CLOSED state, and return. */
+            free_skb(skb);
             return tcp_done(sk);
         case TCP_TIME_WAIT:
             /* TODO: The only thing that can arrive in this state is a
@@ -317,6 +312,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
                 tsk->flags |= TCP_FIN;
                 tcp_send_ack(sk);
             }
+            break;
         }
     }
     
@@ -331,11 +327,9 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
-        if (seg->dlen > 0) {
-            tcp_data_queue(tsk, skb, th, seg);
-            tsk->sk.ops->recv_notify(&tsk->sk);
-        }
-        
+        tcp_data_queue(tsk, skb, th, seg);
+        tsk->sk.ops->recv_notify(&tsk->sk);
+                
         break;
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:

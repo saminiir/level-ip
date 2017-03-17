@@ -34,4 +34,11 @@ static inline int wait_sleep(struct wait_lock *w) {
     return 0;
 };
 
+static inline void wait_free(struct wait_lock *w) {
+    wait_wakeup(w);
+    
+    pthread_mutex_destroy(&w->lock);
+    pthread_cond_destroy(&w->ready);
+};
+
 #endif
