@@ -367,19 +367,20 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             tcp_set_state(sk, TCP_CLOSE_WAIT);
             break;
         case TCP_FIN_WAIT_1:
-            /* TODO:  If our FIN has been ACKed (perhaps in this segment), then
+            /* If our FIN has been ACKed (perhaps in this segment), then
                enter TIME-WAIT, start the time-wait timer, turn off the other
                timers; otherwise enter the CLOSING state. */
             if (skb_queue_empty(&sk->write_queue)) {
-                tcp_set_state(sk, TCP_TIME_WAIT);
+                tcp_enter_time_wait(sk);
             } else {
                 tcp_set_state(sk, TCP_CLOSING);
             }
             
             break;
         case TCP_FIN_WAIT_2:
-            /* TODO: Enter the TIME-WAIT state.  Start the time-wait timer, turn
+            /* Enter the TIME-WAIT state.  Start the time-wait timer, turn
                off the other timers. */
+            tcp_enter_time_wait(sk);
             break;
         case TCP_CLOSE_WAIT:
         case TCP_CLOSING:

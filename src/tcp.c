@@ -347,3 +347,23 @@ void tcp_handle_fin_state(struct sock *sk)
         break;
     }
 }
+
+static void tcp_linger(uint32_t ts, void *arg)
+{
+    struct sock *sk = (struct sock *) arg;
+    struct tcp_sock *tsk = tcp_sk(sk);
+    timer_release(tsk->linger);
+    tsk->linger = NULL;
+
+    tcp_done(sk);
+}
+
+void tcp_enter_time_wait(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+
+    tcp_set_state(sk, TCP_TIME_WAIT);
+
+    timer_cancel(tsk->linger);
+    tsk->linger = timer_add(3000, &tcp_linger, sk);
+}

@@ -161,6 +161,7 @@ struct tcp_sock {
     struct timer *retransmit;
     struct timer *delack;
     struct timer *keepalive;
+    struct timer *linger;
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
 
@@ -202,6 +203,7 @@ int tcp_abort(struct sock *sk);
 int tcp_free(struct sock *sk);
 int tcp_done(struct sock *sk);
 void tcp_handle_fin_state(struct sock *sk);
+void tcp_enter_time_wait(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);
 void tcp_stop_rto_timer(struct tcp_sock *tsk);
 void tcp_release_rto_timer(struct tcp_sock *tsk);
