@@ -16,16 +16,17 @@ static void tcp_data_insert_ordered(struct sk_buff_head *queue, struct sk_buff *
                 /* TODO: We need to join skbs */
                 print_err("Could not join skbs\n");
             } else {
+                skb->refcnt++;
                 list_add(&skb->list, &next->list);
+                return;
             }
-
-            return;
         } else if (skb->seq == next->seq) {
             /* We already have this segment! */
             return;
         }
     }
 
+    skb->refcnt++;
     list_add_tail(&skb->list, &queue->head);
 }
 
@@ -77,6 +78,7 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
         if (skb->dlen == 0) {
             if (th->psh) tsk->flags |= TCP_PSH;
             skb_dequeue(&sk->receive_queue);
+            skb->refcnt--;
             free_skb(skb);
         }
     }
@@ -107,6 +109,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
     if (expected) {
         tcb->rcv_nxt += seg->dlen;
 
+        skb->refcnt++;
         skb_queue_tail(&sk->receive_queue, skb);
         tcp_consume_ofo_queue(tsk);
 

@@ -20,6 +20,7 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
         if (skb->end_seq <= una) {
             /* skb fully acknowledged */
             skb_dequeue(&sk->write_queue);
+            skb->refcnt--;
             free_skb(skb);
         } else {
             break;
@@ -387,6 +388,8 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             break;
         }
     }
+
+    free_skb(skb);
 
 unlock:
     pthread_mutex_unlock(&sk->receive_queue.lock);

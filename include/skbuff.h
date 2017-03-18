@@ -10,6 +10,7 @@ struct sk_buff {
     struct list_head list;
     struct rtentry *rt;
     struct netdev *dev;
+    int refcnt;
     uint16_t protocol;
     uint32_t len;
     uint32_t dlen;
@@ -80,6 +81,7 @@ static inline void skb_queue_free(struct sk_buff_head *list)
     
     while ((skb = skb_peek(list)) != NULL) {
         skb_dequeue(list);
+        skb->refcnt--;
         free_skb(skb);
     }
 }

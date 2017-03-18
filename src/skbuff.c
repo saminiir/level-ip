@@ -9,7 +9,8 @@ struct sk_buff *alloc_skb(unsigned int size)
     memset(skb, 0, sizeof(struct sk_buff));
     skb->data = malloc(size);
     memset(skb->data, 0, size);
-    
+
+    skb->refcnt = 0;
     skb->head = skb->data;
     skb->end = skb->data + size;
 
@@ -20,8 +21,10 @@ struct sk_buff *alloc_skb(unsigned int size)
 
 void free_skb(struct sk_buff *skb)
 {
-    free(skb->head);
-    free(skb);
+    if (skb->refcnt < 1) {
+        free(skb->head);
+        free(skb);
+    }
 }
 
 void *skb_reserve(struct sk_buff *skb, unsigned int len)
