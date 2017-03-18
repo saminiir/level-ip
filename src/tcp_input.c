@@ -217,6 +217,12 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
 
     /* first check sequence number */
     if (!tcp_verify_segment(tsk, th, seg)) {
+        /* RFC793: If an incoming segment is not acceptable, an acknowledgment
+         * should be sent in reply (unless the RST bit is set, if so drop
+         *  the segment and return): */
+        if (!th->rst) {
+            tcp_send_ack(sk);
+        }
         return tcp_drop(tsk, skb);
     }
     
