@@ -17,7 +17,7 @@ static void tcp_data_insert_ordered(struct sk_buff_head *queue, struct sk_buff *
                 print_err("Could not join skbs\n");
             } else {
                 skb->refcnt++;
-                list_add(&skb->list, &next->list);
+                skb_queue_add(queue, skb, next);
                 return;
             }
         } else if (skb->seq == next->seq) {
@@ -27,26 +27,22 @@ static void tcp_data_insert_ordered(struct sk_buff_head *queue, struct sk_buff *
     }
 
     skb->refcnt++;
-    list_add_tail(&skb->list, &queue->head);
+    skb_queue_tail(queue, skb);
 }
 
 /* Routine for transforming out-of-order segments into order */
 static void tcp_consume_ofo_queue(struct tcp_sock *tsk)
 {
-    if (skb_queue_empty(&tsk->ofo_queue)) return;
-
     struct sock *sk = &tsk->sk;
     struct tcb *tcb = &tsk->tcb;
-    struct sk_buff *skb = skb_peek(&tsk->ofo_queue);
+    struct sk_buff *skb = NULL;
 
-    while (tcb->rcv_nxt == skb->seq) {
-       /* skb is in-order, consume it */
+    while ((skb = skb_peek(&tsk->ofo_queue)) != NULL
+           && tcb->rcv_nxt == skb->seq) {
+       /* skb is in-order, put it in receive queue */
        tcb->rcv_nxt += skb->dlen;
-       skb_queue_tail(&sk->receive_queue, skb);
        skb_dequeue(&tsk->ofo_queue);
-       skb = skb_peek(&tsk->ofo_queue);
-
-       if (skb == NULL) break;
+       skb_queue_tail(&sk->receive_queue, skb);
     }
 }
 
