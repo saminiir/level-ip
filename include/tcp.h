@@ -27,21 +27,21 @@
 #define tcp_in_dbg(hdr, sk, skb)                                        \
     do {                                                                \
         print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u, ack %u, win %u, length %u", \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u", \
                     sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
                     sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
-                    hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
-                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, skb->dlen); \
+                    hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.irs, \
+                    skb->dlen, hdr->ack_seq - tcp_sk(sk)->tcb.iss, hdr->win); \
     } while (0) 
 
 #define tcp_out_dbg(hdr, sk, skb)                                       \
     do {                                                                \
         print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u, ack %u, win %u, length %u", \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u", \
                     sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
                     sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
                     hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
-                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, skb->dlen); \
+                    skb->dlen, hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win); \
     } while (0)
 
 #define tcpsock_dbg(msg, sk)                                            \
