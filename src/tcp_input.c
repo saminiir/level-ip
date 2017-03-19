@@ -46,11 +46,15 @@ static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
 static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
 {
     struct tcb *tcb = &tsk->tcb;
+    struct sock *sk = &tsk->sk;
 
     if (seg->dlen > 0 && tcb->rcv_wnd == 0) return 0;
 
     if (th->seq < tcb->rcv_nxt ||
-        th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) return 0;
+        th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) {
+        tcpsock_dbg("Received invalid segment", sk);
+        return 0;
+    }
 
     return 1;
 }
@@ -266,9 +270,6 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
             tcp_clean_rto_queue(sk, tcb->snd_una);
-
-            /* TODO: Users should receive positive acknowledgements for buffers
-               which have been sent and fully acknowledged */
         }
 
         if (seg->ack < tcb->snd_una) {
@@ -286,13 +287,13 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         }
 
         if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
-            // Send window should be updated
-
+            // TODO: Send window should be updated
         }
 
         break;
     }
 
+    /* If the write queue is empty, it means our FIN was acked */
     if (skb_queue_empty(&sk->write_queue)) {
         switch (sk->state) {
         case TCP_FIN_WAIT_1:
@@ -315,7 +316,8 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
                retransmission of the remote FIN.  Acknowledge it, and restart
                the 2 MSL timeout. */
             if (tcb->rcv_nxt == seg->seq) {
-                tcb->rcv_nxt += 1;
+                tcpsock_dbg("Remote FIN retransmitted?", sk);
+//                tcb->rcv_nxt += 1;
                 tsk->flags |= TCP_FIN;
                 tcp_send_ack(sk);
             }
@@ -358,6 +360,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
         }
 
         if ((tcb->rcv_nxt - seg->dlen) == seg->seq) {
+            tcpsock_dbg("Received in-sequence FIN", sk);
             tcb->rcv_nxt += 1;
             tsk->flags |= TCP_FIN;
         }
