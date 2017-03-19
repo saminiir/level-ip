@@ -84,7 +84,6 @@ static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct 
 
 static int tcp_listen(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
 {
-    tcpstate_dbg("state is listen");
     free_skb(skb);
     return 0;
 }
@@ -94,7 +93,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    tcpstate_dbg("state is synsent");
+    tcpsock_dbg("state is synsent", sk);
     
     if (th->ack) {
         if (th->ack_seq <= tcb->iss || th->ack_seq > tcb->snd_nxt) {
@@ -172,8 +171,9 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     */
 
     int rc = -1;
+    struct sock *sk = &tsk->sk;
 
-    tcpstate_dbg("state is closed");
+    tcpsock_dbg("state is closed", sk);
 
     if (th->rst) {
         tcp_discard(tsk, skb, th);
@@ -202,7 +202,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
 
-    tcptcb_dbg("Input", tcb);
+    tcpsock_dbg("input state", sk);
 
     switch (sk->state) {
     case TCP_CLOSE:

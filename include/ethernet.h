@@ -9,16 +9,20 @@
 
 #define ETH_HDR_LEN sizeof(struct eth_hdr)
 
+#ifdef DEBUG_ETH
 #define eth_dbg(msg, hdr)                                               \
     do {                                                                \
-        print_debug("Ethernet "msg": "                                  \
+        print_debug("eth "msg" ("                                       \
                     "dmac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, " \
                     "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, " \
-                    "ethertype: %.4hx\n\n",                               \
+                    "ethertype: %.4hx)",                               \
                     hdr->dmac[0], hdr->dmac[1], hdr->dmac[2], hdr->dmac[3], \
                     hdr->dmac[4], hdr->dmac[5], hdr->smac[0], hdr->smac[1], \
                     hdr->smac[2], hdr->smac[3], hdr->smac[4], hdr->smac[5], hdr->ethertype); \
     } while (0)
+#else
+#define eth_dbg(msg, hdr)
+#endif
 
 struct sk_buff;
 struct netdev;

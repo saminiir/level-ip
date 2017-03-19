@@ -75,7 +75,7 @@ void arp_rcv(struct sk_buff *skb)
     arphdr->hwtype = ntohs(arphdr->hwtype);
     arphdr->protype = ntohs(arphdr->protype);
     arphdr->opcode = ntohs(arphdr->opcode);
-    arp_dbg("Input", arphdr);
+    arp_dbg("in", arphdr);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
         printf("Unsupported HW type\n");
@@ -142,14 +142,14 @@ int arp_request(uint32_t sip, uint32_t dip, struct netdev *netdev)
     
     arp = (struct arp_hdr *) skb_push(skb, ARP_HDR_LEN);
 
-    arp_dbg("Request", arp);
+    arp_dbg("req", arp);
     arp->opcode = htons(ARP_REQUEST);
     arp->hwtype = htons(ARP_ETHERNET); 
     arp->protype = htons(ETH_P_IP);
     arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
 
-    arpdata_dbg("Request", payload);
+    arpdata_dbg("req", payload);
     payload->sip = htonl(payload->sip);
     payload->dip = htonl(payload->dip);
     
@@ -178,7 +178,7 @@ void arp_reply(struct sk_buff *skb, struct netdev *netdev)
 
     arphdr->opcode = ARP_REPLY;
 
-    arp_dbg("REPLY", arphdr);
+    arp_dbg("reply", arphdr);
     arphdr->opcode = htons(arphdr->opcode);
     arphdr->hwtype = htons(arphdr->hwtype);
     arphdr->protype = htons(arphdr->protype);
@@ -202,10 +202,6 @@ unsigned char* arp_get_hwaddr(uint32_t sip)
     struct list_head *item;
     struct arp_cache_entry *entry;
     
-    print_debug("\tARP: Searching for ARP entry with sip "
-                "%hhu.%hhu.%hhu.%hhu\n", sip >> 24, sip >> 16,
-                sip >> 8, sip >> 0);
-
     list_for_each(item, &arp_cache) {
         entry = list_entry(item, struct arp_cache_entry, list);
 

@@ -36,7 +36,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     thdr->csum = 0;
     thdr->urp = 0;
 
-    tcphdr_dbg("Output", thdr);
+    tcp_out_dbg(thdr, sk, skb);
 
     /* Store sequence information into the socket buffer */
     skb->seq = tcb->seq;
@@ -182,7 +182,7 @@ int tcp_send_fin(struct sock *sk)
 
 void tcp_select_initial_window(uint32_t *rcv_wnd)
 {
-    *rcv_wnd = 29200;
+    *rcv_wnd = 44477;
 }
 
 /**

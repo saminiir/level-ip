@@ -65,8 +65,6 @@ void tcp_in(struct sk_buff *skb)
     tcph = (struct tcphdr*) iph->data;
 
     tcp_init_segment(tcph, iph, &seg);
-    tcphdr_dbg("Input", tcph);
-    tcpseg_dbg("Input", dbg);
     
     sk = inet_lookup(skb, tcph->sport, tcph->dport);
 
@@ -76,6 +74,8 @@ void tcp_in(struct sk_buff *skb)
         free_skb(skb);
         return;
     }
+
+    tcp_in_dbg(tcph, sk, skb);
     
     /* if (tcp_checksum(iph, tcph) != 0) { */
     /*     goto discard; */
@@ -134,7 +134,7 @@ int tcp_init_sock(struct sock *sk)
     return 0;
 }
 
-void tcp_set_state(struct sock *sk, uint32_t state)
+void __tcp_set_state(struct sock *sk, uint32_t state)
 {
     sk->state = state;
 }
@@ -257,6 +257,7 @@ int tcp_close(struct sock *sk)
     case TCP_TIME_WAIT:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
+        /* Respond with "error:  connection closing". */
         sk->err = -EBADF;
         return -1;
     case TCP_LISTEN:
@@ -270,8 +271,9 @@ int tcp_close(struct sock *sk)
         tcp_queue_fin(sk);
         break;
     case TCP_CLOSE_WAIT:
+        /* Queue this request until all preceding SENDs have been
+           segmentized; then send a FIN segment, enter LAST_ACK state. */
         tcp_queue_fin(sk);
-        
         break;
     default:
         print_err("Unknown TCP state for close\n");

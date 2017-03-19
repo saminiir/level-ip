@@ -96,8 +96,6 @@ static void wait_for_threads()
             exit(1);
         }
     }
-
-    print_debug("All threads joined\n");
 }
 
 void free_stack()

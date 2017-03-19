@@ -20,19 +20,20 @@
 #define ARP_WAITING     1
 #define ARP_RESOLVED    2
 
+#ifdef DEBUG_ARP
 #define arp_dbg(str, hdr)                                               \
     do {                                                                \
-        print_debug("\tArp "str": hwtype: %hu, protype: %.4hx, "          \
-                    "hwsize: %d, opcode: %.4hx\n",                      \
+        print_debug("arp "str" (hwtype: %hu, protype: %.4hx, "          \
+                    "hwsize: %d, prosize: %d, opcode: %.4hx)",         \
                     hdr->hwtype, hdr->protype, hdr->hwsize,             \
                     hdr->prosize, hdr->opcode);                         \
     } while (0)
 
 #define arpdata_dbg(str, data)                                          \
     do {                                                                \
-        print_debug("\tArp Data "str": smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
+        print_debug("arp data "str" (smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx"  \
                     ":%.2hhx:%.2hhx, sip: %hhu.%hhu.%hhu.%hhu, dmac: %.2hhx:%.2hhx" \
-                    ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu\n", \
+                    ":%.2hhx:%.2hhx:%.2hhx:%.2hhx, dip: %hhu.%hhu.%hhu.%hhu)", \
                     data->smac[0], data->smac[1], data->smac[2], data->smac[3], \
                     data->smac[4], data->smac[5], data->sip >> 24, data->sip >> 16, \
                     data->sip >> 8, data->sip >> 0, data->dmac[0], data->dmac[1], \
@@ -42,12 +43,17 @@
 
 #define arpcache_dbg(str, entry) \
     do { \
-    print_debug("\tArp Cache: "str" hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
-    "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, state: %d\n", entry->hwtype, \
+    print_debug("arp cache "str" (hwtype: %hu, sip: %hhu.%hhu.%hhu.%hhu, " \
+    "smac: %.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx:%.2hhx, state: %d)", entry->hwtype, \
         entry->sip >> 24, entry->sip >> 16, entry->sip >> 8, entry->sip >> 0, \
         entry->smac[0], entry->smac[1], entry->smac[2], entry->smac[3], entry->smac[4], \
                 entry->smac[5], entry->state); \
     } while (0)
+#else
+#define arp_dbg(str, hdr)
+#define arpdata_dbg(str, data)
+#define arpcache_dbg(str, entry)
+#endif
 
 struct arp_hdr
 {

@@ -42,20 +42,6 @@ void print_err(char *str, ...)
     fprintf(stderr, buf);
 }
 
-void print_debug(char *str, ...)
-{
-    if (!debug) return;
-    
-    va_list ap;
-    char buf[200];
-    va_start(ap, str);
-    vsnprintf(buf, 200, str, ap);
-
-    va_end(ap);
-
-    printf(buf);
-}
-
 uint32_t sum_every_16bits(void *addr, int count)
 {
     register uint32_t sum = 0;

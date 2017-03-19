@@ -63,8 +63,6 @@ struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void
     list_add_tail(&t->list, &timers);
     pthread_mutex_unlock(&lock);
     
-    timer_dbg("add", t);
-
     return t;
 }
 

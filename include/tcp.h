@@ -3,6 +3,7 @@
 #include "syshead.h"
 #include "ip.h"
 #include "timer.h"
+#include "utils.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
 
@@ -22,45 +23,51 @@
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
-#define tcphdr_dbg(msg, hdr) \
-    do { \
-        print_debug("\t\t\tTCP "msg": sport: %hu, dport: %hu, seq: %u, ack: %hu\n" \
-                    "\t\t\t            rsvd: %hhu, hl: %hhu, CEUAPRSF: %hhu%hhu%hhu%hhu%hhu%hhu%hhu%hhu,\n" \
-                    "\t\t\t            win: %hu, csum: %.4hx, urp: %hu\n\n", \
-                    hdr->sport, hdr->dport, hdr->seq,                 \
-                    hdr->ack_seq, hdr->rsvd, hdr->hl, hdr->cwr, hdr->ece, hdr->urg, \
-                    hdr->ack, hdr->psh, hdr->rst, hdr->syn, hdr->fin, hdr->win, \
-                    hdr->csum, hdr->urp);                               \
-    } while (0)
-
-#define tcpseg_dbg(msg, seg) \
+#ifdef DEBUG_TCP
+#define tcp_in_dbg(hdr, sk, skb)                                        \
     do {                                                                \
-        print_debug("\t\t\t\tTCP Seg "msg": seq: %u, ack: %u, dlen: %u,\n" \
-                    "\t\t\t\t                len: %u, win: %u,\n" \
-                    "\t\t\t\t                up: %u, prc: %u, seq_last: %u\n\n", \
-                    seg->seq, seg->ack, seg->dlen, seg->len,            \
-                    seg->win, seg->up, seg->prc, seg->seq_last);        \
-    } while (0)
+        print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u, ack %u, win %u, length %u", \
+                    sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
+                    sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
+                    hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
+                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, skb->dlen); \
+    } while (0) 
 
-#define tcptcb_dbg(msg, tcb) \
+#define tcp_out_dbg(hdr, sk, skb)                                       \
     do {                                                                \
-        print_debug("\t\t\t\tTCP TCB "msg": seq: %u, snd_una: %u, snd_nxt: %u,\n" \
-                    "\t\t\t\t                snd_wnd: %u, snd_up: %u,\n" \
-                    "\t\t\t\t                snd_wl1: %u, snd_wl2: %u, iss: %u, rcv_nxt: %u,\n" \
-                    "\t\t\t\t                rcv_wnd: %u, rcv_up: %u, irs: %u\n\n", \
-                    tcb->seq, tcb->snd_una, tcb->snd_nxt, tcb->snd_wnd, tcb->snd_up, tcb->snd_wl1, \
-                    tcb->snd_wl2, tcb->iss, tcb->rcv_nxt, tcb->rcv_wnd, tcb->rcv_up, tcb->irs); \
+        print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u, ack %u, win %u, length %u", \
+                    sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
+                    sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
+                    hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
+                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, skb->dlen); \
     } while (0)
 
-#define tcpstate_dbg(msg)                       \
-    do {                                        \
-        print_debug("\t\t\t\tTCPSTATE: "msg"\n");       \
+#define tcpsock_dbg(msg, sk)                                            \
+    do {                                                                \
+        print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (seq %u, snd_una %u, snd_nxt %u, snd_wnd %u, " \
+                    "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u): "msg, \
+                    sk->sport, sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, \
+                    sk->dport, tcp_sk(sk)->tcb.seq - tcp_sk(sk)->tcb.iss, \
+                    tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
+                    tcp_sk(sk)->tcb.snd_nxt - tcp_sk(sk)->tcb.iss, tcp_sk(sk)->tcb.snd_wnd, \
+                    tcp_sk(sk)->tcb.snd_wl1, tcp_sk(sk)->tcb.snd_wl2,   \
+                    tcp_sk(sk)->tcb.rcv_nxt - tcp_sk(sk)->tcb.irs, tcp_sk(sk)->tcb.rcv_wnd); \
     } while (0)
 
-#define tcpsock_dbg(msg, sock)                       \
-    do {                                        \
-        print_debug("\t\t\t\tTCPSOCK "msg": %d\n", sock->fd);       \
+#define tcp_set_state(sk, state)                                        \
+    do {                                                                \
+        tcpsock_dbg("state is now "#state, sk);                         \
+        __tcp_set_state(sk, state);                                     \
     } while (0)
+
+#else
+#define tcp_in_dbg(hdr, sk, skb)
+#define tcp_out_dbg(hdr, sk, skb)
+#define tcpsock_dbg(msg, sk)
+#define tcp_set_state(sk, state)  __tcp_set_state(sk, state)
+#endif
 
 struct tcphdr {
     uint16_t sport;
@@ -181,7 +188,7 @@ int generate_iss();
 struct sock *tcp_alloc_sock();
 int tcp_v4_init_sock(struct sock *sk);
 int tcp_init_sock(struct sock *sk);
-void tcp_set_state(struct sock *sk, uint32_t state);
+void __tcp_set_state(struct sock *sk, uint32_t state);
 int tcp_v4_checksum(struct sk_buff *skb, uint32_t saddr, uint32_t daddr);
 int tcp_v4_connect(struct sock *sk, const struct sockaddr *addr, int addrlen, int flags);
 int tcp_connect(struct sock *sk);
