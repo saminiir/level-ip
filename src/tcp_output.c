@@ -352,7 +352,7 @@ int tcp_queue_fin(struct sock *sk)
 
     if (ready) {
         tcp_release_rto_timer(tsk);
-        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        tsk->retransmit = timer_add(200, &tcp_retransmission_timeout, tsk);
         /* If nothing in write queue, send FIN immediately */
         tcb->snd_nxt++;
         rc = tcp_transmit_skb(sk, skb);
