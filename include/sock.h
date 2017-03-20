@@ -25,6 +25,7 @@ struct sock {
     struct wait_lock recv_wait;
     struct sk_buff_head receive_queue;
     struct sk_buff_head write_queue;
+    pthread_mutex_t lock;
     int protocol;
     int state;
     int err;

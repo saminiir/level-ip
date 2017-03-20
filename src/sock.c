@@ -21,6 +21,7 @@ void sock_init_data(struct socket *sock, struct sock *sk)
     wait_init(&sk->recv_wait);
     skb_queue_init(&sk->receive_queue);
     skb_queue_init(&sk->write_queue);
+    pthread_mutex_init(&sk->lock, NULL);
 
     sk->ops->init(sk);
 }
@@ -29,4 +30,5 @@ void sock_free(struct sock *sk)
 {
     skb_queue_free(&sk->receive_queue);
     skb_queue_free(&sk->write_queue);
+    pthread_mutex_destroy(&sk->lock);
 }

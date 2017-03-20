@@ -159,17 +159,24 @@ int inet_close(struct socket *sock)
     struct sock *sk = sock->sk;
     int err = 0;
 
+    if (!sock) {
+        return 0;
+    }
+
     if (err) {
         print_err("Error on socket closing\n");
         return -1;
     }
 
+    pthread_mutex_lock(&sk->lock);
     sock->state = SS_DISCONNECTING;
     if (sock->sk->ops->close(sk) != 0) {
         print_err("Error on sock op close\n");
     }
-    
-    return sk->err;
+
+    err = sk->err;
+    pthread_mutex_unlock(&sk->lock);
+    return err;
 }
 
 int inet_free(struct socket *sock)
