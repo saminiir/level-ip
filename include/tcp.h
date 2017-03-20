@@ -47,13 +47,14 @@
 #define tcpsock_dbg(msg, sk)                                            \
     do {                                                                \
         print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (seq %u, snd_una %u, snd_nxt %u, snd_wnd %u, " \
-                    "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u): "msg, \
+                    "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u) state %s: "msg, \
                     sk->sport, sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, \
                     sk->dport, tcp_sk(sk)->tcb.seq - tcp_sk(sk)->tcb.iss, \
                     tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
                     tcp_sk(sk)->tcb.snd_nxt - tcp_sk(sk)->tcb.iss, tcp_sk(sk)->tcb.snd_wnd, \
                     tcp_sk(sk)->tcb.snd_wl1, tcp_sk(sk)->tcb.snd_wl2,   \
-                    tcp_sk(sk)->tcb.rcv_nxt - tcp_sk(sk)->tcb.irs, tcp_sk(sk)->tcb.rcv_wnd); \
+                    tcp_sk(sk)->tcb.rcv_nxt - tcp_sk(sk)->tcb.irs, tcp_sk(sk)->tcb.rcv_wnd, \
+                    tcp_dbg_states[sk->state]);                                        \
     } while (0)
 
 #define tcp_set_state(sk, state)                                        \
@@ -127,6 +128,13 @@ enum tcp_states {
                       the remote TCP received the acknowledgment of its connection
                       termination request. */
 };
+
+#ifdef DEBUG_TCP
+static const char *tcp_dbg_states[] = {
+    "TCP_LISTEN", "TCP_SYNSENT", "TCP_SYN_RECEIVED", "TCP_ESTABLISHED", "TCP_FIN_WAIT_1",
+    "TCP_FIN_WAIT_2", "TCP_CLOSE", "TCP_CLOSE_WAIT", "TCP_CLOSING", "TCP_LAST_ACK", "TCP_TIME_WAIT",
+};
+#endif
 
 struct tcb {
     uint32_t seq;
