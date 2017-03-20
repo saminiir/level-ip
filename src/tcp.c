@@ -24,7 +24,7 @@ void tcp_init()
     
 }
 
-static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_segment *seg)
+static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct sk_buff *skb)
 {
     th->sport = ntohs(th->sport);
     th->dport = ntohs(th->dport);
@@ -34,15 +34,11 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct tcp_seg
     th->csum = ntohs(th->csum);
     th->urp = ntohs(th->urp);
 
-    seg->seq = th->seq;
-    seg->ack = th->ack_seq;
-    seg->dlen = ip_len(ih) - tcp_hlen(th);
-    seg->len = seg->dlen + th->syn + th->fin;
-
-    seg->win = th->win;
-    seg->up = th->urp;
-    seg->prc = 0;
-    seg->seq_last = seg->seq + seg->len - 1;
+    skb->seq = th->seq;
+    skb->dlen = ip_len(ih) - tcp_hlen(th);
+    skb->len = skb->dlen + th->syn + th->fin;
+    skb->end_seq = skb->seq + skb->dlen;
+    skb->payload = th->data;
 }
 
 static void tcp_clear_queues(struct tcp_sock *tsk) {
@@ -57,31 +53,29 @@ void tcp_in(struct sk_buff *skb)
 {
     struct sock *sk;
     struct iphdr *iph;
-    struct tcphdr *tcph;
-    struct tcp_segment seg;
-    struct tcp_segment *dbg = &seg;
+    struct tcphdr *th;
 
     iph = ip_hdr(skb);
-    tcph = (struct tcphdr*) iph->data;
+    th = (struct tcphdr*) iph->data;
 
-    tcp_init_segment(tcph, iph, &seg);
+    tcp_init_segment(th, iph, skb);
     
-    sk = inet_lookup(skb, tcph->sport, tcph->dport);
+    sk = inet_lookup(skb, th->sport, th->dport);
 
     if (sk == NULL) {
         print_err("No TCP socket for sport %d dport %d\n",
-                  tcph->sport, tcph->dport);
+                  th->sport, th->dport);
         free_skb(skb);
         return;
     }
 
-    tcp_in_dbg(tcph, sk, skb);
+    tcp_in_dbg(th, sk, skb);
     
-    /* if (tcp_checksum(iph, tcph) != 0) { */
+    /* if (tcp_checksum(iph, th) != 0) { */
     /*     goto discard; */
     /* } */
         
-    tcp_input_state(sk, skb, &seg);
+    tcp_input_state(sk, th, skb);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -297,6 +291,7 @@ int tcp_free(struct sock *sk)
     tcp_clear_timers(sk);
     tcp_clear_queues(tsk);
 
+    wait_wakeup(&sk->sock->sleep);
     return 0;
 }
 
@@ -319,14 +314,18 @@ void tcp_clear_timers(struct sock *sk)
 
 void tcp_stop_rto_timer(struct tcp_sock *tsk)
 {
-    timer_cancel(tsk->retransmit);
-    tsk->retransmit = NULL;
+    if (tsk) {
+        timer_cancel(tsk->retransmit);
+        tsk->retransmit = NULL;
+    }
 }
 
 void tcp_release_rto_timer(struct tcp_sock *tsk)
 {
-    timer_release(tsk->retransmit);
-    tsk->retransmit = NULL;
+    if (tsk) {
+        timer_release(tsk->retransmit);
+        tsk->retransmit = NULL;
+    }
 }
 
 void tcp_stop_delack_timer(struct tcp_sock *tsk)

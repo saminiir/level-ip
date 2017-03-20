@@ -43,12 +43,12 @@ static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
     return 0;
 }
 
-static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct tcp_segment *seg)
+static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 {
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    if (seg->dlen > 0 && tcb->rcv_wnd == 0) return 0;
+    if (skb->dlen > 0 && tcb->rcv_wnd == 0) return 0;
 
     if (th->seq < tcb->rcv_nxt ||
         th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) {
@@ -65,7 +65,6 @@ static void tcp_reset(struct sock *sk)
     switch (sk->state) {
     case TCP_SYN_SENT:
         sk->err = -ECONNREFUSED;
-        wait_wakeup(&sk->sock->sleep);
         break;
     case TCP_CLOSE_WAIT:
         sk->err = -EPIPE;
@@ -200,9 +199,8 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
 /*
  * Follows RFC793 "Segment Arrives" section closely
  */ 
-int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *seg)
+int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 {
-    struct tcphdr *th = tcp_hdr(skb);
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
 
@@ -220,7 +218,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     /* "Otherwise" section in RFC793 */
 
     /* first check sequence number */
-    if (!tcp_verify_segment(tsk, th, seg)) {
+    if (!tcp_verify_segment(tsk, th, skb)) {
         /* RFC793: If an incoming segment is not acceptable, an acknowledgment
          * should be sent in reply (unless the RST bit is set, if so drop
          *  the segment and return): */
@@ -253,7 +251,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     // ACK bit is on
     switch (sk->state) {
     case TCP_SYN_RECEIVED:
-        if (tcb->snd_una <= seg->ack && seg->ack < tcb->snd_nxt) {
+        if (tcb->snd_una <= th->ack_seq && th->ack_seq < tcb->snd_nxt) {
             tcp_set_state(sk, TCP_ESTABLISHED);
         } else {
             return tcp_drop(tsk, skb);
@@ -264,20 +262,20 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_CLOSE_WAIT:
     case TCP_CLOSING:
     case TCP_LAST_ACK:
-        if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
-            tcb->snd_una = seg->ack;
+        if (tcb->snd_una < th->ack_seq && th->ack_seq <= tcb->snd_nxt) {
+            tcb->snd_una = th->ack_seq;
             tcb->seq = tcb->snd_una;
             /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
             tcp_clean_rto_queue(sk, tcb->snd_una);
         }
 
-        if (seg->ack < tcb->snd_una) {
+        if (th->ack_seq < tcb->snd_una) {
             // If the ACK is a duplicate, it can be ignored
             return tcp_drop(tsk, skb);
         }
 
-        if (seg->ack > tcb->snd_nxt) {
+        if (th->ack_seq > tcb->snd_nxt) {
             // If the ACK acks something not yet sent, then send an ACK, drop segment
             // and return
             // TODO: Dropping the seg here, why would I respond with an ACK? Linux
@@ -286,7 +284,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             return tcp_drop(tsk, skb);
         }
 
-        if (tcb->snd_una < seg->ack && seg->ack <= tcb->snd_nxt) {
+        if (tcb->snd_una < th->ack_seq && th->ack_seq <= tcb->snd_nxt) {
             // TODO: Send window should be updated
         }
 
@@ -315,7 +313,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             /* TODO: The only thing that can arrive in this state is a
                retransmission of the remote FIN.  Acknowledge it, and restart
                the 2 MSL timeout. */
-            if (tcb->rcv_nxt == seg->seq) {
+            if (tcb->rcv_nxt == th->seq) {
                 tcpsock_dbg("Remote FIN retransmitted?", sk);
 //                tcb->rcv_nxt += 1;
                 tsk->flags |= TCP_FIN;
@@ -336,7 +334,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
-        tcp_data_queue(tsk, skb, th, seg);
+        tcp_data_queue(tsk, th, skb);
         tsk->sk.ops->recv_notify(&tsk->sk);
                 
         break;
@@ -359,7 +357,7 @@ int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *se
             goto drop_and_unlock;
         }
 
-        if ((tcb->rcv_nxt - seg->dlen) == seg->seq) {
+        if ((tcb->rcv_nxt - skb->dlen) == skb->seq) {
             tcpsock_dbg("Received in-sequence FIN", sk);
             tcb->rcv_nxt += 1;
             tsk->flags |= TCP_FIN;

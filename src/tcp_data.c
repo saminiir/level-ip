@@ -84,8 +84,7 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
     return rlen;
 }
 
-int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
-                   struct tcphdr *th, struct tcp_segment *seg)
+int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 {
     struct sock *sk = &tsk->sk;
     struct tcb *tcb = &tsk->tcb;
@@ -96,14 +95,9 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
         return -1;
     }
 
-    skb->dlen = seg->dlen;
-    skb->payload = th->data;
-    skb->seq = seg->seq;
-    skb->end_seq = seg->seq + seg->dlen;
-
-    int expected = seg->seq == tcb->rcv_nxt;
+    int expected = skb->seq == tcb->rcv_nxt;
     if (expected) {
-        tcb->rcv_nxt += seg->dlen;
+        tcb->rcv_nxt += skb->dlen;
 
         skb->refcnt++;
         skb_queue_tail(&sk->receive_queue, skb);
@@ -115,7 +109,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct sk_buff *skb,
          * be excessively delayed; in particular, the delay MUST be less than
          * 0.5 seconds, and in a stream of full-sized segments there SHOULD 
          * be an ACK for at least every second segment. */
-        if (seg->dlen == tsk->mss && ++tsk->delacks > 1) {
+        if (skb->dlen == tsk->mss && ++tsk->delacks > 1) {
             tsk->delacks = 0;
             tcp_send_ack(sk);
         } else {

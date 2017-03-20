@@ -128,20 +128,6 @@ enum tcp_states {
                       termination request. */
 };
 
-/* Current Segment Variables */
-struct tcp_segment {
-    uint32_t seq; /* first sequence number of a segment */
-    uint32_t ack; /* acknowledgment from the receiving TCP (next sequence
-                     number expected by the receiving TCP) */
-    uint32_t dlen;
-    uint32_t len; /* the number of octets occupied by the data in the segment
-                     (counting SYN and FIN) */
-    uint32_t win;
-    uint32_t up;
-    uint32_t prc; /* precedence value, not used */
-    uint32_t seq_last; /* last sequence number of a segment */
-};
-
 struct tcb {
     uint32_t seq;
     uint32_t snd_una; /* oldest unacknowledged sequence number */
@@ -196,7 +182,7 @@ int tcp_disconnect(struct sock *sk, int flags);
 int tcp_write(struct sock *sk, const void *buf, int len);
 int tcp_read(struct sock *sk, void *buf, int len);
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len);
-int tcp_input_state(struct sock *sk, struct sk_buff *skb, struct tcp_segment *seg);
+int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb);
 int tcp_send_synack(struct sock *sk);
 int tcp_send_ack(struct sock *sk);
 void tcp_send_delack(uint32_t ts, void *arg);
