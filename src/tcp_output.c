@@ -28,7 +28,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
     thdr->sport = sk->sport;
     thdr->dport = sk->dport;
-    thdr->seq = tcb->seq;
+    thdr->seq = tcb->snd_nxt;
     thdr->ack_seq = tcb->rcv_nxt;
     thdr->hl = 5;
     thdr->rsvd = 0;
@@ -39,8 +39,12 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     tcp_out_dbg(thdr, sk, skb);
 
     /* Store sequence information into the socket buffer */
-    skb->seq = tcb->seq;
-    skb->end_seq = tcb->seq + skb->dlen;
+    skb->seq = tcb->snd_una;
+    skb->end_seq = tcb->snd_una + skb->dlen;
+    
+    tcb->snd_nxt += skb->dlen;
+    if (thdr->syn) tcb->snd_nxt++;
+    if (thdr->fin) tcb->snd_nxt++;
     
     thdr->sport = htons(thdr->sport);
     thdr->dport = htons(thdr->dport);
@@ -173,7 +177,6 @@ int tcp_send_fin(struct sock *sk)
     th = tcp_hdr(skb);
     th->fin = 1;
     th->ack = 1;
-    tcb->snd_nxt++;
 
     rc = tcp_queue_transmit_skb(sk, skb);
 
@@ -209,8 +212,6 @@ static void tcp_connect_rto(struct tcp_sock *tsk)
 
 static void tcp_notify_user(struct sock *sk)
 {
-    struct tcp_sock *tsk = (struct tcp_sock *) sk;
-
     switch (sk->state) {
     case TCP_CLOSE_WAIT:
         wait_wakeup(&sk->sock->sleep);
@@ -221,6 +222,7 @@ static void tcp_notify_user(struct sock *sk)
 static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
+    struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
     pthread_mutex_lock(&sk->write_queue.lock);
@@ -235,6 +237,8 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 
     struct tcphdr *th = tcp_hdr(skb);
     skb_reset_header(skb);
+    
+    tcb->snd_nxt = tcb->snd_una;
     tcp_transmit_skb(sk, skb);
     
     if (th->syn) {
@@ -263,9 +267,8 @@ int tcp_connect(struct sock *sk)
 
     tcb->snd_una = tcb->iss;
     tcb->snd_up = tcb->iss;
-    tcb->snd_nxt = tcb->iss + 1;
+    tcb->snd_nxt = tcb->iss;
     tcb->rcv_nxt = 0;
-    tcb->seq = tcb->iss;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
     
@@ -316,7 +319,7 @@ int tcp_send_reset(struct tcp_sock *tsk)
     tcb = &tsk->tcb;
 
     th->rst = 1;
-    tcb->seq = tcb->snd_nxt;
+    tcb->snd_una = tcb->snd_nxt;
 
     rc = tcp_transmit_skb(&tsk->sk, skb);
     free_skb(skb);
@@ -353,8 +356,8 @@ int tcp_queue_fin(struct sock *sk)
     if (ready) {
         tcp_release_rto_timer(tsk);
         tsk->retransmit = timer_add(200, &tcp_retransmission_timeout, tsk);
+
         /* If nothing in write queue, send FIN immediately */
-        tcb->snd_nxt++;
         rc = tcp_transmit_skb(sk, skb);
 
         tcp_handle_fin_state(sk);

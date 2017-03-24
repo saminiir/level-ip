@@ -46,11 +46,10 @@
 
 #define tcpsock_dbg(msg, sk)                                            \
     do {                                                                \
-        print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (seq %u, snd_una %u, snd_nxt %u, snd_wnd %u, " \
+        print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (snd_una %u, snd_nxt %u, snd_wnd %u, " \
                     "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u) state %s: "msg, \
                     sk->sport, sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, \
-                    sk->dport, tcp_sk(sk)->tcb.seq - tcp_sk(sk)->tcb.iss, \
-                    tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
+                    sk->dport, tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
                     tcp_sk(sk)->tcb.snd_nxt - tcp_sk(sk)->tcb.iss, tcp_sk(sk)->tcb.snd_wnd, \
                     tcp_sk(sk)->tcb.snd_wl1, tcp_sk(sk)->tcb.snd_wl2,   \
                     tcp_sk(sk)->tcb.rcv_nxt - tcp_sk(sk)->tcb.irs, tcp_sk(sk)->tcb.rcv_wnd, \
@@ -137,7 +136,6 @@ static const char *tcp_dbg_states[] = {
 #endif
 
 struct tcb {
-    uint32_t seq;
     uint32_t snd_una; /* oldest unacknowledged sequence number */
     uint32_t snd_nxt; /* next sequence number to be sent */
     uint32_t snd_wnd;

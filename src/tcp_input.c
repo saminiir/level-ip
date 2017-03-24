@@ -100,13 +100,16 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     
     if (th->ack) {
         if (th->ack_seq <= tcb->iss || th->ack_seq > tcb->snd_nxt) {
+            tcpsock_dbg("ACK is unacceptable", sk);
+            
             if (th->rst) goto discard;
-
             goto reset_and_discard;
         }
 
-        if (th->ack_seq < tcb->snd_una || th->ack_seq > tcb->snd_nxt)
+        if (th->ack_seq < tcb->snd_una || th->ack_seq > tcb->snd_nxt) {
+            tcpsock_dbg("ACK is unacceptable", sk);
             goto reset_and_discard;
+        }
     }
 
     /* ACK is acceptable */
@@ -133,13 +136,13 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
 
     if (tcb->snd_una > tcb->iss) {
         tcp_set_state(sk, TCP_ESTABLISHED);
-        tcb->seq = tcb->snd_nxt;
+        tcb->snd_una = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
         tsk->sk.err = 0;
         wait_wakeup(&tsk->sk.sock->sleep);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
-        tcb->seq = tcb->iss;
+        tcb->snd_una = tcb->iss;
         tcp_send_synack(&tsk->sk);
     }
     
@@ -264,7 +267,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     case TCP_LAST_ACK:
         if (tcb->snd_una < th->ack_seq && th->ack_seq <= tcb->snd_nxt) {
             tcb->snd_una = th->ack_seq;
-            tcb->seq = tcb->snd_una;
             /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
             tcp_clean_rto_queue(sk, tcb->snd_una);
