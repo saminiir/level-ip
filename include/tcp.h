@@ -205,6 +205,7 @@ int tcp_done(struct sock *sk);
 void tcp_handle_fin_state(struct sock *sk);
 void tcp_enter_time_wait(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);
+void tcp_rearm_rto_timer(struct tcp_sock *tsk);
 void tcp_stop_rto_timer(struct tcp_sock *tsk);
 void tcp_release_rto_timer(struct tcp_sock *tsk);
 void tcp_stop_delack_timer(struct tcp_sock *tsk);

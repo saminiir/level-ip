@@ -236,6 +236,11 @@ unlock:
     pthread_mutex_unlock(&sk->write_queue.lock);
 }
 
+void tcp_rearm_rto_timer(struct tcp_sock *tsk)
+{
+    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+}
+
 int tcp_connect(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
@@ -263,29 +268,35 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
     struct sk_buff *skb;
     struct tcb *tcb = &tsk->tcb;
     struct tcphdr *th;
-    int ret = -1;
+    int slen = len;
+    int mss = tsk->mss;
+    int dlen = 0;
 
-    skb = tcp_alloc_skb(len);
-    skb_push(skb, len);
-    memcpy(skb->data, buf, len);
+    while (slen > 0) {
+        dlen = slen > mss ? mss : slen;
+        slen -= dlen;
 
-    th = tcp_hdr(skb);
-    th->ack = 1;
-    th->psh = 1;
-    tcb->seq = tcb->snd_nxt;
-    tcb->snd_nxt += len;
+        skb = tcp_alloc_skb(dlen);
+        skb_push(skb, dlen);
+        memcpy(skb->data, buf, dlen);
+        
+        buf += dlen;
 
-    ret = tcp_queue_transmit_skb(&tsk->sk, skb);
+        th = tcp_hdr(skb);
+        th->ack = 1;
 
-    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        if (slen == 0) {
+            th->psh = 1;
+        }
 
-    ret -= (ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
-
-    if (ret != len) {
-        return -1;
+        if (tcp_queue_transmit_skb(&tsk->sk, skb) == -1) {
+            perror("Error on TCP skb queueing");
+        };
     }
 
-    return ret;
+    tcp_rearm_rto_timer(tsk);
+
+    return len;
 }
 
 int tcp_send_reset(struct tcp_sock *tsk)
