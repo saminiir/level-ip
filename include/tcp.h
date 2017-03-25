@@ -92,6 +92,11 @@ struct tcphdr {
     uint8_t data[];
 } __attribute__((packed));
 
+struct tcp_options {
+    uint16_t options;
+    uint16_t mss;
+};
+
 struct tcpiphdr {
     uint32_t saddr;
     uint32_t daddr;

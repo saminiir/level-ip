@@ -17,6 +17,16 @@ static struct sk_buff *tcp_alloc_skb(int size)
     return skb;
 }
 
+static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts)
+{
+    return 0;
+}
+
+static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
+{
+    return 0;
+}
+
 static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
@@ -133,9 +143,14 @@ static int tcp_send_syn(struct sock *sk)
 
     struct sk_buff *skb;
     struct tcphdr *th;
+    struct tcp_options opts = { 0 };
+    int tcp_options_len = 0;
 
-    skb = tcp_alloc_skb(0);
+    tcp_options_len = tcp_syn_options(sk, &opts);
+    skb = tcp_alloc_skb(tcp_options_len);
     th = tcp_hdr(skb);
+
+    tcp_write_options(th, &opts);
 
     sk->state = TCP_SYN_SENT;
     th->syn = 1;
