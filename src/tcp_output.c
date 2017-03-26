@@ -37,7 +37,7 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
     struct tcp_sock *tsk = tcp_sk(sk);
     int optlen = 0;
 
-    opts->mss = tsk->mss;
+    opts->mss = tsk->rmss;
     optlen += TCP_OPTLEN_MSS;
     
     return optlen;
@@ -300,7 +300,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
     struct tcb *tcb = &tsk->tcb;
     struct tcphdr *th;
     int slen = len;
-    int mss = tsk->mss;
+    int mss = tsk->smss;
     int dlen = 0;
 
     while (slen > 0) {

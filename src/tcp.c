@@ -112,7 +112,8 @@ struct sock *tcp_alloc_sock()
     tsk->delacks = 0;
 
     /* TODO: Determine mss properly */
-    tsk->mss = 1460;
+    tsk->rmss = 1460;
+    tsk->smss = 1460;
 
     skb_queue_init(&tsk->ofo_queue);
     
