@@ -110,7 +110,9 @@ struct sock *tcp_alloc_sock()
     tsk->keepalive = NULL;
 
     tsk->delacks = 0;
-    tsk->mss = 536;
+
+    /* TODO: Determine mss properly */
+    tsk->mss = 1460;
 
     skb_queue_init(&tsk->ofo_queue);
     

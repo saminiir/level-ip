@@ -7,40 +7,57 @@
 
 static void tcp_retransmission_timeout(uint32_t ts, void *arg);
 
-static struct sk_buff *tcp_alloc_skb(int size)
+static struct sk_buff *tcp_alloc_skb(int optlen, int size)
 {
-    struct sk_buff *skb = alloc_skb(size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
-    skb_reserve(skb, size + ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN);
+    int reserved = ETH_HDR_LEN + IP_HDR_LEN + TCP_HDR_LEN + optlen + size;
+    struct sk_buff *skb = alloc_skb(reserved);
+
+    skb_reserve(skb, reserved);
     skb->protocol = IP_TCP;
     skb->dlen = size;
 
     return skb;
 }
 
-static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts)
+static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
 {
+    struct tcp_opt_mss *opt_mss = (struct tcp_opt_mss *) th->data;
+
+    opt_mss->kind = TCP_OPT_MSS;
+    opt_mss->len = TCP_OPTLEN_MSS;
+    opt_mss->mss = htons(opts->mss);
+
+    th->hl = TCP_DOFFSET + (optlen / 4);
+
     return 0;
 }
 
 static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
 {
-    return 0;
+    struct tcp_sock *tsk = tcp_sk(sk);
+    int optlen = 0;
+
+    opts->mss = tsk->mss;
+    optlen += TCP_OPTLEN_MSS;
+    
+    return optlen;
 }
 
 static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
+    struct tcphdr *thdr = tcp_hdr(skb);
 
-    skb_push(skb, tsk->tcp_header_len);
+    /* No options were previously set */
+    if (thdr->hl == 0) thdr->hl = TCP_DOFFSET;
 
-    struct tcphdr *thdr = (struct tcphdr *)skb->data;
+    skb_push(skb, thdr->hl * 4);
 
     thdr->sport = sk->sport;
     thdr->dport = sk->dport;
     thdr->seq = tcb->snd_nxt;
     thdr->ack_seq = tcb->rcv_nxt;
-    thdr->hl = 5;
     thdr->rsvd = 0;
     thdr->win = tcb->rcv_wnd;
     thdr->csum = 0;
@@ -91,7 +108,7 @@ int tcp_send_synack(struct sock *sk)
     struct tcphdr *th;
     int rc = 0;
 
-    skb = tcp_alloc_skb(0);
+    skb = tcp_alloc_skb(0, 0);
     th = tcp_hdr(skb);
 
     th->syn = 1;
@@ -123,7 +140,7 @@ int tcp_send_ack(struct sock *sk)
     struct tcphdr *th;
     int rc = 0;
 
-    skb = tcp_alloc_skb(0);
+    skb = tcp_alloc_skb(0, 0);
     
     th = tcp_hdr(skb);
     th->ack = 1;
@@ -147,14 +164,13 @@ static int tcp_send_syn(struct sock *sk)
     int tcp_options_len = 0;
 
     tcp_options_len = tcp_syn_options(sk, &opts);
-    skb = tcp_alloc_skb(tcp_options_len);
+    skb = tcp_alloc_skb(tcp_options_len, 0);
     th = tcp_hdr(skb);
 
-    tcp_write_options(th, &opts);
-
+    tcp_write_options(th, &opts, tcp_options_len);
     sk->state = TCP_SYN_SENT;
     th->syn = 1;
-    
+
     return tcp_queue_transmit_skb(sk, skb);
 }
 
@@ -168,7 +184,7 @@ int tcp_send_fin(struct sock *sk)
     struct tcphdr *th;
     int rc = 0;
 
-    skb = tcp_alloc_skb(0);
+    skb = tcp_alloc_skb(0, 0);
     
     th = tcp_hdr(skb);
     th->fin = 1;
@@ -291,7 +307,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
         dlen = slen > mss ? mss : slen;
         slen -= dlen;
 
-        skb = tcp_alloc_skb(dlen);
+        skb = tcp_alloc_skb(0, dlen);
         skb_push(skb, dlen);
         memcpy(skb->data, buf, dlen);
         
@@ -321,7 +337,7 @@ int tcp_send_reset(struct tcp_sock *tsk)
     struct tcb *tcb;
     int rc = 0;
 
-    skb = tcp_alloc_skb(0);
+    skb = tcp_alloc_skb(0, 0);
     th = tcp_hdr(skb);
     tcb = &tsk->tcb;
 
@@ -349,7 +365,7 @@ int tcp_queue_fin(struct sock *sk)
     int ready = 0;
     int rc = 0;
 
-    skb = tcp_alloc_skb(0);
+    skb = tcp_alloc_skb(0, 0);
     th = tcp_hdr(skb);
 
     th->fin = 1;

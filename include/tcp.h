@@ -6,6 +6,7 @@
 #include "utils.h"
 
 #define TCP_HDR_LEN sizeof(struct tcphdr)
+#define TCP_DOFFSET sizeof(struct tcphdr) / 4
 
 #define TCP_FIN 0x01
 #define TCP_SYN 0x02
@@ -19,6 +20,9 @@
 
 #define TCP_SYN_BACKOFF 1000
 #define TCP_CONN_RETRIES 3
+
+#define TCP_OPTLEN_MSS 4
+#define TCP_OPT_MSS 2
 
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
@@ -96,6 +100,12 @@ struct tcp_options {
     uint16_t options;
     uint16_t mss;
 };
+
+struct tcp_opt_mss {
+    uint8_t kind;
+    uint8_t len;
+    uint16_t mss;
+} __attribute__((packed));
 
 struct tcpiphdr {
     uint32_t saddr;
