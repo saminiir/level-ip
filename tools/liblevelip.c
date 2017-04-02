@@ -93,6 +93,11 @@ static int init_socket(char *sockname)
     return data_socket;
 }
 
+static int free_socket(int lvlfd)
+{
+    return _close(lvlfd);
+}
+
 static int transmit_lvlip(int lvlfd, struct ipc_msg *msg, int msglen)
 {
     char *buf[RCBUF_LEN];
@@ -180,6 +185,7 @@ int close(int fd)
 
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_close);
+    int rc = 0;
 
     struct ipc_msg *msg = alloca(msglen);
     msg->type = IPC_CLOSE;
@@ -188,7 +194,10 @@ int close(int fd)
     struct ipc_close *payload = (struct ipc_close *)msg->data;
     payload->sockfd = fd;
 
-    return transmit_lvlip(sock->lvlfd, msg, msglen);
+    rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+    free_socket(sock->lvlfd);
+
+    return rc;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
