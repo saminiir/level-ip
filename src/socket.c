@@ -93,6 +93,22 @@ struct socket *socket_lookup(uint16_t remoteport, uint16_t localport)
     return NULL;
 }
 
+void socket_debug()
+{
+    struct list_head *item;
+    struct socket *sock = NULL;
+    struct sock *sk = NULL;
+
+    pthread_mutex_lock(&slock);
+
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+        socket_dbg(sock);
+    }
+
+    pthread_mutex_unlock(&slock);
+}
+
 int _socket(pid_t pid, int domain, int type, int protocol)
 {
     struct socket *sock;

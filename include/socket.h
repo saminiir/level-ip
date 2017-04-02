@@ -5,6 +5,19 @@
 #include "wait.h"
 #include "list.h"
 
+#ifdef DEBUG_SOCKET
+#define socket_dbg(sock) \
+    do {                     \
+        print_debug("Socket fd %d pid %d state %d sk_state %d sport %d dport %d " \
+                    "recv-q %d send-q %d",                              \
+                    sock->fd, sock->pid, sock->state, sock->sk->state,  \
+                    sock->sk->sport, sock->sk->dport, sock->sk->receive_queue.qlen, \
+                    sock->sk->write_queue.qlen);                        \
+    } while (0)
+#else
+#define socket_dbg(sock)
+#endif
+
 struct socket;
 
 enum socket_state {
@@ -56,5 +69,6 @@ int _close(pid_t pid, int sockfd);
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
 void abort_sockets();
+void socket_debug();
 
 #endif

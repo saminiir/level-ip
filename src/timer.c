@@ -1,5 +1,6 @@
 #include "syshead.h"
 #include "timer.h"
+#include "socket.h"
 
 static LIST_HEAD(timers);
 static int tick = 0;
@@ -104,6 +105,10 @@ void *timers_start()
 
         tick++;
         timers_tick();
+
+        if (tick % 5000 == 0) {
+            socket_debug();
+        } 
     }
 }
 
