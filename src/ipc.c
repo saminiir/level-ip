@@ -5,9 +5,45 @@
 
 #define IPC_BUFLEN 4096
 
-// TODO: dynamic socket pool
-static pthread_t sockets[256];
-static int cur_th = 0;
+static LIST_HEAD(sockets);
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static int socket_count = 0;
+
+static struct ipc_thread *ipc_alloc_thread(int sock)
+{
+    struct ipc_thread *th = calloc(sizeof(struct ipc_thread), 1);
+    list_init(&th->list);
+    th->sock = sock;
+
+    pthread_mutex_lock(&lock);
+    list_add_tail(&th->list, &sockets);
+    socket_count++;
+    pthread_mutex_unlock(&lock);
+
+    return th;
+}
+
+static void ipc_free_thread(int sock)
+{
+    struct list_head *item, *tmp = NULL;
+    struct ipc_thread *th = NULL;
+    
+    pthread_mutex_lock(&lock);
+
+    list_for_each_safe(item, tmp, &sockets) {
+        th = list_entry(item, struct ipc_thread, list);
+
+        if (th->sock == sock) {
+            list_del(&th->list);
+            free(th);
+            socket_count--;
+            break;
+        }
+
+    }
+
+    pthread_mutex_unlock(&lock);
+}
 
 static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
 {
@@ -140,7 +176,11 @@ static int ipc_close(int sockfd, struct ipc_msg *msg)
 
     rc = _close(pid, payload->sockfd);
 
-    return ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
+    rc = ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
+
+    ipc_free_thread(sockfd);
+
+    return rc;
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -185,6 +225,8 @@ void *socket_ipc_open(void *args) {
             return NULL;
         };
     }
+
+    ipc_free_thread(sockfd);
 
     if (rc == -1) {
         perror("socket ipc read");
@@ -237,7 +279,9 @@ void *start_ipc_listener()
             exit(EXIT_FAILURE);
         }
 
-        if (pthread_create(&sockets[cur_th++], NULL, &socket_ipc_open, &datasock) != 0) {
+        struct ipc_thread *th = ipc_alloc_thread(datasock);
+        
+        if (pthread_create(&th->id, NULL, &socket_ipc_open, &datasock) != 0) {
             printf("Error on socket thread creation\n");
             exit(1);
         };

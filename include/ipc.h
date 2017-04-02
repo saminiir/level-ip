@@ -1,5 +1,8 @@
 #ifndef IPC_H_
 #define IPC_H_
+
+#include "list.h"
+
 void *start_ipc_listener();
 
 #define IPC_SOCKET  0x0001
@@ -7,6 +10,12 @@ void *start_ipc_listener();
 #define IPC_WRITE   0x0003
 #define IPC_READ    0x0004
 #define IPC_CLOSE   0x0005
+
+struct ipc_thread {
+    struct list_head list;
+    int sock;
+    pthread_t id;
+};
 
 struct ipc_msg {
     uint16_t type;
