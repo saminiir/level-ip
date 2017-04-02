@@ -235,6 +235,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     if (th->rst) {
         free_skb(skb);
         tcp_enter_time_wait(sk);
+        tsk->sk.ops->recv_notify(&tsk->sk);
         return 0;
     }
     
