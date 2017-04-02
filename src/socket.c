@@ -97,7 +97,6 @@ void socket_debug()
 {
     struct list_head *item;
     struct socket *sock = NULL;
-    struct sock *sk = NULL;
 
     pthread_mutex_lock(&slock);
 

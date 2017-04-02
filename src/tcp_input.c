@@ -46,13 +46,12 @@ static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
 static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 {
     struct tcb *tcb = &tsk->tcb;
-    struct sock *sk = &tsk->sk;
 
     if (skb->dlen > 0 && tcb->rcv_wnd == 0) return 0;
 
     if (th->seq < tcb->rcv_nxt ||
         th->seq > (tcb->rcv_nxt + tcb->rcv_wnd)) {
-        tcpsock_dbg("Received invalid segment", sk);
+        tcpsock_dbg("Received invalid segment", (&tsk->sk));
         return 0;
     }
 
@@ -177,9 +176,8 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     */
 
     int rc = -1;
-    struct sock *sk = &tsk->sk;
 
-    tcpsock_dbg("state is closed", sk);
+    tcpsock_dbg("state is closed", (&tsk->sk));
 
     if (th->rst) {
         tcp_discard(tsk, skb, th);

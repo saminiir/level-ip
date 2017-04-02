@@ -7,6 +7,13 @@
 #include "timer.h"
 #include "wait.h"
 
+#ifdef DEBUG_TCP
+const char *tcp_dbg_states[] = {
+    "TCP_LISTEN", "TCP_SYNSENT", "TCP_SYN_RECEIVED", "TCP_ESTABLISHED", "TCP_FIN_WAIT_1",
+    "TCP_FIN_WAIT_2", "TCP_CLOSE", "TCP_CLOSE_WAIT", "TCP_CLOSING", "TCP_LAST_ACK", "TCP_TIME_WAIT",
+};
+#endif
+
 struct net_ops tcp_ops = {
     .alloc_sock = &tcp_alloc_sock,
     .init = &tcp_v4_init_sock,

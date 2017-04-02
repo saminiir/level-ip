@@ -28,6 +28,7 @@
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
 #ifdef DEBUG_TCP
+extern const char *tcp_dbg_states[];
 #define tcp_in_dbg(hdr, sk, skb)                                        \
     do {                                                                \
         print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
@@ -144,13 +145,6 @@ enum tcp_states {
                       the remote TCP received the acknowledgment of its connection
                       termination request. */
 };
-
-#ifdef DEBUG_TCP
-static const char *tcp_dbg_states[] = {
-    "TCP_LISTEN", "TCP_SYNSENT", "TCP_SYN_RECEIVED", "TCP_ESTABLISHED", "TCP_FIN_WAIT_1",
-    "TCP_FIN_WAIT_2", "TCP_CLOSE", "TCP_CLOSE_WAIT", "TCP_CLOSING", "TCP_LAST_ACK", "TCP_TIME_WAIT",
-};
-#endif
 
 struct tcb {
     uint32_t snd_una; /* oldest unacknowledged sequence number */
