@@ -260,7 +260,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     if (th->syn) {
         tcp_connect_rto(tsk);
     } else {
-        tsk->retransmit = timer_add(200, &tcp_retransmission_timeout, tsk);
+        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
     }
 
     if (th->fin) {
@@ -273,6 +273,7 @@ unlock:
 
 void tcp_rearm_rto_timer(struct tcp_sock *tsk)
 {
+    tcp_release_rto_timer(tsk);
     tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 }
 
