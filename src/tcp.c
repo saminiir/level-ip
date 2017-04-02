@@ -377,6 +377,8 @@ void tcp_enter_time_wait(struct sock *sk)
 
     tcp_set_state(sk, TCP_TIME_WAIT);
 
+    tcp_clear_timers(sk);
+    
     timer_cancel(tsk->linger);
     tsk->linger = timer_add(3000, &tcp_linger, sk);
 }
