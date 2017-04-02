@@ -7,7 +7,7 @@
 
 #define timer_dbg(msg, t)                                               \
     do {                                                                \
-        print_debug("Timer at %d: "msg": expires %d\n", tick, t->expires); \
+        print_debug("Timer at %d: "msg": expires %d", tick, t->expires); \
     } while (0)
 
 struct timer {

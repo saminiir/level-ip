@@ -248,6 +248,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 
     struct sk_buff *skb = write_queue_head(sk);
     if (!skb) {
+        tcpsock_dbg("TCP RTO queue empty, notifying user", sk);
         tcp_notify_user(sk);
         goto unlock;
     }
@@ -330,7 +331,7 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
 
         if (tcp_queue_transmit_skb(&tsk->sk, skb) == -1) {
             perror("Error on TCP skb queueing");
-        };
+        }
     }
 
     return len;
@@ -375,6 +376,7 @@ int tcp_queue_fin(struct sock *sk)
     th->fin = 1;
     th->ack = 1;
 
+    tcpsock_dbg("Queueing fin", sk);
     
     rc = tcp_queue_transmit_skb(sk, skb);
     tcb->snd_nxt++;
