@@ -3,6 +3,16 @@
 
 #include "list.h"
 
+#ifdef DEBUG_IPC
+#define ipc_dbg(msg, th)                                                \
+    do {                                                                \
+        print_debug("IPC sockets count %d, current sock %d, tid %lu: %s", \
+                    socket_count, th->sock, th->id, msg);             \
+    } while (0)
+#else
+#define ipc_dbg(msg, th)
+#endif
+
 void *start_ipc_listener();
 
 #define IPC_SOCKET  0x0001

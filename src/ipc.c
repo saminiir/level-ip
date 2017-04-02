@@ -20,6 +20,8 @@ static struct ipc_thread *ipc_alloc_thread(int sock)
     socket_count++;
     pthread_mutex_unlock(&lock);
 
+    ipc_dbg("New IPC socket allocated", th);
+
     return th;
 }
 
@@ -35,6 +37,8 @@ static void ipc_free_thread(int sock)
 
         if (th->sock == sock) {
             list_del(&th->list);
+            ipc_dbg("IPC socket deleted", th);
+
             free(th);
             socket_count--;
             break;
