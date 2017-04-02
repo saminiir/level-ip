@@ -233,7 +233,9 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     
     /* second check the RST bit */
     if (th->rst) {
-
+        free_skb(skb);
+        tcp_enter_time_wait(sk);
+        return 0;
     }
     
     /* third check security and precedence */
