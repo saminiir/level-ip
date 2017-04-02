@@ -363,6 +363,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             tcpsock_dbg("Received in-sequence FIN", sk);
             tcb->rcv_nxt += 1;
             tsk->flags |= TCP_FIN;
+            tcp_send_ack(sk);
         }
 
         switch (sk->state) {

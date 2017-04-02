@@ -178,8 +178,6 @@ int tcp_send_fin(struct sock *sk)
 {
     if (sk->state == TCP_CLOSE) return 0;
 
-    struct tcp_sock *tsk = tcp_sk(sk);
-    struct tcb *tcb = &tsk->tcb;
     struct sk_buff *skb;
     struct tcphdr *th;
     int rc = 0;
@@ -256,7 +254,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     if (th->syn) {
         tcp_connect_rto(tsk);
     } else {
-        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        tsk->retransmit = timer_add(200, &tcp_retransmission_timeout, tsk);
     }
 
     if (th->fin) {
@@ -297,7 +295,6 @@ int tcp_connect(struct sock *sk)
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
 {
     struct sk_buff *skb;
-    struct tcb *tcb = &tsk->tcb;
     struct tcphdr *th;
     int slen = len;
     int mss = tsk->smss;
@@ -324,8 +321,6 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
             perror("Error on TCP skb queueing");
         };
     }
-
-    tcp_rearm_rto_timer(tsk);
 
     return len;
 }
@@ -358,11 +353,8 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb)
 
 int tcp_queue_fin(struct sock *sk)
 {
-    struct tcp_sock *tsk = tcp_sk(sk);
-    struct tcb *tcb = &tsk->tcb;
     struct sk_buff *skb;
     struct tcphdr *th;
-    int ready = 0;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -370,23 +362,9 @@ int tcp_queue_fin(struct sock *sk)
 
     th->fin = 1;
     th->ack = 1;
+
     
-    pthread_mutex_lock(&sk->write_queue.lock);
-
-    ready = skb_queue_empty(&sk->write_queue);
-    skb_queue_tail(&sk->write_queue, skb);
-
-    if (ready) {
-        tcp_release_rto_timer(tsk);
-        tsk->retransmit = timer_add(200, &tcp_retransmission_timeout, tsk);
-
-        /* If nothing in write queue, send FIN immediately */
-        rc = tcp_transmit_skb(sk, skb);
-
-        tcp_handle_fin_state(sk);
-    }
-
-    pthread_mutex_unlock(&sk->write_queue.lock);
+    rc = tcp_queue_transmit_skb(sk, skb);
 
     return rc;
 }
