@@ -43,7 +43,7 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
     return optlen;
 }
 
-static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
+static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
@@ -56,7 +56,7 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
     thdr->sport = sk->sport;
     thdr->dport = sk->dport;
-    thdr->seq = tcb->snd_nxt;
+    thdr->seq = seq;
     thdr->ack_seq = tcb->rcv_nxt;
     thdr->rsvd = 0;
     thdr->win = tcb->rcv_wnd;
@@ -68,10 +68,6 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
     /* Store sequence information into the socket buffer */
     skb->seq = tcb->snd_una;
     skb->end_seq = tcb->snd_una + skb->dlen;
-    
-    tcb->snd_nxt += skb->dlen;
-    if (thdr->syn) tcb->snd_nxt++;
-    if (thdr->fin) tcb->snd_nxt++;
     
     thdr->sport = htons(thdr->sport);
     thdr->dport = htons(thdr->dport);
@@ -87,11 +83,20 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb)
 
 static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
     int rc = 0;
     
     pthread_mutex_lock(&sk->write_queue.lock);
+
+    if (skb_queue_empty(&sk->write_queue)) {
+        tcp_rearm_rto_timer(tsk);
+    }
+
     skb_queue_tail(&sk->write_queue, skb);
-    rc = tcp_transmit_skb(sk, skb);
+    rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
+    tcb->snd_nxt += skb->dlen;
+    
     pthread_mutex_unlock(&sk->write_queue.lock);
 
     return rc;
@@ -106,6 +111,7 @@ int tcp_send_synack(struct sock *sk)
 
     struct sk_buff *skb;
     struct tcphdr *th;
+    struct tcb * tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -114,7 +120,7 @@ int tcp_send_synack(struct sock *sk)
     th->syn = 1;
     th->ack = 1;
 
-    rc = tcp_transmit_skb(sk, skb);
+    rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
     free_skb(skb);
 
     return rc;
@@ -138,6 +144,7 @@ int tcp_send_ack(struct sock *sk)
     
     struct sk_buff *skb;
     struct tcphdr *th;
+    struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -145,7 +152,7 @@ int tcp_send_ack(struct sock *sk)
     th = tcp_hdr(skb);
     th->ack = 1;
 
-    rc = tcp_transmit_skb(sk, skb);
+    rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
     free_skb(skb);
 
     return rc;
@@ -248,8 +255,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     struct tcphdr *th = tcp_hdr(skb);
     skb_reset_header(skb);
     
-    tcb->snd_nxt = tcb->snd_una;
-    tcp_transmit_skb(sk, skb);
+    tcp_transmit_skb(sk, skb, tcb->snd_una);
     
     if (th->syn) {
         tcp_connect_rto(tsk);
@@ -274,6 +280,7 @@ int tcp_connect(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
+    int rc = 0;
     
     tsk->tcp_header_len = sizeof(struct tcphdr);
     tcb->iss = generate_iss();
@@ -289,7 +296,10 @@ int tcp_connect(struct sock *sk)
     
     tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
 
-    return tcp_send_syn(sk);
+    rc = tcp_send_syn(sk);
+    tcb->snd_nxt++;
+    
+    return rc;
 }
 
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
@@ -339,7 +349,7 @@ int tcp_send_reset(struct tcp_sock *tsk)
     th->rst = 1;
     tcb->snd_una = tcb->snd_nxt;
 
-    rc = tcp_transmit_skb(&tsk->sk, skb);
+    rc = tcp_transmit_skb(&tsk->sk, skb, tcb->snd_nxt);
     free_skb(skb);
 
     return rc;
@@ -355,6 +365,7 @@ int tcp_queue_fin(struct sock *sk)
 {
     struct sk_buff *skb;
     struct tcphdr *th;
+    struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -365,6 +376,7 @@ int tcp_queue_fin(struct sock *sk)
 
     
     rc = tcp_queue_transmit_skb(sk, skb);
+    tcb->snd_nxt++;
 
     return rc;
 }
