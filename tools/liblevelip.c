@@ -131,9 +131,6 @@ static int transmit_lvlip(int lvlfd, struct ipc_msg *msg, int msglen)
 int socket(int domain, int type, int protocol)
 {
     if (!is_socket_supported(domain, type, protocol)) {
-        printf("lvl-ip does not support socket parameters "
-               "(domain %x, type %x, prot %x), bouncing back to host stack\n",
-               domain, type, protocol);
         return _socket(domain, type, protocol);
     }
 
