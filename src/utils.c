@@ -30,16 +30,14 @@ void print_hexdump(char *str, int len)
     printf("\n");
 }
 
-void print_err(char *str, ...)
+void print_err(char *format, ...)
 {
     va_list ap;
-    char buf[200];
-    va_start(ap, str);
-    vsnprintf(buf, 200, str, ap);
+    va_start(ap, format);
+
+    vfprintf(stderr, format, ap);
 
     va_end(ap);
-
-    fprintf(stderr, buf);
 }
 
 uint32_t sum_every_16bits(void *addr, int count)

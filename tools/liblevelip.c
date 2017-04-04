@@ -304,8 +304,8 @@ ssize_t read(int sockfd, void *buf, size_t len)
     }
 
     struct ipc_read *data = (struct ipc_read *) error->data;
-    if (data->len < 0 || len < data->len) {
-        printf("IPC read received len error: %d\n", data->len);
+    if (len < data->len) {
+        printf("IPC read received len error: %lu\n", data->len);
         return -1;
     }
 

@@ -244,7 +244,7 @@ out:
 
 int tcp_recv_notify(struct sock *sk)
 {
-    if (&sk->recv_wait) {
+    if (&(sk->recv_wait)) {
         return wait_wakeup(&sk->recv_wait);
     }
 

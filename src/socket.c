@@ -93,6 +93,7 @@ struct socket *socket_lookup(uint16_t remoteport, uint16_t localport)
     return NULL;
 }
 
+#ifdef DEBUG_SOCKET
 void socket_debug()
 {
     struct list_head *item;
@@ -107,6 +108,12 @@ void socket_debug()
 
     pthread_mutex_unlock(&slock);
 }
+#else
+void socket_debug()
+{
+    return;
+}
+#endif
 
 int _socket(pid_t pid, int domain, int type, int protocol)
 {
