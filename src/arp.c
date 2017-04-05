@@ -78,12 +78,12 @@ void arp_rcv(struct sk_buff *skb)
     arp_dbg("in", arphdr);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
-        printf("Unsupported HW type\n");
+        printf("ARP: Unsupported HW type\n");
         goto drop_pkt;
     }
 
     if (arphdr->protype != ARP_IPV4) {
-        printf("Unsupported protocol\n");
+        printf("ARP: Unsupported protocol\n");
         goto drop_pkt;
     }
 
@@ -110,7 +110,7 @@ void arp_rcv(struct sk_buff *skb)
         arp_reply(skb, netdev);
         return;
     default:
-        printf("Opcode not supported\n");
+        printf("ARP: Opcode not supported\n");
         goto drop_pkt;
     }
 
