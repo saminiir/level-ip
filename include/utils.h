@@ -7,7 +7,6 @@
     printf(str" - %s:%u\n", ##__VA_ARGS__, __FILE__, __LINE__);
 
 int run_cmd(char *cmd, ...);
-void print_hexdump(char *str, int len);
 void print_err(char *str, ...);
 uint32_t sum_every_16bits(void *addr, int count);
 uint16_t checksum(void *addr, int count, int start_sum);
