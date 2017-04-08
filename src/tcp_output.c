@@ -215,9 +215,7 @@ static void tcp_connect_rto(struct tcp_sock *tsk)
     if (sk->state != TCP_ESTABLISHED) {
         if (tsk->backoff > TCP_CONN_RETRIES) {
             tsk->sk.err = -ETIMEDOUT;
-            tcp_set_state(sk, TCP_CLOSE);
-            wait_wakeup(&tsk->sk.sock->sleep);
-            //free_socket
+            tcp_free(sk);
         } else {
             tsk->backoff++;
             tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
