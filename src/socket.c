@@ -200,3 +200,15 @@ int _close(pid_t pid, int sockfd)
 
     return sock->ops->close(sock);
 }
+
+int _poll(pid_t pid, int sockfd)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
+        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        return -1;
+    }
+
+    return sock->sk->poll_events;
+}

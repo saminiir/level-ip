@@ -29,6 +29,7 @@ struct sock {
     int protocol;
     int state;
     int err;
+    short int poll_events;
     uint16_t sport;
     uint16_t dport;
     uint32_t saddr;

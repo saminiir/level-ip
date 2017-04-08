@@ -187,6 +187,17 @@ static int ipc_close(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
+static int ipc_poll(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_poll *data = (struct ipc_poll *)msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _poll(pid, data->sockfd);
+
+    return ipc_write_rc(sockfd, pid, IPC_POLL, rc);
+}
+
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 {
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
@@ -206,6 +217,9 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
         break;
     case IPC_CLOSE:
         return ipc_close(sockfd, msg);
+        break;
+    case IPC_POLL:
+        return ipc_poll(sockfd, msg);
         break;
     default:
         print_err("No such IPC type %d\n", msg->type);

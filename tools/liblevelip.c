@@ -351,8 +351,53 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    /* TODO: Implement poll semantics. Curl uses this, won't work without it */
-    return _poll(fds, nfds, timeout);
+    printf("Poll called\n");
+
+    /* First get kernel fd events */
+    int events = _poll(fds, nfds, timeout);
+
+    if (events == -1) {
+        perror("Poll kernel error");
+        errno = EAGAIN;
+        return -1;
+    }
+
+    /* Then get lvlip fd events */
+    struct lvlip_sock *sock = NULL;
+    for (int i = 0; i < nfds; i++) {
+        struct pollfd *pfd = &fds[i];
+        if ((sock = lvlip_get_sock(pfd->fd)) != NULL) {
+            int rc = -1;
+            int pid = getpid();
+            int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_poll);
+            struct ipc_msg *msg = alloca(msglen);
+
+            msg->type = IPC_POLL;
+            msg->pid = pid;
+
+            struct ipc_poll *data = (struct ipc_poll *)msg->data;
+            data->sockfd = sock->fd;
+            data->events = pfd->events;
+
+            rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+
+            if (rc < 0) {
+                fprintf(stderr, "Error on lvl-ip poll\n");
+                errno = EAGAIN;
+                return -1;
+            } else {
+                /* Decrement event count. This is because kernel poll returns error for lvlip fd */
+                events--;
+                pfd->revents = rc;
+
+                if (rc > 0) {
+                    events++;
+                }
+            }
+        }
+    }
+
+    return events;
 }
 
 int setsockopt(int fd, int level, int optname,

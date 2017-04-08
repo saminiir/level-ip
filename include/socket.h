@@ -44,6 +44,7 @@ struct sock_ops {
     int (*close) (struct socket *sock);
     int (*free) (struct socket *sock);
     int (*abort) (struct socket *sock);
+    int (*poll) (struct socket *sock);
 };
 
 struct net_family {
@@ -67,6 +68,7 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
 int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count);
 int _read(pid_t pid, int sockfd, void *buf, const unsigned int count);
 int _close(pid_t pid, int sockfd);
+int _poll(pid_t pid, int sockfd);
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
 void abort_sockets();

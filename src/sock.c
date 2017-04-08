@@ -23,6 +23,8 @@ void sock_init_data(struct socket *sock, struct sock *sk)
     skb_queue_init(&sk->write_queue);
     pthread_mutex_init(&sk->lock, NULL);
 
+    sk->poll_events = 0;
+
     sk->ops->init(sk);
 }
 

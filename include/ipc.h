@@ -20,6 +20,7 @@ void *start_ipc_listener();
 #define IPC_WRITE   0x0003
 #define IPC_READ    0x0004
 #define IPC_CLOSE   0x0005
+#define IPC_POLL    0x0006
 
 struct ipc_thread {
     struct list_head list;
@@ -65,6 +66,11 @@ struct ipc_read {
 
 struct ipc_close {
     int sockfd;
+} __attribute__((packed));
+
+struct ipc_poll {
+    int sockfd;
+    short int events;
 } __attribute__((packed));
 
 #endif
