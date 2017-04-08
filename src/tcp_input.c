@@ -137,8 +137,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tcp_set_state(sk, TCP_ESTABLISHED);
         tcb->snd_una = tcb->snd_nxt;
         tcp_send_ack(&tsk->sk);
-        tsk->sk.err = 0;
-        wait_wakeup(&tsk->sk.sock->sleep);
+        sock_connected(sk);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
         tcb->snd_una = tcb->iss;

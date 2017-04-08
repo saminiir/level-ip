@@ -34,3 +34,14 @@ void sock_free(struct sock *sk)
     skb_queue_free(&sk->write_queue);
     pthread_mutex_destroy(&sk->lock);
 }
+
+void sock_connected(struct sock *sk)
+{
+    struct socket *sock = sk->sock;
+
+    sock->state = SS_CONNECTED;
+    sk->err = 0;
+    sk->poll_events = POLLOUT;
+
+    wait_wakeup(&sock->sleep);
+}
