@@ -205,32 +205,44 @@ void tcp_select_initial_window(uint32_t *rcv_wnd)
     *rcv_wnd = 44477;
 }
 
-/**
- * TCP connection retransmission timeout
- */
-static void tcp_connect_rto(struct tcp_sock *tsk)
-{
-    struct sock *sk = &tsk->sk;
-
-    if (sk->state != TCP_ESTABLISHED) {
-        if (tsk->backoff > TCP_CONN_RETRIES) {
-            tsk->sk.err = -ETIMEDOUT;
-            tcp_free(sk);
-        } else {
-            tsk->backoff++;
-            tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
-        }
-    } else {
-        print_err("TCP connect RTO triggered even when Established\n");
-    }
-}
-
 static void tcp_notify_user(struct sock *sk)
 {
     switch (sk->state) {
     case TCP_CLOSE_WAIT:
         wait_wakeup(&sk->sock->sleep);
         break;
+    }
+}
+
+static void tcp_connect_rto(uint32_t ts, void *arg)
+{
+    struct tcp_sock *tsk = (struct tcp_sock *) arg;
+    struct tcb *tcb = &tsk->tcb;
+    struct sock *sk = &tsk->sk;
+
+    tcp_release_rto_timer(tsk);
+
+    if (sk->state != TCP_ESTABLISHED) {
+        if (tsk->backoff > TCP_CONN_RETRIES) {
+            tsk->sk.err = -ETIMEDOUT;
+            tcp_free(sk);
+        } else {
+            pthread_mutex_lock(&sk->write_queue.lock);
+
+            struct sk_buff *skb = write_queue_head(sk);
+
+            if (skb) {
+                skb_reset_header(skb);
+                tcp_transmit_skb(sk, skb, tcb->snd_una);
+            
+                tsk->backoff++;
+                tcp_rearm_rto_timer(tsk);
+            }
+            
+            pthread_mutex_unlock(&sk->write_queue.lock);
+         }
+    } else {
+        print_err("TCP connect RTO triggered even when Established\n");
     }
 }
 
@@ -245,6 +257,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     tcp_release_rto_timer(tsk);
 
     struct sk_buff *skb = write_queue_head(sk);
+
     if (!skb) {
         tcpsock_dbg("TCP RTO queue empty, notifying user", sk);
         tcp_notify_user(sk);
@@ -256,11 +269,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     
     tcp_transmit_skb(sk, skb, tcb->snd_una);
     
-    if (th->syn) {
-        tcp_connect_rto(tsk);
-    } else {
-        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
-    }
+    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 
     if (th->fin) {
         tcp_handle_fin_state(sk);
@@ -272,8 +281,14 @@ unlock:
 
 void tcp_rearm_rto_timer(struct tcp_sock *tsk)
 {
+    struct sock *sk = &tsk->sk;
     tcp_release_rto_timer(tsk);
-    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+
+    if (sk->state == TCP_SYN_SENT) {
+        tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
+    } else {
+        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+    }
 }
 
 int tcp_connect(struct sock *sk)
@@ -293,8 +308,6 @@ int tcp_connect(struct sock *sk)
     tcb->rcv_nxt = 0;
 
     tcp_select_initial_window(&tsk->tcb.rcv_wnd);
-    
-    tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_retransmission_timeout, tsk);
 
     rc = tcp_send_syn(sk);
     tcb->snd_nxt++;
