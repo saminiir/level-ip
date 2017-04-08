@@ -237,6 +237,7 @@ ssize_t write(int sockfd, const void *buf, size_t len)
         return _write(sockfd, buf, len);
     }
 
+    lvlip_dbg("Write called", sock);
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_write) + len;
     int pid = getpid();
 
@@ -263,7 +264,9 @@ ssize_t read(int sockfd, void *buf, size_t len)
         /* No lvl-ip IPC socket associated */
         return _read(sockfd, buf, len);
     }
-    
+
+    lvlip_dbg("Read called", sock);
+
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_read);
 
@@ -351,8 +354,6 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    printf("Poll called\n");
-
     /* First get kernel fd events */
     int events = _poll(fds, nfds, timeout);
 
