@@ -180,6 +180,8 @@ int close(int fd)
         return _close(fd);
     }
 
+    lvlip_dbg("Close called", sock);
+    
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_close);
     int rc = 0;
@@ -206,6 +208,8 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
         return _connect(sockfd, addr, addrlen);
     }
 
+    lvlip_dbg("Connect called", sock);
+    
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_connect);
     int pid = getpid();
     

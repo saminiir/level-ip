@@ -5,6 +5,15 @@
 #include <dlfcn.h>
 #include "list.h"
 
+#ifdef DEBUG_API
+#define lvlip_dbg(msg, sock)                                            \
+    do {                                                                \
+        printf("lvlip-sock lvlfd %d fd %d: %s\n", sock->lvlfd, sock->fd, msg); \
+    } while (0)
+#else
+#define lvlip_dbg(msg, sock)
+#endif
+
 struct lvlip_sock {
     struct list_head list;
     int lvlfd; /* For Level-IP IPC */
