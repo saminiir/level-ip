@@ -412,6 +412,8 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 {
     int rlen = 0;
     int curlen = 0;
+    struct sock *sk = &tsk->sk;
+    struct socket *sock = sk->sock;
 
     memset(buf, 0, len);
 
@@ -428,7 +430,15 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
 
         if (tsk->flags & TCP_FIN || rlen == len) break;
 
-        wait_sleep(&tsk->sk.recv_wait);
+        if (sock->flags & O_NONBLOCK) {
+            if (rlen == 0) {
+                rlen = -EAGAIN;
+            } 
+            
+            break;
+        } else {
+            wait_sleep(&tsk->sk.recv_wait);
+        }
     }
     
     return rlen;

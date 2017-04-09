@@ -78,6 +78,10 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
             free_skb(skb);
         }
     }
+
+    if (skb_queue_empty(&sk->receive_queue)) {
+        sk->poll_events &= ~POLLIN;
+    }
     
     pthread_mutex_unlock(&sk->receive_queue.lock);
 
@@ -101,6 +105,8 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 
         skb->refcnt++;
         skb_queue_tail(&sk->receive_queue, skb);
+        sk->poll_events |= POLLIN;
+
         tcp_consume_ofo_queue(tsk);
 
         tcp_stop_delack_timer(tsk);

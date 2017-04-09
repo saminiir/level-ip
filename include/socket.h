@@ -8,9 +8,10 @@
 #ifdef DEBUG_SOCKET
 #define socket_dbg(sock)                                                \
     do {                                                                \
-        print_debug("Socket fd %d pid %d state %d sk_state %d flags %d sport %d dport %d " \
+        print_debug("Socket fd %d pid %d state %d sk_state %d flags %d poll %d sport %d dport %d " \
                     "sock-sleep %d sk-sleep %d recv-q %d send-q %d",  \
                     sock->fd, sock->pid, sock->state, sock->sk->state, sock->flags, \
+                    sock->sk->poll_events,                              \
                     sock->sk->sport, sock->sk->dport, sock->sleep.sleeping, \
                     sock->sk->recv_wait.sleeping, sock->sk->receive_queue.qlen, \
                     sock->sk->write_queue.qlen);                        \

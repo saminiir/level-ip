@@ -92,11 +92,6 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
 
     rlen = _read(pid, requested->sockfd, rbuf, requested->len);
 
-    if (rlen < 0 || requested->len < rlen) {
-        printf("Error on IPC read, requested len %lu, actual len %d, sockfd %d, pid %d\n",
-               requested->len, rlen, requested->sockfd, pid);
-    }
-
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen;
     struct ipc_msg *response = alloca(resplen);
     struct ipc_err *error = (struct ipc_err *) response->data;
