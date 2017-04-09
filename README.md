@@ -1,4 +1,4 @@
-# Level-IP
+# Level-IP [![Build Status](https://travis-ci.org/saminiir/level-ip.svg?branch=master)](https://travis-ci.org/saminiir/level-ip)
 
 Level-IP is a Linux userspace TCP/IP stack, implemented with TUN/TAP devices.
 

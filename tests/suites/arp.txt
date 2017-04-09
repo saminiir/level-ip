@@ -1,7 +1,0 @@
-% ARP tests
-
-+ ARP suite 1
-
-= ARP lookup should work
-p=sr1(ARP(pdst="10.0.0.4"),timeout=3)
-p is not None

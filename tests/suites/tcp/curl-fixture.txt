@@ -1,0 +1,20 @@
+HTTP/1.0 200 OK
+Server:
+Date:
+Content-type: text/html; charset=UTF-8
+Content-Length: 326
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2 Final//EN"><html>
+<title>Directory listing for /</title>
+<body>
+<h2>Directory listing for /</h2>
+<hr>
+<ul>
+<li><a href="README.md">README.md</a>
+<li><a href="suites/">suites/</a>
+<li><a href="test-run-all">test-run-all</a>
+<li><a href="utils/">utils/</a>
+</ul>
+<hr>
+</body>
+</html>

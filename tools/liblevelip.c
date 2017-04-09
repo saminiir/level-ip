@@ -234,7 +234,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
         perror("Error on writing IPC read");
     }
 
-    int rlen = msglen + len;
+    int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + len;
     char rbuf[rlen];
     memset(rbuf, 0, rlen);
 
@@ -263,6 +263,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
         return -1;
     }
 
+    memset(buf, 0, len);
     memcpy(buf, data->buf, data->len);
         
     return data->len;
