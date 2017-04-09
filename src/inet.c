@@ -107,6 +107,10 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         sk->ops->connect(sk, addr, addr_len, flags);
         sock->state = SS_CONNECTING;
         sk->err = -EINPROGRESS;
+
+        if (sock->flags & O_NONBLOCK) {
+            goto out;
+        }
         
         wait_sleep(&sock->sleep);
 

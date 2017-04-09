@@ -8,9 +8,9 @@
 #ifdef DEBUG_SOCKET
 #define socket_dbg(sock)                                                \
     do {                                                                \
-        print_debug("Socket fd %d pid %d state %d sk_state %d sport %d dport %d " \
+        print_debug("Socket fd %d pid %d state %d sk_state %d flags %d sport %d dport %d " \
                     "sock-sleep %d sk-sleep %d recv-q %d send-q %d",  \
-                    sock->fd, sock->pid, sock->state, sock->sk->state,  \
+                    sock->fd, sock->pid, sock->state, sock->sk->state, sock->flags, \
                     sock->sk->sport, sock->sk->dport, sock->sleep.sleeping, \
                     sock->sk->recv_wait.sleeping, sock->sk->receive_queue.qlen, \
                     sock->sk->write_queue.qlen);                        \
@@ -57,6 +57,7 @@ struct socket {
     pid_t pid;
     enum socket_state state;
     short type;
+    int flags;
     struct sock *sk;
     struct sock_ops *ops;
     struct wait_lock sleep;
@@ -69,6 +70,7 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count);
 int _read(pid_t pid, int sockfd, void *buf, const unsigned int count);
 int _close(pid_t pid, int sockfd);
 int _poll(pid_t pid, int sockfd);
+int _fcntl(pid_t pid, int fildes, int cmd, ...);
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
 void abort_sockets();

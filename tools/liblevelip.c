@@ -423,20 +423,58 @@ int getsockopt(int fd, int level, int optname,
 
 int fcntl(int fildes, int cmd, ...)
 {
+    int rc = -1;
     va_list ap;
     void *arg;
 
-    va_start(ap, cmd);
+    struct lvlip_sock *sock = lvlip_get_sock(fildes);
 
-    arg = va_arg(ap, void*);
+    if (!sock) {
+        va_start(ap, cmd);
+        arg = va_arg(ap, void *);
+        va_end(ap);
 
-    va_end(ap);
+        return _fcntl(fildes, cmd, arg);
+    }
 
-    if (!lvlip_get_sock(fildes)) return _fcntl(fildes, cmd, arg);
-    printf("Fcntl not supported yet\n");
+    lvlip_dbg("Fcntl called", sock);
 
-    errno = EINVAL;
-    return -1;
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_fcntl) + sizeof(struct flock) + sizeof(int);
+    struct ipc_msg *msg = alloca(msglen);
+
+    msg->type = IPC_FCNTL;
+    msg->pid = pid;
+
+    struct ipc_fcntl *fc = (struct ipc_fcntl *)msg->data;
+    fc->sockfd = fildes;
+    fc->cmd = cmd;
+    
+    switch (cmd) {
+    case F_GETFL:
+        lvlip_dbg("Fcntl GETFL", sock);
+
+        rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+        break;
+    case F_SETFL:
+        lvlip_dbg("Fcntl SETFL", sock);
+
+        va_start(ap, cmd);
+
+        int flags = va_arg(ap, int);
+        memcpy(fc->data, &flags, sizeof(int));
+
+        va_end(ap);
+
+        rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+        break;
+    default:
+        rc = -1;
+        errno = EINVAL;
+        break;
+    }
+    
+    return rc;
 }
 
 int __libc_start_main(int (*main) (int, char * *, char * *), int argc,

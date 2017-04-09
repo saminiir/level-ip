@@ -39,6 +39,7 @@ static void ipc_free_thread(int sock)
             list_del(&th->list);
             ipc_dbg("IPC socket deleted", th);
 
+            close(th->sock);
             free(th);
             socket_count--;
             break;
@@ -182,8 +183,6 @@ static int ipc_close(int sockfd, struct ipc_msg *msg)
 
     rc = ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
 
-    ipc_free_thread(sockfd);
-
     return rc;
 }
 
@@ -196,6 +195,27 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     rc = _poll(pid, data->sockfd);
 
     return ipc_write_rc(sockfd, pid, IPC_POLL, rc);
+}
+
+static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_fcntl *fc = (struct ipc_fcntl *)msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    switch (fc->cmd) {
+    case F_GETFL:
+        rc = _fcntl(pid, fc->sockfd, fc->cmd);
+        break;
+    case F_SETFL:
+        rc = _fcntl(pid, fc->sockfd, fc->cmd, *(int *)fc->data);
+        break;
+    default:
+        print_err("IPC Fcntl cmd not supported %d\n", fc->cmd);
+        rc = -EINVAL;
+    }
+    
+    return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -221,6 +241,9 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     case IPC_POLL:
         return ipc_poll(sockfd, msg);
         break;
+    case IPC_FCNTL:
+        return ipc_fcntl(sockfd, msg);
+        break;
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;
@@ -240,6 +263,7 @@ void *socket_ipc_open(void *args) {
 
         if (rc == -1) {
             printf("Error on demuxing IPC socket call\n");
+            close(sockfd);
             return NULL;
         };
     }

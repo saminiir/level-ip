@@ -21,6 +21,7 @@ void *start_ipc_listener();
 #define IPC_READ    0x0004
 #define IPC_CLOSE   0x0005
 #define IPC_POLL    0x0006
+#define IPC_FCNTL   0x0007
 
 struct ipc_thread {
     struct list_head list;
@@ -71,6 +72,12 @@ struct ipc_close {
 struct ipc_poll {
     int sockfd;
     short int events;
+} __attribute__((packed));
+
+struct ipc_fcntl {
+    int sockfd;
+    int cmd;
+    uint8_t data[];
 } __attribute__((packed));
 
 #endif
