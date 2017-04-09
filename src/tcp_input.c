@@ -180,7 +180,8 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
 
     if (th->rst) {
         tcp_discard(tsk, skb, th);
-        return 0;
+        rc = 0;
+        goto out;
     }
 
     if (th->ack) {
@@ -192,7 +193,8 @@ static int tcp_closed(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *
     
     rc = tcp_send_reset(tsk);
     free_skb(skb);
-    
+
+out:
     return rc;
 }
 
@@ -364,6 +366,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
         tcb->rcv_nxt += 1;
         tsk->flags |= TCP_FIN;
         tcp_send_ack(sk);
+        tsk->sk.ops->recv_notify(&tsk->sk);
 
         switch (sk->state) {
         case TCP_SYN_RECEIVED:

@@ -298,8 +298,6 @@ int tcp_free(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
 
-    wait_wakeup(&sk->sock->sleep);
-
     pthread_mutex_lock(&sk->lock);
 
     tcp_set_state(sk, TCP_CLOSE);
@@ -307,6 +305,8 @@ int tcp_free(struct sock *sk)
     tcp_clear_queues(tsk);
 
     pthread_mutex_unlock(&sk->lock);
+
+    wait_wakeup(&sk->sock->sleep);
 
     return 0;
 }
