@@ -404,21 +404,27 @@ int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 int setsockopt(int fd, int level, int optname,
                const void *optval, socklen_t optlen)
 {
-    if (!lvlip_get_sock(fd)) return _setsockopt(fd, level, optname, optval, optlen);
+    struct lvlip_sock *sock = lvlip_get_sock(fd);
+    if (sock == NULL) return _setsockopt(fd, level, optname, optval, optlen);
 
-    printf("Setsockopt not supported yet\n");
-    errno = ENOPROTOOPT;
-    return -1;
+    lvlip_dbg("Setsockopt called", sock);
+
+    printf("WARN: Setsockopt not supported yet\n");
+    
+    return 0;
 }
 
 int getsockopt(int fd, int level, int optname,
                void *optval, socklen_t *optlen)
 {
-    if (!lvlip_get_sock(fd)) return _getsockopt(fd, level, optname, optval, optlen);
+    struct lvlip_sock *sock = lvlip_get_sock(fd);
+    if (sock == NULL) return _getsockopt(fd, level, optname, optval, optlen);
 
-    printf("Getsockopt not supported yet\n");
-    errno = ENOPROTOOPT;
-    return -1;
+    lvlip_dbg("Getsockopt called", sock);
+    
+    printf("WARN: Getsockopt not supported yet\n");
+    
+    return 0;
 }
 
 int fcntl(int fildes, int cmd, ...)
