@@ -9,10 +9,10 @@ struct sk_buff *alloc_skb(unsigned int size)
     memset(skb, 0, sizeof(struct sk_buff));
     skb->data = malloc(size);
     memset(skb->data, 0, size);
-    
+
+    skb->refcnt = 0;
     skb->head = skb->data;
-    skb->tail = skb->data;
-    skb->end = skb->tail + size;
+    skb->end = skb->data + size;
 
     list_init(&skb->list);
 
@@ -21,14 +21,15 @@ struct sk_buff *alloc_skb(unsigned int size)
 
 void free_skb(struct sk_buff *skb)
 {
-    free(skb->head);
-    free(skb);
+    if (skb->refcnt < 1) {
+        free(skb->head);
+        free(skb);
+    }
 }
 
 void *skb_reserve(struct sk_buff *skb, unsigned int len)
 {
     skb->data += len;
-    skb->tail += len;
 
     return skb->data;
 }
@@ -44,4 +45,10 @@ uint8_t *skb_push(struct sk_buff *skb, unsigned int len)
 uint8_t *skb_head(struct sk_buff *skb)
 {
     return skb->head;
+}
+
+void skb_reset_header(struct sk_buff *skb)
+{
+    skb->data = skb->end - skb->dlen;
+    skb->len = skb->dlen;
 }

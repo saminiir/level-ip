@@ -12,6 +12,7 @@ int inet_write(struct socket *sock, const void *buf, int len);
 int inet_read(struct socket *sock, void *buf, int len);
 int inet_close(struct socket *sock);
 int inet_free(struct socket *sock);
+int inet_abort(struct socket *sock);
 
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport);
 #endif

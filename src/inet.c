@@ -22,6 +22,7 @@ static struct sock_ops inet_stream_ops = {
     .read = &inet_read,
     .close = &inet_close,
     .free = &inet_free,
+    .abort = &inet_abort,
 };
 
 static struct sock_type inet_ops[] = {
@@ -75,51 +76,64 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
                         int addr_len, int flags)
 {
     struct sock *sk = sock->sk;
-    int err;
+    int rc = 0;
     
     if (addr_len < sizeof(addr->sa_family)) {
         return -EINVAL;
     }
 
     if (addr->sa_family == AF_UNSPEC) {
-        err = sk->ops->disconnect(sk, flags);
-        sock->state = err ? SS_DISCONNECTING : SS_UNCONNECTED;
+        sk->ops->disconnect(sk, flags);
+        sock->state = sk->err ? SS_DISCONNECTING : SS_UNCONNECTED;
         goto out;
     }
 
     switch (sock->state) {
     default:
-        err = -EINVAL;
+        sk->err = -EINVAL;
         goto out;
     case SS_CONNECTED:
-        err = -EISCONN;
+        sk->err = -EISCONN;
         goto out;
     case SS_CONNECTING:
-        err = -EALREADY;
+        sk->err = -EALREADY;
         goto out;
     case SS_UNCONNECTED:
-        err = -EISCONN;
+        sk->err = -EISCONN;
         if (sk->state != TCP_CLOSE) {
             goto out;
         }
 
-        err = sk->ops->connect(sk, addr, addr_len, flags);
+        sk->ops->connect(sk, addr, addr_len, flags);
+        sock->state = SS_CONNECTING;
+        sk->err = -EINPROGRESS;
+
+        if (sock->flags & O_NONBLOCK) {
+            goto out;
+        }
+        
         wait_sleep(&sock->sleep);
 
-        if (err < 0) {
+        switch (sk->err) {
+        case -ETIMEDOUT:
+        case -ECONNREFUSED:
+            goto sock_error;
+        }
+
+        if (sk->err != 0) {
             goto out;
         }
 
-        sock->state = SS_CONNECTING;
-
-        err = -EINPROGRESS;
+        sock->state = SS_CONNECTED;
         break;
     }
     
-    return 0;
-
 out:
-    return err;
+    return sk->err;
+sock_error:
+    rc = sk->err;
+    socket_free(sock);
+    return rc;
 }
 
 int inet_write(struct socket *sock, const void *buf, int len)
@@ -149,24 +163,42 @@ int inet_close(struct socket *sock)
     struct sock *sk = sock->sk;
     int err = 0;
 
-//    err = sk->ops-close(sk);
+    if (!sock) {
+        return 0;
+    }
 
     if (err) {
         print_err("Error on socket closing\n");
         return -1;
     }
 
+    pthread_mutex_lock(&sk->lock);
     sock->state = SS_DISCONNECTING;
-    wait_sleep(&sock->sleep);
+    if (sock->sk->ops->close(sk) != 0) {
+        print_err("Error on sock op close\n");
+    }
 
-    return 0;
+    err = sk->err;
+    pthread_mutex_unlock(&sk->lock);
+    return err;
 }
 
 int inet_free(struct socket *sock)
 {
     struct sock *sk = sock->sk;
-    sk->ops->abort(sk);
-
+    sock_free(sk);
     free(sock->sk);
+    
+    return 0;
+}
+
+int inet_abort(struct socket *sock)
+{
+    struct sock *sk = sock->sk;
+    
+    if (sk) {
+        sk->ops->abort(sk);
+    }
+
     return 0;
 }

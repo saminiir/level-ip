@@ -24,15 +24,26 @@ struct sock {
     struct net_ops *ops;
     struct wait_lock recv_wait;
     struct sk_buff_head receive_queue;
+    struct sk_buff_head write_queue;
+    pthread_mutex_t lock;
     int protocol;
     int state;
+    int err;
+    short int poll_events;
     uint16_t sport;
     uint16_t dport;
     uint32_t saddr;
     uint32_t daddr;
 };
 
+static inline struct sk_buff *write_queue_head(struct sock *sk)
+{
+    return skb_peek(&sk->write_queue);
+}
+
 struct sock *sk_alloc(struct net_ops *ops, int protocol);
+void sock_free(struct sock *sk);
 void sock_init_data(struct socket *sock, struct sock *sk);
+void sock_connected(struct sock *sk);
 
 #endif

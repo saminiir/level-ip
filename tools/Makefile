@@ -1,7 +1,9 @@
+CPPFLAGS = -I ../include
+
 all: liblevelip
 
 liblevelip: liblevelip.c
-	$(CC) -fPIC -shared -o liblevelip.so liblevelip.c -ldl
+	$(CC) $(CFLAGS) $(CPPFLAGS) -fPIC -shared -o liblevelip.so liblevelip.c -ldl
 
 .PHONY:
 clean:

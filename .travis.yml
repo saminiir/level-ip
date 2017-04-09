@@ -7,7 +7,7 @@ compiler:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -qqy arping
+  - sudo apt-get install -qqy iputils-arping
 
 script:
   - sudo mknod /dev/net/tap c 10 200

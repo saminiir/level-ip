@@ -1,48 +1,34 @@
 #ifndef LIBLEVELIP_H_
 #define LIBLEVELIP_H_
 
-#include <stdint.h>
+#include <poll.h>
+#include <dlfcn.h>
+#include "list.h"
 
-#define IPC_SOCKET  0x0001
-#define IPC_CONNECT 0x0002
-#define IPC_WRITE   0x0003
-#define IPC_READ    0x0004
-#define IPC_CLOSE   0x0005
+#ifdef DEBUG_API
+#define lvlip_dbg(msg, sock)                                            \
+    do {                                                                \
+        printf("lvlip-sock lvlfd %d fd %d: %s\n", sock->lvlfd, sock->fd, msg); \
+    } while (0)
+#else
+#define lvlip_dbg(msg, sock)
+#endif
 
-struct ipc_msg {
-    uint16_t type;
-    pid_t pid;
-    uint8_t data[];
-} __attribute__((packed));
+struct lvlip_sock {
+    struct list_head list;
+    int lvlfd; /* For Level-IP IPC */
+    int fd;
+};
 
-struct ipc_err {
-    int rc;
-    int err;
-    uint8_t data[];
-} __attribute__((packed));
+static inline struct lvlip_sock *lvlip_alloc() {
+    struct lvlip_sock *sock = malloc(sizeof(struct lvlip_sock));
+    memset(sock, 0, sizeof(struct lvlip_sock));
 
-struct ipc_socket {
-    int domain;
-    int type;
-    int protocol;
-} __attribute__((packed));
+    return sock;
+};
 
-struct ipc_connect {
-    int sockfd;
-    const struct sockaddr addr;
-    socklen_t addrlen;
-} __attribute__((packed));
-
-struct ipc_write {
-    int sockfd;
-    size_t len;
-    uint8_t buf[];
-} __attribute__((packed));
-
-struct ipc_read {
-    int sockfd;
-    size_t len;
-    uint8_t buf[];
-} __attribute__((packed));
+static inline void lvlip_free(struct lvlip_sock *sock) {
+    free(sock);
+}
 
 #endif

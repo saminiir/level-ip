@@ -6,7 +6,7 @@
 
 static int sock_amount = 0;
 static LIST_HEAD(sockets);
-static pthread_mutex_t slock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t slock = PTHREAD_RWLOCK_INITIALIZER;
 
 extern struct net_family inet;
 
@@ -26,41 +26,40 @@ static struct socket *alloc_socket(pid_t pid)
     sock->fd = fd++;
     sock->state = SS_UNCONNECTED;
     sock->ops = NULL;
+    sock->flags = O_RDWR;
     wait_init(&sock->sleep);
     
     return sock;
 }
 
-static int free_socket(struct socket *sock)
+int socket_free(struct socket *sock)
 {
     if (sock->ops) {
         sock->ops->free(sock);
     }
 
-    pthread_mutex_lock(&slock);
+    pthread_rwlock_wrlock(&slock);
 
     list_del(&sock->list);
+
+    wait_free(&sock->sleep);
+    
+    free(sock);
     sock_amount--;
 
-    pthread_mutex_unlock(&slock);
+    pthread_rwlock_unlock(&slock);
     
     return 0;
 }
 
-void free_sockets() {
+void abort_sockets() {
     struct list_head *item, *tmp;
     struct socket *sock;
 
-    pthread_mutex_lock(&slock);
-    
     list_for_each_safe(item, tmp, &sockets) {
         sock = list_entry(item, struct socket, list);
-        list_del(item);
-        sock->ops->free(sock);
-        free(sock);
+        sock->ops->abort(sock);
     }
-    
-    pthread_mutex_unlock(&slock);
 }
 
 static struct socket *get_socket(pid_t pid, int fd)
@@ -82,18 +81,46 @@ struct socket *socket_lookup(uint16_t remoteport, uint16_t localport)
     struct socket *sock = NULL;
     struct sock *sk = NULL;
 
+    pthread_rwlock_rdlock(&slock);
+    
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
 
         if (sock == NULL || sock->sk == NULL) continue;
-
         sk = sock->sk;
 
-        if (sk->sport == localport && sk->dport == remoteport) return sock;
+        if (sk->sport == localport && sk->dport == remoteport) {
+            goto found;
+        }
     }
-    
-    return NULL;
+
+    sock = NULL;
+found:
+    pthread_rwlock_unlock(&slock);
+    return sock;
 }
+
+#ifdef DEBUG_SOCKET
+void socket_debug()
+{
+    struct list_head *item;
+    struct socket *sock = NULL;
+
+    pthread_rwlock_rdlock(&slock);
+
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+        socket_dbg(sock);
+    }
+
+    pthread_rwlock_unlock(&slock);
+}
+#else
+void socket_debug()
+{
+    return;
+}
+#endif
 
 int _socket(pid_t pid, int domain, int type, int protocol)
 {
@@ -107,11 +134,6 @@ int _socket(pid_t pid, int domain, int type, int protocol)
 
     sock->type = type;
 
-    printf("pid %d\n", pid);
-    printf("domain %x\n", domain);
-    printf("type %x\n", type);
-    printf("protocol %x\n", protocol);
-
     family = families[domain];
 
     if (!family) {
@@ -124,17 +146,17 @@ int _socket(pid_t pid, int domain, int type, int protocol)
         goto abort_socket;
     }
 
-    pthread_mutex_lock(&slock);
+    pthread_rwlock_wrlock(&slock);
     
     list_add_tail(&sock->list, &sockets);
     sock_amount++;
 
-    pthread_mutex_unlock(&slock);
+    pthread_rwlock_unlock(&slock);
 
     return sock->fd;
 
 abort_socket:
-    free_socket(sock);
+    socket_free(sock);
     return -1;
 }
 
@@ -183,5 +205,44 @@ int _close(pid_t pid, int sockfd)
         return -1;
     }
 
-    return free_socket(sock);
+    return sock->ops->close(sock);
+}
+
+int _poll(pid_t pid, int sockfd)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, sockfd)) == NULL) {
+        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        return -1;
+    }
+
+    return sock->sk->poll_events;
+}
+
+int _fcntl(pid_t pid, int fildes, int cmd, ...)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, fildes)) == NULL) {
+        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", fildes, pid);
+        return -1;
+    }
+
+    va_list ap;
+
+    switch (cmd) {
+    case F_GETFL:
+        return sock->flags;
+    case F_SETFL:
+        va_start(ap, cmd);
+        sock->flags = va_arg(ap, int);
+        va_end(ap);
+        return 0;
+    default:
+        return -1;
+
+    }
+
+    return -1;
 }

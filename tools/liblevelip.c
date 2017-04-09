@@ -1,19 +1,9 @@
 #define _GNU_SOURCE
-#include <sys/socket.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <dlfcn.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <poll.h>
+#include "syshead.h"
 #include "liblevelip.h"
+#include "ipc.h"
+#include "list.h"
 
-#define LVLIP_FD_BOUNDARY 4096
 #define RCBUF_LEN 512
 
 static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
@@ -38,13 +28,21 @@ static ssize_t (*_recvfrom)(int sockfd, void *buf, size_t len,
                             int flags, struct sockaddr *restrict address,
                             socklen_t *restrict addrlen) = NULL;
 
-static int lvlfd = 0;
-#define BUFLEN 4096
+static int lvlip_socks_count = 0;
+static LIST_HEAD(lvlip_socks);
 
-static int is_fd_ours(int sockfd)
-{
-    return sockfd > LVLIP_FD_BOUNDARY;
-}
+static inline struct lvlip_sock *lvlip_get_sock(int fd) {
+    struct list_head *item;
+    struct lvlip_sock *sock;
+
+    list_for_each(item, &lvlip_socks) {
+        sock = list_entry(item, struct lvlip_sock, list);
+        
+        if (sock->fd == fd) return sock;
+    };
+
+    return NULL;
+};
 
 static int is_socket_supported(int domain, int type, int protocol)
 {
@@ -95,7 +93,12 @@ static int init_socket(char *sockname)
     return data_socket;
 }
 
-static int transmit_lvlip(struct ipc_msg *msg, int msglen)
+static int free_socket(int lvlfd)
+{
+    return _close(lvlfd);
+}
+
+static int transmit_lvlip(int lvlfd, struct ipc_msg *msg, int msglen)
 {
     char *buf[RCBUF_LEN];
 
@@ -112,8 +115,9 @@ static int transmit_lvlip(struct ipc_msg *msg, int msglen)
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
     if (response->type != msg->type || response->pid != msg->pid) {
-        printf("ERR: IPC msg type %d, IPC response type %d, pid %d\n",
-               msg->type, response->type, response->pid);
+        printf("ERR: IPC msg response expected type %d, pid %d\n"
+               "                      actual type %d, pid %d\n",
+               msg->type, msg->pid, response->type, response->pid);
         return -1;
     }
 
@@ -127,11 +131,17 @@ static int transmit_lvlip(struct ipc_msg *msg, int msglen)
 int socket(int domain, int type, int protocol)
 {
     if (!is_socket_supported(domain, type, protocol)) {
-        printf("lvl-ip does not support socket parameters "
-               "(domain %x, type %x, prot %x), bouncing back to host stack\n",
-               domain, type, protocol);
         return _socket(domain, type, protocol);
     }
+
+    struct lvlip_sock *sock;
+    
+    int lvlfd = init_socket("/tmp/lvlip.socket");
+
+    sock = lvlip_alloc();
+    sock->lvlfd = lvlfd;
+    list_add_tail(&sock->list, &lvlip_socks);
+    lvlip_socks_count++;
     
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_socket);
@@ -140,37 +150,66 @@ int socket(int domain, int type, int protocol)
     msg->type = IPC_SOCKET;
     msg->pid = pid;
 
-    struct ipc_socket sock = {
+    struct ipc_socket usersock = {
         .domain = domain,
         .type = type,
         .protocol = protocol
     };
     
-    memcpy(msg->data, &sock, sizeof(struct ipc_socket));
+    memcpy(msg->data, &usersock, sizeof(struct ipc_socket));
 
-    return transmit_lvlip(msg, msglen);
+    int sockfd = transmit_lvlip(sock->lvlfd, msg, msglen);
+
+    if (sockfd == -1) {
+        /* Socket alloc failed */
+        lvlip_free(sock);
+        return -1;
+    }
+
+    sock->fd = sockfd;
+
+    return sockfd;
 }
 
 int close(int fd)
 {
-    if (!is_fd_ours(fd)) return _close(fd);
+    struct lvlip_sock *sock = lvlip_get_sock(fd);
 
+    if (sock == NULL) {
+        /* No lvl-ip IPC socket associated */
+        return _close(fd);
+    }
+
+    lvlip_dbg("Close called", sock);
+    
     int pid = getpid();
-    int msglen = sizeof(struct ipc_msg) + sizeof(int);
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_close);
+    int rc = 0;
 
     struct ipc_msg *msg = alloca(msglen);
     msg->type = IPC_CLOSE;
     msg->pid = pid;
 
-    memcpy(msg->data, &fd, sizeof(int));
+    struct ipc_close *payload = (struct ipc_close *)msg->data;
+    payload->sockfd = fd;
 
-    return transmit_lvlip(msg, msglen);
+    rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+    free_socket(sock->lvlfd);
+
+    return rc;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 {
-    if (!is_fd_ours(sockfd)) return _connect(sockfd, addr, addrlen);
+    struct lvlip_sock *sock = lvlip_get_sock(sockfd);
 
+    if (sock == NULL) {
+        /* No lvl-ip IPC socket associated */
+        return _connect(sockfd, addr, addrlen);
+    }
+
+    lvlip_dbg("Connect called", sock);
+    
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_connect);
     int pid = getpid();
     
@@ -186,13 +225,19 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
 
     memcpy(msg->data, &payload, sizeof(struct ipc_connect));
 
-    return transmit_lvlip(msg, msglen);
+    return transmit_lvlip(sock->lvlfd, msg, msglen);
 }
 
 ssize_t write(int sockfd, const void *buf, size_t len)
 {
-    if (!is_fd_ours(sockfd)) return _write(sockfd, buf, len);
+    struct lvlip_sock *sock = lvlip_get_sock(sockfd);
 
+    if (sock == NULL) {
+        /* No lvl-ip IPC socket associated */
+        return _write(sockfd, buf, len);
+    }
+
+    lvlip_dbg("Write called", sock);
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_write) + len;
     int pid = getpid();
 
@@ -208,12 +253,19 @@ ssize_t write(int sockfd, const void *buf, size_t len)
     memcpy(msg->data, &payload, sizeof(struct ipc_write));
     memcpy(((struct ipc_write *)msg->data)->buf, buf, len);
 
-    return transmit_lvlip(msg, msglen);
+    return transmit_lvlip(sock->lvlfd, msg, msglen);
 }
 
 ssize_t read(int sockfd, void *buf, size_t len)
 {
-    if (!is_fd_ours(sockfd)) return _read(sockfd, buf, len);
+    struct lvlip_sock *sock = lvlip_get_sock(sockfd);
+
+    if (sock == NULL) {
+        /* No lvl-ip IPC socket associated */
+        return _read(sockfd, buf, len);
+    }
+
+    lvlip_dbg("Read called", sock);
 
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_read);
@@ -230,7 +282,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
     memcpy(msg->data, &payload, sizeof(struct ipc_read));
 
     // Send mocked syscall to lvl-ip
-    if (_write(lvlfd, (char *)msg, msglen) == -1) {
+    if (_write(sock->lvlfd, (char *)msg, msglen) == -1) {
         perror("Error on writing IPC read");
     }
 
@@ -239,15 +291,16 @@ ssize_t read(int sockfd, void *buf, size_t len)
     memset(rbuf, 0, rlen);
 
     // Read return value from lvl-ip
-    if (_read(lvlfd, rbuf, rlen) == -1) {
+    if (_read(sock->lvlfd, rbuf, rlen) == -1) {
         perror("Could not read IPC read response");
     }
     
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_READ || response->pid != pid) {
-        printf("ERR: IPC read response type %d, pid %d\n",
-               response->type, response->pid);
+        printf("ERR: IPC read response expected: type %d, pid %d\n"
+               "                       actual: type %d, pid %d\n",
+               IPC_READ, pid, response->type, response->pid);
         return -1;
     }
 
@@ -258,8 +311,8 @@ ssize_t read(int sockfd, void *buf, size_t len)
     }
 
     struct ipc_read *data = (struct ipc_read *) error->data;
-    if (data->len < 0 || len < data->len) {
-        printf("IPC read received len error: %d\n", data->len);
+    if (len < data->len) {
+        printf("IPC read received len error: %lu\n", data->len);
         return -1;
     }
 
@@ -278,7 +331,7 @@ ssize_t sendto(int fd, const void *buf, size_t len,
                int flags, const struct sockaddr *dest_addr,
                socklen_t dest_len)
 {
-    if (!is_fd_ours(fd)) return _sendto(fd, buf, len,
+    if (!lvlip_get_sock(fd)) return _sendto(fd, buf, len,
                                         flags, dest_addr, dest_len);
 
     return write(fd, buf, len);
@@ -293,7 +346,7 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
                  int flags, struct sockaddr *restrict address,
                  socklen_t *restrict addrlen)
 {
-    if (!is_fd_ours(fd)) return _recvfrom(fd, buf, len,
+    if (!lvlip_get_sock(fd)) return _recvfrom(fd, buf, len,
                                           flags, address, addrlen);
 
     return read(fd, buf, len);
@@ -301,42 +354,133 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    return _poll(fds, nfds, timeout);
+    /* First get kernel fd events */
+    int events = _poll(fds, nfds, timeout);
+
+    if (events == -1) {
+        perror("Poll kernel error");
+        errno = EAGAIN;
+        return -1;
+    }
+
+    /* Then get lvlip fd events */
+    struct lvlip_sock *sock = NULL;
+    for (int i = 0; i < nfds; i++) {
+        struct pollfd *pfd = &fds[i];
+        if ((sock = lvlip_get_sock(pfd->fd)) != NULL) {
+            int rc = -1;
+            int pid = getpid();
+            int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_poll);
+            struct ipc_msg *msg = alloca(msglen);
+
+            msg->type = IPC_POLL;
+            msg->pid = pid;
+
+            struct ipc_poll *data = (struct ipc_poll *)msg->data;
+            data->sockfd = sock->fd;
+            data->events = pfd->events;
+
+            rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+
+            if (rc < 0) {
+                fprintf(stderr, "Error on lvl-ip poll\n");
+                errno = EAGAIN;
+                return -1;
+            } else {
+                /* Decrement event count. This is because kernel poll returns error for lvlip fd */
+                events--;
+                pfd->revents = rc;
+
+                if (rc > 0) {
+                    events++;
+                }
+            }
+        }
+    }
+
+    return events;
 }
 
 int setsockopt(int fd, int level, int optname,
                const void *optval, socklen_t optlen)
 {
-    if (!is_fd_ours(fd)) return _setsockopt(fd, level, optname, optval, optlen);
+    struct lvlip_sock *sock = lvlip_get_sock(fd);
+    if (sock == NULL) return _setsockopt(fd, level, optname, optval, optlen);
 
-    printf("Setsockopt not supported yet\n");
+    lvlip_dbg("Setsockopt called", sock);
+
+    printf("WARN: Setsockopt not supported yet\n");
+    
     return 0;
 }
 
 int getsockopt(int fd, int level, int optname,
                void *optval, socklen_t *optlen)
 {
-    if (!is_fd_ours(fd)) return _getsockopt(fd, level, optname, optval, optlen);
+    struct lvlip_sock *sock = lvlip_get_sock(fd);
+    if (sock == NULL) return _getsockopt(fd, level, optname, optval, optlen);
 
-    printf("Getsockopt not supported yet\n");
+    lvlip_dbg("Getsockopt called", sock);
+    
+    printf("WARN: Getsockopt not supported yet\n");
+    
     return 0;
 }
 
 int fcntl(int fildes, int cmd, ...)
 {
+    int rc = -1;
     va_list ap;
     void *arg;
 
-    va_start(ap, cmd);
+    struct lvlip_sock *sock = lvlip_get_sock(fildes);
 
-    arg = va_arg(ap, void*);
+    if (!sock) {
+        va_start(ap, cmd);
+        arg = va_arg(ap, void *);
+        va_end(ap);
 
-    va_end(ap);
+        return _fcntl(fildes, cmd, arg);
+    }
 
-    if (!is_fd_ours(fildes)) return _fcntl(fildes, cmd, arg);
+    lvlip_dbg("Fcntl called", sock);
+
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_fcntl) + sizeof(struct flock) + sizeof(int);
+    struct ipc_msg *msg = alloca(msglen);
+
+    msg->type = IPC_FCNTL;
+    msg->pid = pid;
+
+    struct ipc_fcntl *fc = (struct ipc_fcntl *)msg->data;
+    fc->sockfd = fildes;
+    fc->cmd = cmd;
     
-    printf("Fcntl not supported yet\n");
-    return 0;
+    switch (cmd) {
+    case F_GETFL:
+        lvlip_dbg("Fcntl GETFL", sock);
+
+        rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+        break;
+    case F_SETFL:
+        lvlip_dbg("Fcntl SETFL", sock);
+
+        va_start(ap, cmd);
+
+        int flags = va_arg(ap, int);
+        memcpy(fc->data, &flags, sizeof(int));
+
+        va_end(ap);
+
+        rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+        break;
+    default:
+        rc = -1;
+        errno = EINVAL;
+        break;
+    }
+    
+    return rc;
 }
 
 int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
@@ -356,8 +500,8 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _connect = dlsym(RTLD_NEXT, "connect");
     _socket = dlsym(RTLD_NEXT, "socket");
     _close = dlsym(RTLD_NEXT, "close");
- 
-    lvlfd = init_socket("/tmp/lvlip.socket");
+
+    list_init(&lvlip_socks);
 
     return __start_main(main, argc, ubp_av, init, fini, rtld_fini, stack_end);
 }

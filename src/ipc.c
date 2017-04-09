@@ -5,9 +5,50 @@
 
 #define IPC_BUFLEN 4096
 
-// TODO: dynamic socket pool
-static pthread_t sockets[256];
-static int cur_th = 0;
+static LIST_HEAD(sockets);
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static int socket_count = 0;
+
+static struct ipc_thread *ipc_alloc_thread(int sock)
+{
+    struct ipc_thread *th = calloc(sizeof(struct ipc_thread), 1);
+    list_init(&th->list);
+    th->sock = sock;
+
+    pthread_mutex_lock(&lock);
+    list_add_tail(&th->list, &sockets);
+    socket_count++;
+    pthread_mutex_unlock(&lock);
+
+    ipc_dbg("New IPC socket allocated", th);
+
+    return th;
+}
+
+static void ipc_free_thread(int sock)
+{
+    struct list_head *item, *tmp = NULL;
+    struct ipc_thread *th = NULL;
+    
+    pthread_mutex_lock(&lock);
+
+    list_for_each_safe(item, tmp, &sockets) {
+        th = list_entry(item, struct ipc_thread, list);
+
+        if (th->sock == sock) {
+            list_del(&th->list);
+            ipc_dbg("IPC socket deleted", th);
+
+            close(th->sock);
+            free(th);
+            socket_count--;
+            break;
+        }
+
+    }
+
+    pthread_mutex_unlock(&lock);
+}
 
 static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
 {
@@ -19,7 +60,6 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
         return -1;
     }
 
-    printf("pid %d, sockfd %d, type %4x, rc %d\n", pid, sockfd, type, rc);
     response->type = type;
     response->pid = pid;
 
@@ -51,11 +91,6 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     memset(rbuf, 0, requested->len);
 
     rlen = _read(pid, requested->sockfd, rbuf, requested->len);
-
-    if (rlen < 0 || requested->len < rlen) {
-        printf("Error on IPC read, requested len %lu, actual len %d, sockfd %d, pid %d\n",
-               requested->len, rlen, requested->sockfd, pid);
-    }
 
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen;
     struct ipc_msg *response = alloca(resplen);
@@ -135,13 +170,47 @@ static int ipc_socket(int sockfd, struct ipc_msg *msg)
 
 static int ipc_close(int sockfd, struct ipc_msg *msg)
 {
-    int fd = *msg->data;
+    struct ipc_close *payload = (struct ipc_close *)msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _close(pid, fd);
+    rc = _close(pid, payload->sockfd);
 
-    return ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
+    rc = ipc_write_rc(sockfd, pid, IPC_CLOSE, rc);
+
+    return rc;
+}
+
+static int ipc_poll(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_poll *data = (struct ipc_poll *)msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _poll(pid, data->sockfd);
+
+    return ipc_write_rc(sockfd, pid, IPC_POLL, rc);
+}
+
+static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_fcntl *fc = (struct ipc_fcntl *)msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    switch (fc->cmd) {
+    case F_GETFL:
+        rc = _fcntl(pid, fc->sockfd, fc->cmd);
+        break;
+    case F_SETFL:
+        rc = _fcntl(pid, fc->sockfd, fc->cmd, *(int *)fc->data);
+        break;
+    default:
+        print_err("IPC Fcntl cmd not supported %d\n", fc->cmd);
+        rc = -EINVAL;
+    }
+    
+    return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -164,6 +233,12 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     case IPC_CLOSE:
         return ipc_close(sockfd, msg);
         break;
+    case IPC_POLL:
+        return ipc_poll(sockfd, msg);
+        break;
+    case IPC_FCNTL:
+        return ipc_fcntl(sockfd, msg);
+        break;
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;
@@ -178,16 +253,17 @@ void *socket_ipc_open(void *args) {
     int sockfd = *(int *)args;
     int rc = -1;
 
-    printf("socket ipc opened\n");
-
     while ((rc = read(sockfd, buf, blen)) > 0) {
         rc = demux_ipc_socket_call(sockfd, buf, blen);
 
         if (rc == -1) {
             printf("Error on demuxing IPC socket call\n");
+            close(sockfd);
             return NULL;
         };
     }
+
+    ipc_free_thread(sockfd);
 
     if (rc == -1) {
         perror("socket ipc read");
@@ -240,7 +316,9 @@ void *start_ipc_listener()
             exit(EXIT_FAILURE);
         }
 
-        if (pthread_create(&sockets[cur_th++], NULL, &socket_ipc_open, &datasock) != 0) {
+        struct ipc_thread *th = ipc_alloc_thread(datasock);
+        
+        if (pthread_create(&th->id, NULL, &socket_ipc_open, &datasock) != 0) {
             printf("Error on socket thread creation\n");
             exit(1);
         };

@@ -12,7 +12,6 @@ int dst_neigh_output(struct sk_buff *skb)
     uint32_t saddr = ntohl(iphdr->saddr);
 
     uint8_t *dmac;
-    int rc;
 
     if (rt->flags & RT_GATEWAY) {
         daddr = rt->gateway;
@@ -23,14 +22,9 @@ int dst_neigh_output(struct sk_buff *skb)
     if (dmac) {
         return netdev_transmit(skb, dmac, ETH_P_IP);
     } else {
-        rc = arp_request(saddr, daddr, netdev);
+        arp_request(saddr, daddr, netdev);
 
-        /* TODO: Get rid of this abomination. A simple solution is to have
-         * the retransmission mechanism just do its thing. */
-        while ((dmac = arp_get_hwaddr(daddr)) == NULL) {
-            sleep(1);
-        }
-
-        return netdev_transmit(skb, dmac, ETH_P_IP);
+        /* Inform upper layer that traffic was not sent, retry later */
+        return -1;
     }
 }
