@@ -6,7 +6,7 @@
 
 static int sock_amount = 0;
 static LIST_HEAD(sockets);
-static pthread_mutex_t slock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t slock = PTHREAD_RWLOCK_INITIALIZER;
 
 extern struct net_family inet;
 
@@ -37,7 +37,7 @@ int socket_free(struct socket *sock)
         sock->ops->free(sock);
     }
 
-    pthread_mutex_lock(&slock);
+    pthread_rwlock_wrlock(&slock);
 
     list_del(&sock->list);
 
@@ -46,7 +46,7 @@ int socket_free(struct socket *sock)
     free(sock);
     sock_amount--;
 
-    pthread_mutex_unlock(&slock);
+    pthread_rwlock_unlock(&slock);
     
     return 0;
 }
@@ -80,17 +80,23 @@ struct socket *socket_lookup(uint16_t remoteport, uint16_t localport)
     struct socket *sock = NULL;
     struct sock *sk = NULL;
 
+    pthread_rwlock_rdlock(&slock);
+    
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
 
         if (sock == NULL || sock->sk == NULL) continue;
-
         sk = sock->sk;
 
-        if (sk->sport == localport && sk->dport == remoteport) return sock;
+        if (sk->sport == localport && sk->dport == remoteport) {
+            goto found;
+        }
     }
-    
-    return NULL;
+
+    sock = NULL;
+found:
+    pthread_rwlock_unlock(&slock);
+    return sock;
 }
 
 #ifdef DEBUG_SOCKET
@@ -99,14 +105,14 @@ void socket_debug()
     struct list_head *item;
     struct socket *sock = NULL;
 
-    pthread_mutex_lock(&slock);
+    pthread_rwlock_rdlock(&slock);
 
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
         socket_dbg(sock);
     }
 
-    pthread_mutex_unlock(&slock);
+    pthread_rwlock_unlock(&slock);
 }
 #else
 void socket_debug()
@@ -139,12 +145,12 @@ int _socket(pid_t pid, int domain, int type, int protocol)
         goto abort_socket;
     }
 
-    pthread_mutex_lock(&slock);
+    pthread_rwlock_wrlock(&slock);
     
     list_add_tail(&sock->list, &sockets);
     sock_amount++;
 
-    pthread_mutex_unlock(&slock);
+    pthread_rwlock_unlock(&slock);
 
     return sock->fd;
 
