@@ -309,6 +309,13 @@ void *start_ipc_listener()
         exit(EXIT_FAILURE);
     }
 
+    if (chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |
+              S_IRGRP | S_IWGRP | S_IXGRP |
+              S_IROTH | S_IWOTH | S_IXOTH) == -1) {
+        perror("Chmod on lvl-ip IPC UNIX socket failed");
+        exit(EXIT_FAILURE);
+    }
+
     for (;;) {
         datasock = accept(fd, NULL, NULL);
         if (datasock == -1) {
