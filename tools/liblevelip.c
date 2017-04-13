@@ -27,6 +27,10 @@ static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
 static ssize_t (*_recvfrom)(int sockfd, void *buf, size_t len,
                             int flags, struct sockaddr *restrict address,
                             socklen_t *restrict addrlen) = NULL;
+static int (*_getpeername)(int socket, struct sockaddr *restrict address,
+                           socklen_t *restrict address_len) = NULL;
+static int (*_getsockname)(int socket, struct sockaddr *restrict address,
+                           socklen_t *restrict address_len) = NULL;
 
 static int lvlip_socks_count = 0;
 static LIST_HEAD(lvlip_socks);
@@ -427,6 +431,32 @@ int getsockopt(int fd, int level, int optname,
     return 0;
 }
 
+int getpeername(int socket, struct sockaddr *restrict address,
+                socklen_t *restrict address_len)
+{
+    struct lvlip_sock *sock = lvlip_get_sock(socket);
+    if (sock == NULL) return _getpeername(socket, address, address_len);
+
+    lvlip_dbg("Getpeername called", sock);
+    
+    printf("WARN: Getpeername not supported yet\n");
+    
+    return 0;
+}
+
+int getsockname(int socket, struct sockaddr *restrict address,
+                socklen_t *restrict address_len)
+{
+    struct lvlip_sock *sock = lvlip_get_sock(socket);
+    if (sock == NULL) return _getsockname(socket, address, address_len);
+
+    lvlip_dbg("Getsockname called", sock);
+
+    printf("WARN: Getsockname not supported yet\n");
+    
+    return 0;
+}
+
 int fcntl(int fildes, int cmd, ...)
 {
     int rc = -1;
@@ -500,6 +530,8 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _connect = dlsym(RTLD_NEXT, "connect");
     _socket = dlsym(RTLD_NEXT, "socket");
     _close = dlsym(RTLD_NEXT, "close");
+    _getpeername = dlsym(RTLD_NEXT, "getpeername");
+    _getsockname = dlsym(RTLD_NEXT, "getsockname");
 
     list_init(&lvlip_socks);
 
