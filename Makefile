@@ -1,4 +1,4 @@
-CPPFLAGS = -I include -Wall -pthread
+CPPFLAGS = -I include -Wall -Werror -pthread
 
 src = $(wildcard src/*.c)
 obj = $(patsubst src/%.c, build/%.o, $(src))

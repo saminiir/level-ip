@@ -62,7 +62,6 @@ static int is_socket_supported(int domain, int type, int protocol)
 static int init_socket(char *sockname)
 {
     struct sockaddr_un addr;
-    int i;
     int ret;
     int data_socket;
 
