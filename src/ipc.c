@@ -187,9 +187,42 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _poll(pid, data->sockfd);
+    rc = _poll(pid, data->fds, data->nfds, data->timeout);
 
-    return ipc_write_rc(sockfd, pid, IPC_POLL, rc);
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct pollfd) * data->nfds;
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC write response\n");
+        return -1;
+    }
+
+    response->type = IPC_POLL;
+    response->pid = pid;
+
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    struct pollfd *polled = (struct pollfd *) ((struct ipc_err *)response->data)->data;
+
+    for (int i = 0; i < rc; i++) {
+        memcpy(&polled[i], &data->fds[i], sizeof(struct pollfd));
+    }
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC poll response");
+    }
+        
+    return 0;
 }
 
 static int ipc_fcntl(int sockfd, struct ipc_msg *msg)

@@ -105,9 +105,9 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 
         skb->refcnt++;
         skb_queue_tail(&sk->receive_queue, skb);
-        sk->poll_events |= POLLIN;
 
         tcp_consume_ofo_queue(tsk);
+        sk->poll_events |= POLLIN;
 
         tcp_stop_delack_timer(tsk);
 

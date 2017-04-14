@@ -208,16 +208,40 @@ int _close(pid_t pid, int sockfd)
     return sock->ops->close(sock);
 }
 
-int _poll(pid_t pid, int sockfd)
+int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    struct socket *sock;
+    for (;;) {
+        int polled = 0;
 
-    if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        for (int i = 0; i < nfds; i++) {
+            struct socket *sock;
+            struct pollfd *poll = &fds[i];
+            if ((sock = get_socket(pid, poll->fd)) == NULL) {
+                print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", poll->fd, pid);
+                return -1;
+            }
+
+            poll->revents = sock->sk->poll_events & (poll->events | POLLHUP | POLLERR | POLLNVAL);
+            if (poll->revents > 0) {
+                polled++;
+            }
+        }
+
+        if (polled > 0 || timeout == 0) {
+            return polled;
+        } else {
+            if (timeout > 0) {
+                if (timeout > 10) {
+                    timeout -= 10;
+                } else {
+                    timeout = 0;
+                }
+            }
+            usleep(1000 * 10);
+        }
     }
 
-    return sock->sk->poll_events;
+    return -EAGAIN;
 }
 
 int _fcntl(pid_t pid, int fildes, int cmd, ...)
@@ -225,7 +249,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     struct socket *sock;
 
     if ((sock = get_socket(pid, fildes)) == NULL) {
-        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", fildes, pid);
+        print_err("Fcntl: could not find socket (fd %d) for connection (pid %d)\n", fildes, pid);
         return -1;
     }
 

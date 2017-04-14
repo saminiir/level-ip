@@ -357,53 +357,124 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
     return read(fd, buf, len);
 }
 
-int poll(struct pollfd fds[], nfds_t nfds, int timeout)
+int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-    /* First get kernel fd events */
-    int events = _poll(fds, nfds, timeout);
+    struct pollfd *kernel_fds[nfds];
+    struct pollfd *lvlip_fds[nfds];
+    int lvlip_nfds = 0;
+    int kernel_nfds = 0;
+    int lvlip_sock = 0;
 
-    if (events == -1) {
-        perror("Poll kernel error");
-        errno = EAGAIN;
-        return -1;
-    }
-
-    /* Then get lvlip fd events */
     struct lvlip_sock *sock = NULL;
+
     for (int i = 0; i < nfds; i++) {
         struct pollfd *pfd = &fds[i];
         if ((sock = lvlip_get_sock(pfd->fd)) != NULL) {
-            int rc = -1;
-            int pid = getpid();
-            int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_poll);
-            struct ipc_msg *msg = alloca(msglen);
-
-            msg->type = IPC_POLL;
-            msg->pid = pid;
-
-            struct ipc_poll *data = (struct ipc_poll *)msg->data;
-            data->sockfd = sock->fd;
-            data->events = pfd->events;
-
-            rc = transmit_lvlip(sock->lvlfd, msg, msglen);
-
-            if (rc < 0) {
-                fprintf(stderr, "Error on lvl-ip poll\n");
-                errno = EAGAIN;
-                return -1;
-            } else {
-                /* Decrement event count. This is because kernel poll returns error for lvlip fd */
-                events--;
-                pfd->revents = rc;
-
-                if (rc > 0) {
-                    events++;
-                }
-            }
+            lvlip_fds[lvlip_nfds++] = pfd;
+            lvlip_sock = sock->lvlfd;
+        } else {
+            kernel_fds[kernel_nfds++] = pfd;
         }
     }
 
-    return events;
+    int blocking = 0;
+    if (kernel_nfds > 0 && lvlip_nfds > 0 && timeout == -1) {
+        /* Cannot sleep indefinitely when we demux poll 
+           with both kernel and lvlip fds */
+        timeout = 100;
+        blocking = 1;
+    }
+
+    lvl_dbg("Poll called kernel_nfds %d lvlip_nfds %d timeout %d", kernel_nfds, lvlip_nfds, timeout);
+
+    for (;;) {
+        int events = 0;
+        if (kernel_nfds > 0) {
+            lvl_dbg("Polling kernel with %d fds", kernel_nfds);
+            for (int i = 0; i < kernel_nfds; i++) {
+                lvl_dbg("Kernel nfd %d events %d timeout %d", kernel_fds[i]->fd, kernel_fds[i]->events, timeout);
+            }
+            events = _poll(*kernel_fds, kernel_nfds, timeout);
+
+            lvl_dbg("Kernel poll events %d", events);
+
+            if (events == -1) {
+                perror("Poll kernel error");
+                errno = EAGAIN;
+                return -1;
+            }
+        }
+
+        if (lvlip_nfds < 1) {
+            return events;
+        }
+    
+        int pid = getpid();
+        int pollfd_size = sizeof(struct pollfd);
+        int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_poll) + pollfd_size * lvlip_nfds;
+        struct ipc_msg *msg = alloca(msglen);
+
+        msg->type = IPC_POLL;
+        msg->pid = pid;
+
+        struct ipc_poll *data = (struct ipc_poll *)msg->data;
+        data->nfds = lvlip_nfds;
+        data->timeout = timeout;
+
+        for (int i = 0; i < lvlip_nfds; i++) {
+            memcpy(&data->fds[i], lvlip_fds[i], pollfd_size);
+        }
+
+        lvl_dbg("Polling lvlip with %d fds", lvlip_nfds);
+        if (_write(lvlip_sock, (char *)msg, msglen) == -1) {
+            perror("Error on writing IPC poll");
+        }
+
+        lvl_dbg("Returned from lvlip poll");
+
+        int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + pollfd_size * lvlip_nfds;
+        char rbuf[rlen];
+        memset(rbuf, 0, rlen);
+
+        // Read return value from lvl-ip
+        if (_read(lvlip_sock, rbuf, rlen) == -1) {
+            perror("Could not read IPC poll response");
+        }
+    
+        struct ipc_msg *response = (struct ipc_msg *) rbuf;
+
+        if (response->type != IPC_POLL || response->pid != pid) {
+            printf("ERR: IPC poll response expected: type %d, pid %d\n"
+                   "                       actual: type %d, pid %d\n",
+                   IPC_POLL, pid, response->type, response->pid);
+            return -1;
+        }
+
+        struct ipc_err *error = (struct ipc_err *) response->data;
+        if (error->rc < 0) {
+            errno = error->err;
+            fprintf(stderr, "Error on poll %d %s\n", error->rc, strerror(errno));
+            return error->rc;
+        }
+
+        struct pollfd *returned = (struct pollfd *) error->data;
+
+        for (int i = 0; i < lvlip_nfds; i++) {
+            memcpy(lvlip_fds[i], returned + i * pollfd_size, pollfd_size);
+        }
+
+        int result = events + error->rc;
+    
+        for (int i = 0; i < nfds; i++) {
+            lvl_dbg("Returning counts %d nfd %d with revents %d events %d timeout %d", result, i, fds[i].revents, fds[i].events, timeout);
+        }
+
+        if (result > 0 || !blocking) {
+            return result;
+        } 
+    }
+
+    return -1;
 }
 
 int setsockopt(int fd, int level, int optname,
@@ -425,7 +496,7 @@ int getsockopt(int fd, int level, int optname,
     struct lvlip_sock *sock = lvlip_get_sock(fd);
     if (sock == NULL) return _getsockopt(fd, level, optname, optval, optlen);
 
-    lvl_dbg("Getsockopt called", sock);
+    lvl_sock_dbg("Getsockopt called", sock);
     
     printf("WARN: Getsockopt not supported yet\n");
     
