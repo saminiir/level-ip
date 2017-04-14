@@ -365,6 +365,8 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
         tcb->rcv_nxt += 1;
         tsk->flags |= TCP_FIN;
+        sk->poll_events |= POLLHUP;
+        
         tcp_send_ack(sk);
         tsk->sk.ops->recv_notify(&tsk->sk);
 
