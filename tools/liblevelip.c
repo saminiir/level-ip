@@ -172,6 +172,8 @@ int socket(int domain, int type, int protocol)
 
     sock->fd = sockfd;
 
+    lvl_sock_dbg("Socket called", sock);
+    
     return sockfd;
 }
 
@@ -184,7 +186,7 @@ int close(int fd)
         return _close(fd);
     }
 
-    lvlip_dbg("Close called", sock);
+    lvl_sock_dbg("Close called", sock);
     
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_close);
@@ -212,7 +214,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen)
         return _connect(sockfd, addr, addrlen);
     }
 
-    lvlip_dbg("Connect called", sock);
+    lvl_sock_dbg("Connect called", sock);
     
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_connect);
     int pid = getpid();
@@ -241,7 +243,7 @@ ssize_t write(int sockfd, const void *buf, size_t len)
         return _write(sockfd, buf, len);
     }
 
-    lvlip_dbg("Write called", sock);
+    lvl_sock_dbg("Write called", sock);
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_write) + len;
     int pid = getpid();
 
@@ -269,7 +271,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
         return _read(sockfd, buf, len);
     }
 
-    lvlip_dbg("Read called", sock);
+    lvl_sock_dbg("Read called", sock);
 
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_read);
@@ -411,7 +413,7 @@ int setsockopt(int fd, int level, int optname,
     struct lvlip_sock *sock = lvlip_get_sock(fd);
     if (sock == NULL) return _setsockopt(fd, level, optname, optval, optlen);
 
-    lvlip_dbg("Setsockopt called", sock);
+    lvl_sock_dbg("Setsockopt called", sock);
 
     printf("WARN: Setsockopt not supported yet\n");
     
@@ -424,7 +426,7 @@ int getsockopt(int fd, int level, int optname,
     struct lvlip_sock *sock = lvlip_get_sock(fd);
     if (sock == NULL) return _getsockopt(fd, level, optname, optval, optlen);
 
-    lvlip_dbg("Getsockopt called", sock);
+    lvl_dbg("Getsockopt called", sock);
     
     printf("WARN: Getsockopt not supported yet\n");
     
@@ -437,7 +439,7 @@ int getpeername(int socket, struct sockaddr *restrict address,
     struct lvlip_sock *sock = lvlip_get_sock(socket);
     if (sock == NULL) return _getpeername(socket, address, address_len);
 
-    lvlip_dbg("Getpeername called", sock);
+    lvl_sock_dbg("Getpeername called", sock);
     
     printf("WARN: Getpeername not supported yet\n");
     
@@ -450,7 +452,7 @@ int getsockname(int socket, struct sockaddr *restrict address,
     struct lvlip_sock *sock = lvlip_get_sock(socket);
     if (sock == NULL) return _getsockname(socket, address, address_len);
 
-    lvlip_dbg("Getsockname called", sock);
+    lvl_sock_dbg("Getsockname called", sock);
 
     printf("WARN: Getsockname not supported yet\n");
     
@@ -473,7 +475,7 @@ int fcntl(int fildes, int cmd, ...)
         return _fcntl(fildes, cmd, arg);
     }
 
-    lvlip_dbg("Fcntl called", sock);
+    lvl_sock_dbg("Fcntl called", sock);
 
     int pid = getpid();
     int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_fcntl) + sizeof(struct flock) + sizeof(int);
@@ -488,12 +490,12 @@ int fcntl(int fildes, int cmd, ...)
     
     switch (cmd) {
     case F_GETFL:
-        lvlip_dbg("Fcntl GETFL", sock);
+        lvl_sock_dbg("Fcntl GETFL", sock);
 
         rc = transmit_lvlip(sock->lvlfd, msg, msglen);
         break;
     case F_SETFL:
-        lvlip_dbg("Fcntl SETFL", sock);
+        lvl_sock_dbg("Fcntl SETFL", sock);
 
         va_start(ap, cmd);
 

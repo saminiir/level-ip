@@ -4,14 +4,20 @@
 #include <poll.h>
 #include <dlfcn.h>
 #include "list.h"
+#include "utils.h"
 
 #ifdef DEBUG_API
-#define lvlip_dbg(msg, sock)                                            \
+#define lvl_dbg(msg, ...)                                               \
     do {                                                                \
-        printf("lvlip-sock lvlfd %d fd %d: %s\n", sock->lvlfd, sock->fd, msg); \
+        print_debug(msg, ##__VA_ARGS__);                                \
+    } while (0)
+#define lvl_sock_dbg(msg, sock)                                            \
+    do {                                                                \
+        print_debug("lvlip-sock lvlfd %d fd %d: %s", sock->lvlfd, sock->fd, msg); \
     } while (0)
 #else
-#define lvlip_dbg(msg, sock)
+#define lvl_sock_dbg(msg, sock)
+#define lvl_dbg(msg, ...)
 #endif
 
 struct lvlip_sock {
