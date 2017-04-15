@@ -79,7 +79,7 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
         }
     }
 
-    if (skb_queue_empty(&sk->receive_queue)) {
+    if (skb_queue_empty(&sk->receive_queue) && !(tsk->flags & TCP_FIN)) {
         sk->poll_events &= ~POLLIN;
     }
     
