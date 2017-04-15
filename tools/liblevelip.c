@@ -21,6 +21,12 @@ static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrle
 static int (*_socket)(int domain, int type, int protocol) = NULL;
 static int (*_close)(int fildes) = NULL;
 static int (*_poll)(struct pollfd fds[], nfds_t nfds, int timeout) = NULL;
+static int (*_pollchk)(struct pollfd *__fds, nfds_t __nfds, int __timeout,
+                       __SIZE_TYPE__ __fdslen) = NULL;
+
+static int (*_ppoll)(struct pollfd *fds, nfds_t nfds,
+                     const struct timespec *tmo_p, const sigset_t *sigmask) = NULL;
+
 static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
                           int flags, const struct sockaddr *dest_addr,
                           socklen_t dest_len) = NULL;
@@ -483,6 +489,19 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
     return -1;
 }
 
+int __poll_chk (struct pollfd *__fds, nfds_t __nfds, int __timeout,
+                __SIZE_TYPE__ __fdslen)
+{
+    return poll(__fds, __nfds, __timeout);
+}
+
+int ppoll(struct pollfd *fds, nfds_t nfds,
+          const struct timespec *tmo_p, const sigset_t *sigmask)
+{
+    printf("Ppoll called but not supported\n");
+    return -1;
+}
+
 int setsockopt(int fd, int level, int optname,
                const void *optval, socklen_t optlen)
 {
@@ -601,6 +620,8 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _sendto = dlsym(RTLD_NEXT, "sendto");
     _recvfrom = dlsym(RTLD_NEXT, "recvfrom");
     _poll = dlsym(RTLD_NEXT, "poll");
+    _ppoll = dlsym(RTLD_NEXT, "ppoll");
+    _pollchk = dlsym(RTLD_NEXT, "__poll_chk");
     _fcntl = dlsym(RTLD_NEXT, "fcntl");
     _setsockopt = dlsym(RTLD_NEXT, "setsockopt");
     _getsockopt = dlsym(RTLD_NEXT, "getsockopt");
