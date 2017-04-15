@@ -222,7 +222,7 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
 
     struct ipc_pollfd *polled = (struct ipc_pollfd *) ((struct ipc_err *)response->data)->data;
 
-    for (int i = 0; i < rc; i++) {
+    for (int i = 0; i < data->nfds; i++) {
         polled[i].fd = fds[i].fd;
         polled[i].events = fds[i].events;
         polled[i].revents = fds[i].revents;

@@ -461,10 +461,11 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
             return error->rc;
         }
 
-        struct pollfd *returned = (struct pollfd *) error->data;
+        struct ipc_pollfd *returned = (struct ipc_pollfd *) error->data;
 
         for (int i = 0; i < lvlip_nfds; i++) {
-            memcpy(lvlip_fds[i], returned + i * pollfd_size, pollfd_size);
+            lvlip_fds[i]->events = returned[i].events;
+            lvlip_fds[i]->revents = returned[i].revents;
         }
 
         int result = events + error->rc;
