@@ -385,18 +385,16 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         blocking = 1;
     }
 
-    lvl_dbg("Poll called kernel_nfds %d lvlip_nfds %d timeout %d", kernel_nfds, lvlip_nfds, timeout);
+    lvl_dbg("Poll called with kernel_nfds %d lvlip_nfds %d timeout %d", kernel_nfds, lvlip_nfds, timeout);
 
     for (;;) {
         int events = 0;
         if (kernel_nfds > 0) {
-            lvl_dbg("Polling kernel with %d fds", kernel_nfds);
             for (int i = 0; i < kernel_nfds; i++) {
                 lvl_dbg("Kernel nfd %d events %d timeout %d", kernel_fds[i]->fd, kernel_fds[i]->events, timeout);
             }
+            
             events = _poll(*kernel_fds, kernel_nfds, timeout);
-
-            lvl_dbg("Kernel poll events %d", events);
 
             if (events == -1) {
                 perror("Poll kernel error");
@@ -425,12 +423,11 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
             memcpy(&data->fds[i], lvlip_fds[i], pollfd_size);
         }
 
-        lvl_dbg("Polling lvlip with %d fds", lvlip_nfds);
         if (_write(lvlip_sock, (char *)msg, msglen) == -1) {
             perror("Error on writing IPC poll");
+            errno = EAGAIN;
+            return -1;
         }
-
-        lvl_dbg("Returned from lvlip poll");
 
         int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + pollfd_size * lvlip_nfds;
         char rbuf[rlen];
@@ -439,6 +436,8 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         // Read return value from lvl-ip
         if (_read(lvlip_sock, rbuf, rlen) == -1) {
             perror("Could not read IPC poll response");
+            errno = EAGAIN;
+            return -1;
         }
     
         struct ipc_msg *response = (struct ipc_msg *) rbuf;
@@ -447,6 +446,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
             printf("ERR: IPC poll response expected: type %d, pid %d\n"
                    "                       actual: type %d, pid %d\n",
                    IPC_POLL, pid, response->type, response->pid);
+            errno = EAGAIN;
             return -1;
         }
 
@@ -465,15 +465,16 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 
         int result = events + error->rc;
     
-        for (int i = 0; i < nfds; i++) {
-            lvl_dbg("Returning counts %d nfd %d with revents %d events %d timeout %d", result, i, fds[i].revents, fds[i].events, timeout);
-        }
-
         if (result > 0 || !blocking) {
+            for (int i = 0; i < nfds; i++) {
+                lvl_dbg("Returning counts %d nfd %d with revents %d events %d timeout %d", result, i, fds[i].revents, fds[i].events, timeout);
+            }
+ 
             return result;
         } 
     }
 
+    fprintf(stderr, "Poll returning with -1\n");
     return -1;
 }
 
