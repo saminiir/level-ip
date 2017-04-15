@@ -178,7 +178,9 @@ int tcp_disconnect(struct sock *sk, int flags)
 int tcp_write(struct sock *sk, const void *buf, int len)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    int ret = -1;
+    int ret = sk->err;
+
+    if (ret != 0) goto out;
 
     switch (sk->state) {
     case TCP_ESTABLISHED:
