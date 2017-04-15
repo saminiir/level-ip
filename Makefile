@@ -16,6 +16,7 @@ debug: lvl-ip
 all: lvl-ip
 	$(MAKE) -C tools
 	$(MAKE) -C apps/curl
+	$(MAKE) -C apps/curl-poll
 
 test: all
 	cd tests && sudo ./test-run-all
