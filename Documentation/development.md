@@ -33,9 +33,9 @@ An example from my (Arch) Linux machine, where `wlp2s0` is my outgoing interface
 ```
 $ sysctl -w net.ipv4.ip_forward=1
 $ iptables -I INPUT --source 10.0.0.0/24 -j ACCEPT
-$ iptables -t nat -A POSTROUTING --out-interface wlp2s0 -j MASQUERADE
-$ iptables -A FORWARD --in-interface wlp2s0 --out-interface tap0 -j ACCEPT
-$ iptables -A FORWARD --in-interface tap0 --out-interface wlp2s0 -j ACCEPT
+$ iptables -t nat -I POSTROUTING --out-interface wlp2s0 -j MASQUERADE
+$ iptables -I FORWARD --in-interface wlp2s0 --out-interface tap0 -j ACCEPT
+$ iptables -I FORWARD --in-interface tap0 --out-interface wlp2s0 -j ACCEPT
 ```
 
 Now, packets coming from `lvl-ip` (e.g. 10.0.0.4) should be NATed by the host Linux interfaces and traverse the FORWARD chain correctly to host's outgoing gateway.
