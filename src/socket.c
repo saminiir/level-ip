@@ -166,7 +166,7 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_err("Connect: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        return -EBADF;
     }
 
     return sock->ops->connect(sock, addr, addrlen, 0);
@@ -178,7 +178,7 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_err("Write: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        return -EBADF;
     }
 
     return sock->ops->write(sock, buf, count);
@@ -190,7 +190,7 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_err("Read: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        return -EBADF;
     }
 
     return sock->ops->read(sock, buf, count);
@@ -202,7 +202,7 @@ int _close(pid_t pid, int sockfd)
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
         print_err("Close: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        return -EBADF;
     }
 
     return sock->ops->close(sock);
@@ -218,7 +218,7 @@ int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
             struct pollfd *poll = &fds[i];
             if ((sock = get_socket(pid, poll->fd)) == NULL) {
                 print_err("Poll: could not find socket (fd %u) for connection (pid %d)\n", poll->fd, pid);
-                return -1;
+                return -EBADF;
             }
 
             poll->revents = sock->sk->poll_events & (poll->events | POLLHUP | POLLERR | POLLNVAL);
@@ -250,7 +250,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
 
     if ((sock = get_socket(pid, fildes)) == NULL) {
         print_err("Fcntl: could not find socket (fd %u) for connection (pid %d)\n", fildes, pid);
-        return -1;
+        return -EBADF;
     }
 
     va_list ap;
