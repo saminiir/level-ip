@@ -61,6 +61,7 @@ static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct sk
 /* TCP RST received */
 static void tcp_reset(struct sock *sk)
 {
+    sk->poll_events = (POLLOUT | POLLWRNORM | POLLERR | POLLHUP);
     switch (sk->state) {
     case TCP_SYN_SENT:
         sk->err = -ECONNREFUSED;

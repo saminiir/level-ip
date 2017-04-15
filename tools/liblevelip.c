@@ -510,7 +510,7 @@ int setsockopt(int fd, int level, int optname,
 
     lvl_sock_dbg("Setsockopt called", sock);
 
-    printf("WARN: Setsockopt not supported yet\n");
+    /* WARN: Setsockopt not supported yet */
     
     return 0;
 }
@@ -524,8 +524,65 @@ int getsockopt(int fd, int level, int optname,
     lvl_sock_dbg("Getsockopt called: level %d optname %d optval %d socklen %d",
                  sock, level, optname, *(int *)optval, *(int *)optlen);
     
-    printf("WARN: Getsockopt not supported yet\n");
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_sockopt) + *optlen;
+
+    struct ipc_msg *msg = alloca(msglen);
+    msg->type = IPC_GETSOCKOPT;
+    msg->pid = pid;
+
+    struct ipc_sockopt opts = {
+        .fd = fd,
+        .level = level,
+        .optname = optname,
+        .optlen = *optlen,
+    };
+
+    memcpy(&opts.optval, optval, *optlen);
+    memcpy(msg->data, &opts, sizeof(struct ipc_sockopt) + *optlen);
+
+    // Send mocked syscall to lvl-ip
+    if (_write(sock->lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing IPC getsockopt");
+    }
+
+    int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockopt) + *optlen;
+    char rbuf[rlen];
+    memset(rbuf, 0, rlen);
+
+    // Read return value from lvl-ip
+    if (_read(sock->lvlfd, rbuf, rlen) == -1) {
+        perror("Could not read IPC getsockopt response");
+    }
     
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
+
+    if (response->type != IPC_GETSOCKOPT || response->pid != pid) {
+        printf("ERR: IPC getsockopt response expected: type %d, pid %d\n"
+               "                          actual: type %d, pid %d\n",
+               IPC_GETSOCKOPT, pid, response->type, response->pid);
+        return -1;
+    }
+
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    if (error->rc != 0) {
+        errno = error->err;
+        return error->rc;
+    }
+
+    struct ipc_sockopt *optres = (struct ipc_sockopt *) error->data;
+
+    lvl_sock_dbg("Got getsockopt level %d optname %d optval %d socklen %d",
+                 sock, optres->level, optres->optname, *(int *)optres->optval, optres->optlen);
+
+    int val = *(int *)optres->optval;
+
+    /* lvl-ip probably encoded the error value as negative */
+    val *= -1;
+
+    *(int *)optval = val;
+    *optlen = optres->optlen;
+
     return 0;
 }
 
@@ -537,7 +594,7 @@ int getpeername(int socket, struct sockaddr *restrict address,
 
     lvl_sock_dbg("Getpeername called", sock);
     
-    printf("WARN: Getpeername not supported yet\n");
+    /* "WARN: Getpeername not supported yet */
     
     return 0;
 }
@@ -550,7 +607,7 @@ int getsockname(int socket, struct sockaddr *restrict address,
 
     lvl_sock_dbg("Getsockname called", sock);
 
-    printf("WARN: Getsockname not supported yet\n");
+    /* "WARN: Getsockname not supported yet */
     
     return 0;
 }

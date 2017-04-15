@@ -256,6 +256,53 @@ static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
     return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
 }
 
+static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockopt *opts = (struct ipc_sockopt *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _getsockopt(pid, opts->fd, opts->level, opts->optname, opts->optval, &opts->optlen);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockopt) + opts->optlen;
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getsockopt response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETSOCKOPT;
+    response->pid = pid;
+
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    struct ipc_sockopt *optres = (struct ipc_sockopt *) ((struct ipc_err *)response->data)->data;
+
+    optres->fd = opts->fd;
+    optres->level = opts->level;
+    optres->optname = opts->optname;
+    optres->optlen = opts->optlen;
+    memcpy(&optres->optval, opts->optval, opts->optlen);
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getsockopt response");
+    }
+
+    return rc;
+}
+
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 {
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
@@ -282,6 +329,8 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     case IPC_FCNTL:
         return ipc_fcntl(sockfd, msg);
         break;
+    case IPC_GETSOCKOPT:
+        return ipc_getsockopt(sockfd, msg);
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;

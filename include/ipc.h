@@ -15,13 +15,15 @@
 
 void *start_ipc_listener();
 
-#define IPC_SOCKET  0x0001
-#define IPC_CONNECT 0x0002
-#define IPC_WRITE   0x0003
-#define IPC_READ    0x0004
-#define IPC_CLOSE   0x0005
-#define IPC_POLL    0x0006
-#define IPC_FCNTL   0x0007
+#define IPC_SOCKET     0x0001
+#define IPC_CONNECT    0x0002
+#define IPC_WRITE      0x0003
+#define IPC_READ       0x0004
+#define IPC_CLOSE      0x0005
+#define IPC_POLL       0x0006
+#define IPC_FCNTL      0x0007
+#define IPC_GETSOCKOPT 0x0008
+#define IPC_SETSOCKOPT 0x0009
 
 struct ipc_thread {
     struct list_head list;
@@ -85,6 +87,14 @@ struct ipc_fcntl {
     int sockfd;
     int cmd;
     uint8_t data[];
+} __attribute__((packed));
+
+struct ipc_sockopt {
+    int fd;
+    int level;
+    int optname;
+    socklen_t optlen;
+    uint8_t optval[];
 } __attribute__((packed));
 
 #endif

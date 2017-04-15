@@ -270,3 +270,33 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
 
     return -1;
 }
+
+int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen_t *optlen)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, fd)) == NULL) {
+        print_err("Getsockopt: could not find socket (fd %u) for connection (pid %d)\n", fd, pid);
+        return -EBADF;
+    }
+
+    switch (level) {
+    case SOL_SOCKET:
+        switch (optname) {
+        case SO_ERROR:
+            *optlen = 4;
+            *(int *)optval = sock->sk->err;
+            return 0;
+        default:
+            print_err("Getsockopt unsupported optname %d\n", optname);
+            return -ENOPROTOOPT;
+        }
+        
+        break;
+    default:
+        print_err("Getsockopt: Unsupported level %d\n", level);
+        return -EINVAL;
+    }
+
+    return 0;
+}
