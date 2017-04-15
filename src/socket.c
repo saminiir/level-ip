@@ -62,7 +62,7 @@ void abort_sockets() {
     }
 }
 
-static struct socket *get_socket(pid_t pid, int fd)
+static struct socket *get_socket(pid_t pid, uint32_t fd)
 {
     struct list_head *item;
     struct socket *sock = NULL;
@@ -165,7 +165,7 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Connect: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        print_err("Connect: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -177,7 +177,7 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Write: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        print_err("Write: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -189,7 +189,7 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Read: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        print_err("Read: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -201,7 +201,7 @@ int _close(pid_t pid, int sockfd)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Close: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
+        print_err("Close: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
         return -1;
     }
 
@@ -217,7 +217,7 @@ int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
             struct socket *sock;
             struct pollfd *poll = &fds[i];
             if ((sock = get_socket(pid, poll->fd)) == NULL) {
-                print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", poll->fd, pid);
+                print_err("Poll: could not find socket (fd %u) for connection (pid %d)\n", poll->fd, pid);
                 return -1;
             }
 
@@ -249,7 +249,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     struct socket *sock;
 
     if ((sock = get_socket(pid, fildes)) == NULL) {
-        print_err("Fcntl: could not find socket (fd %d) for connection (pid %d)\n", fildes, pid);
+        print_err("Fcntl: could not find socket (fd %u) for connection (pid %d)\n", fildes, pid);
         return -1;
     }
 
