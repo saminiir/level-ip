@@ -2,39 +2,5 @@
 
 set -eu
 
-source "$(dirname $0)/../../utils/common"
-# Simple end-to-end test for an application's curl
-
-function strip_http_header {
-    sed 's/^Date:.*/Date:/' | sed 's/^Server:.*/Server:/'
-}
-
-function setup {
-    start_stack
-
-    /usr/bin/env python2.7 -m SimpleHTTPServer >/dev/null 2>&1 &
-    httpserver="$!"
-
-    sleep 1
-}
-
-function teardown {
-    kill "$stackip"
-    kill "$httpserver"
-}
-
-function test_normal_http_get {
-    response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 8000 | strip_http_header)"
-
-    diff "$folder/curl-fixture.txt" <(echo "$response")
-}
-
-function test_tcp_connection_refused {
-    "$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 9999 2>&1 | grep -q "Connection refused"
-}
-
-setup
-trap teardown EXIT ERR
-
-test_run "test_normal_http_get"
-test_run "test_tcp_connection_refused"
+source "$(dirname $0)/env-normal"
+source "$(dirname $0)/tests"

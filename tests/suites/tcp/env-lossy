@@ -17,7 +17,7 @@ function setup {
 
     sleep 1
 
-    tc qdisc add dev tap0 root netem delay 2000ms 
+    tc qdisc add dev tap0 root netem loss 25%
 }
 
 function teardown {
@@ -25,13 +25,5 @@ function teardown {
     kill "$httpserver"
 }
 
-function test_normal_http_get {
-    response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 8000 | strip_http_header)"
-
-    diff "$folder/curl-fixture.txt" <(echo "$response")
-}
-
 setup
 trap teardown EXIT ERR
-
-test_run "test_normal_http_get"
