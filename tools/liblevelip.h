@@ -9,11 +9,11 @@
 #ifdef DEBUG_API
 #define lvl_dbg(msg, ...)                                               \
     do {                                                                \
-        print_debug(msg, ##__VA_ARGS__);                                \
+        print_debug("lvlip ttid %lu "msg, pthread_self(), ##__VA_ARGS__); \
     } while (0)
 #define lvl_sock_dbg(msg, sock, ...)                                        \
     do {                                                                \
-        print_debug("lvlip-sock lvlfd %d fd %d: "msg, sock->lvlfd, sock->fd, ##__VA_ARGS__); \
+        lvl_dbg("lvlfd %d fd %d: "msg, sock->lvlfd, sock->fd, ##__VA_ARGS__); \
     } while (0)
 #else
 #define lvl_sock_dbg(msg, sock, ...)
