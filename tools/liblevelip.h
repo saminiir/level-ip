@@ -11,12 +11,12 @@
     do {                                                                \
         print_debug(msg, ##__VA_ARGS__);                                \
     } while (0)
-#define lvl_sock_dbg(msg, sock)                                            \
+#define lvl_sock_dbg(msg, sock, ...)                                        \
     do {                                                                \
-        print_debug("lvlip-sock lvlfd %d fd %d: %s", sock->lvlfd, sock->fd, msg); \
+        print_debug("lvlip-sock lvlfd %d fd %d: "msg, sock->lvlfd, sock->fd, ##__VA_ARGS__); \
     } while (0)
 #else
-#define lvl_sock_dbg(msg, sock)
+#define lvl_sock_dbg(msg, sock, ...)
 #define lvl_dbg(msg, ...)
 #endif
 

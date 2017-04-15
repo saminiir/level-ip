@@ -497,7 +497,8 @@ int getsockopt(int fd, int level, int optname,
     struct lvlip_sock *sock = lvlip_get_sock(fd);
     if (sock == NULL) return _getsockopt(fd, level, optname, optval, optlen);
 
-    lvl_sock_dbg("Getsockopt called", sock);
+    lvl_sock_dbg("Getsockopt called: level %d optname %d optval %d socklen %d",
+                 sock, level, optname, *(int *)optval, *(int *)optlen);
     
     printf("WARN: Getsockopt not supported yet\n");
     
