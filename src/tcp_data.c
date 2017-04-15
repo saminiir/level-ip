@@ -109,7 +109,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
         tcp_consume_ofo_queue(tsk);
 
         if (skb->dlen > 0) {
-            sk->poll_events |= POLLIN;
+            sk->poll_events |= (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND);
         }
 
         tcp_stop_delack_timer(tsk);
