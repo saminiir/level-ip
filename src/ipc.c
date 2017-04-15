@@ -187,9 +187,17 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _poll(pid, data->fds, data->nfds, data->timeout);
+    struct pollfd fds[data->nfds];
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct pollfd) * data->nfds;
+    for (int i = 0; i < data->nfds; i++) {
+        fds[i].fd = data->fds[i].fd;
+        fds[i].events = data->fds[i].events;
+        fds[i].revents = data->fds[i].revents;
+    }
+
+    rc = _poll(pid, fds, data->nfds, data->timeout);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_pollfd) * data->nfds;
     struct ipc_msg *response = alloca(resplen);
 
     if (response == NULL) {
@@ -212,10 +220,12 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
-    struct pollfd *polled = (struct pollfd *) ((struct ipc_err *)response->data)->data;
+    struct ipc_pollfd *polled = (struct ipc_pollfd *) ((struct ipc_err *)response->data)->data;
 
     for (int i = 0; i < rc; i++) {
-        memcpy(&polled[i], &data->fds[i], sizeof(struct pollfd));
+        polled[i].fd = fds[i].fd;
+        polled[i].events = fds[i].events;
+        polled[i].revents = fds[i].revents;
     }
 
     if (write(sockfd, (char *)response, resplen) == -1) {

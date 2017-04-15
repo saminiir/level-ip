@@ -408,7 +408,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         }
     
         int pid = getpid();
-        int pollfd_size = sizeof(struct pollfd);
+        int pollfd_size = sizeof(struct ipc_pollfd);
         int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_poll) + pollfd_size * lvlip_nfds;
         struct ipc_msg *msg = alloca(msglen);
 
@@ -419,8 +419,12 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         data->nfds = lvlip_nfds;
         data->timeout = timeout;
 
+        struct ipc_pollfd *pfd = NULL;
         for (int i = 0; i < lvlip_nfds; i++) {
-            memcpy(&data->fds[i], lvlip_fds[i], pollfd_size);
+            pfd = &data->fds[i];
+            pfd->fd = lvlip_fds[i]->fd;
+            pfd->events = lvlip_fds[i]->events;
+            pfd->revents = lvlip_fds[i]->revents;
         }
 
         if (_write(lvlip_sock, (char *)msg, msglen) == -1) {

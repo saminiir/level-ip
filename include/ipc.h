@@ -69,10 +69,16 @@ struct ipc_close {
     int sockfd;
 } __attribute__((packed));
 
+struct ipc_pollfd {
+    int fd;
+    short int events;
+    short int revents;
+} __attribute__((packed));
+
 struct ipc_poll {
     nfds_t nfds;
     int timeout;
-    struct pollfd fds[];
+    struct ipc_pollfd fds[];
 } __attribute__((packed));
 
 struct ipc_fcntl {
