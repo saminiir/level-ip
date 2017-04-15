@@ -11,12 +11,16 @@ void icmpv4_incoming(struct sk_buff *skb)
     //TODO: Check csum
 
     switch (icmp->type) {
-        case ICMP_V4_ECHO:
-            icmpv4_reply(skb);
-            return;
-        default:
-            print_err("ICMPv4 did not match supported types\n");
-            goto drop_pkt;
+    case ICMP_V4_ECHO:
+        icmpv4_reply(skb);
+        return;
+    case ICMP_V4_DST_UNREACHABLE:
+        print_err("ICMPv4 received 'dst unreachable' code %d\n. "
+                  "Check your routes and firewall rules", icmp->code);
+        goto drop_pkt;
+    default:
+        print_err("ICMPv4 did not match supported types\n");
+        goto drop_pkt;
     }
 
 drop_pkt:
