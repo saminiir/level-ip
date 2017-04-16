@@ -46,6 +46,10 @@ struct sock_ops {
     int (*free) (struct socket *sock);
     int (*abort) (struct socket *sock);
     int (*poll) (struct socket *sock);
+    int (*getpeername) (struct socket *sock, struct sockaddr *restrict addr,
+                        socklen_t *restrict address_len);
+    int (*getsockname) (struct socket *sock, struct sockaddr *restrict addr,
+                        socklen_t *restrict address_len);
 };
 
 struct net_family {
@@ -73,6 +77,11 @@ int _close(pid_t pid, int sockfd);
 int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout);
 int _fcntl(pid_t pid, int fildes, int cmd, ...);
 int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen_t *optlen);
+int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len);
+int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len);
+
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
 void abort_sockets();

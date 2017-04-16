@@ -13,6 +13,10 @@ int inet_read(struct socket *sock, void *buf, int len);
 int inet_close(struct socket *sock);
 int inet_free(struct socket *sock);
 int inet_abort(struct socket *sock);
+int inet_getpeername(struct socket *sock, struct sockaddr *restrict address,
+                     socklen_t *restrict address_len);
+int inet_getsockname(struct socket *sock, struct sockaddr *restrict address,
+                     socklen_t *restrict address_len);
 
 struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport);
 #endif

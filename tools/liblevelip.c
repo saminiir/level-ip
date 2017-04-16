@@ -593,8 +593,57 @@ int getpeername(int socket, struct sockaddr *restrict address,
     if (sock == NULL) return _getpeername(socket, address, address_len);
 
     lvl_sock_dbg("Getpeername called", sock);
+
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_sockname);
+
+    struct ipc_msg *msg = alloca(msglen);
+    msg->type = IPC_GETPEERNAME;
+    msg->pid = pid;
+
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+    name->socket = socket;
+
+    // Send mocked syscall to lvl-ip
+    if (_write(sock->lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing IPC getpeername");
+    }
+
+    int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    char rbuf[rlen];
+    memset(rbuf, 0, rlen);
+
+    // Read return value from lvl-ip
+    if (_read(sock->lvlfd, rbuf, rlen) == -1) {
+        perror("Could not read IPC getpeername response");
+    }
     
-    /* "WARN: Getpeername not supported yet */
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
+
+    if (response->type != IPC_GETPEERNAME || response->pid != pid) {
+        print_err("ERR: IPC getpeername response expected: type %d, pid %d\n"
+               "                          actual: type %d, pid %d\n",
+               IPC_GETPEERNAME, pid, response->type, response->pid);
+        return -1;
+    }
+
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    if (error->rc != 0) {
+        errno = error->err;
+        return error->rc;
+    }
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) error->data;
+
+    lvl_sock_dbg("Got getpeername fd %d addrlen %d sa_data %p",
+                 sock, nameres->socket, nameres->address_len, nameres->sa_data);
+
+    if (nameres->socket != socket) {
+        print_err("Got socket %d but requested %d\n", nameres->socket, socket);
+    }
+
+    *address_len = nameres->address_len;
+    memcpy(address, nameres->sa_data, nameres->address_len);
     
     return 0;
 }
@@ -607,8 +656,57 @@ int getsockname(int socket, struct sockaddr *restrict address,
 
     lvl_sock_dbg("Getsockname called", sock);
 
-    /* "WARN: Getsockname not supported yet */
+    int pid = getpid();
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_sockname);
+
+    struct ipc_msg *msg = alloca(msglen);
+    msg->type = IPC_GETSOCKNAME;
+    msg->pid = pid;
+
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+    name->socket = socket;
+
+    // Send mocked syscall to lvl-ip
+    if (_write(sock->lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing IPC getsockname");
+    }
+
+    int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    char rbuf[rlen];
+    memset(rbuf, 0, rlen);
+
+    // Read return value from lvl-ip
+    if (_read(sock->lvlfd, rbuf, rlen) == -1) {
+        perror("Could not read IPC getsockname response");
+    }
     
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
+
+    if (response->type != IPC_GETSOCKNAME || response->pid != pid) {
+        print_err("ERR: IPC getsockname response expected: type %d, pid %d\n"
+               "                          actual: type %d, pid %d\n",
+               IPC_GETSOCKNAME, pid, response->type, response->pid);
+        return -1;
+    }
+
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    if (error->rc != 0) {
+        errno = error->err;
+        return error->rc;
+    }
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) error->data;
+
+    lvl_sock_dbg("Got getsockname fd %d addrlen %d sa_data %p",
+                 sock, nameres->socket, nameres->address_len, nameres->sa_data);
+
+    if (nameres->socket != socket) {
+        print_err("Got socket %d but requested %d\n", nameres->socket, socket);
+    }
+
+    *address_len = nameres->address_len;
+    memcpy(address, nameres->sa_data, nameres->address_len);
+
     return 0;
 }
 

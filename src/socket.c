@@ -300,3 +300,33 @@ int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen
 
     return 0;
 }
+
+int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Getpeername: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    int rc = sock->ops->getpeername(sock, address, address_len);
+
+    return rc;
+}
+
+int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Getsockname: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    int rc = sock->ops->getsockname(sock, address, address_len);
+
+    return rc;
+}

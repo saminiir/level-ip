@@ -303,6 +303,90 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
+static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getpeername response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETPEERNAME;
+    response->pid = pid;
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    rc = _getpeername(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
+    
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    nameres->socket = name->socket;
+    
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getpeername response");
+    }
+
+    return rc;
+}
+
+static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getsockname response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETSOCKNAME;
+    response->pid = pid;
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    rc = _getsockname(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
+    
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    nameres->socket = name->socket;
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getsockname response");
+    }
+
+    return rc;
+}
+
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 {
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
@@ -331,6 +415,10 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
         break;
     case IPC_GETSOCKOPT:
         return ipc_getsockopt(sockfd, msg);
+    case IPC_GETPEERNAME:
+        return ipc_getpeername(sockfd, msg);
+    case IPC_GETSOCKNAME:
+        return ipc_getsockname(sockfd, msg);
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;
