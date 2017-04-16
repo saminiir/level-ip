@@ -437,7 +437,7 @@ void *socket_ipc_open(void *args) {
         rc = demux_ipc_socket_call(sockfd, buf, blen);
 
         if (rc == -1) {
-            printf("Error on demuxing IPC socket call\n");
+            print_err("Error on demuxing IPC socket call\n");
             close(sockfd);
             return NULL;
         };
@@ -506,7 +506,7 @@ void *start_ipc_listener()
         struct ipc_thread *th = ipc_alloc_thread(datasock);
         
         if (pthread_create(&th->id, NULL, &socket_ipc_open, &datasock) != 0) {
-            printf("Error on socket thread creation\n");
+            print_err("Error on socket thread creation\n");
             exit(1);
         };
     }

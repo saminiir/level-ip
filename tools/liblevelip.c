@@ -3,6 +3,7 @@
 #include "liblevelip.h"
 #include "ipc.h"
 #include "list.h"
+#include "utils.h"
 
 #define RCBUF_LEN 512
 
@@ -95,7 +96,7 @@ static int init_socket(char *sockname)
     ret = _connect(data_socket, (const struct sockaddr *) &addr,
                    sizeof(struct sockaddr_un));
     if (ret == -1) {
-        fprintf(stderr, "Error connecting to level-ip. Is it up?\n");
+        print_err("Error connecting to level-ip. Is it up?\n");
         exit(EXIT_FAILURE);
     }
 
@@ -124,8 +125,8 @@ static int transmit_lvlip(int lvlfd, struct ipc_msg *msg, int msglen)
     struct ipc_msg *response = (struct ipc_msg *) buf;
 
     if (response->type != msg->type || response->pid != msg->pid) {
-        printf("ERR: IPC msg response expected type %d, pid %d\n"
-               "                      actual type %d, pid %d\n",
+        print_err("ERR: IPC msg response expected type %d, pid %d\n"
+                  "                      actual type %d, pid %d\n",
                msg->type, msg->pid, response->type, response->pid);
         return -1;
     }
@@ -309,8 +310,8 @@ ssize_t read(int sockfd, void *buf, size_t len)
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_READ || response->pid != pid) {
-        printf("ERR: IPC read response expected: type %d, pid %d\n"
-               "                       actual: type %d, pid %d\n",
+        print_err("ERR: IPC read response expected: type %d, pid %d\n"
+                  "                       actual: type %d, pid %d\n",
                IPC_READ, pid, response->type, response->pid);
         return -1;
     }
@@ -323,7 +324,7 @@ ssize_t read(int sockfd, void *buf, size_t len)
 
     struct ipc_read *data = (struct ipc_read *) error->data;
     if (len < data->len) {
-        printf("IPC read received len error: %lu\n", data->len);
+        print_err("IPC read received len error: %lu\n", data->len);
         return -1;
     }
 
@@ -453,7 +454,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
         if (response->type != IPC_POLL || response->pid != pid) {
-            printf("ERR: IPC poll response expected: type %d, pid %d\n"
+            print_err("ERR: IPC poll response expected: type %d, pid %d\n"
                    "                       actual: type %d, pid %d\n",
                    IPC_POLL, pid, response->type, response->pid);
             errno = EAGAIN;
@@ -463,7 +464,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         struct ipc_err *error = (struct ipc_err *) response->data;
         if (error->rc < 0) {
             errno = error->err;
-            fprintf(stderr, "Error on poll %d %s\n", error->rc, strerror(errno));
+            print_err("Error on poll %d %s\n", error->rc, strerror(errno));
             return error->rc;
         }
 
@@ -485,7 +486,7 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
         } 
     }
 
-    fprintf(stderr, "Poll returning with -1\n");
+    print_err("Poll returning with -1\n");
     return -1;
 }
 
@@ -498,7 +499,7 @@ int __poll_chk (struct pollfd *__fds, nfds_t __nfds, int __timeout,
 int ppoll(struct pollfd *fds, nfds_t nfds,
           const struct timespec *tmo_p, const sigset_t *sigmask)
 {
-    printf("Ppoll called but not supported\n");
+    print_err("Ppoll called but not supported\n");
     return -1;
 }
 
@@ -558,7 +559,7 @@ int getsockopt(int fd, int level, int optname,
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_GETSOCKOPT || response->pid != pid) {
-        printf("ERR: IPC getsockopt response expected: type %d, pid %d\n"
+        print_err("ERR: IPC getsockopt response expected: type %d, pid %d\n"
                "                          actual: type %d, pid %d\n",
                IPC_GETSOCKOPT, pid, response->type, response->pid);
         return -1;

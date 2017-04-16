@@ -110,7 +110,7 @@ void socket_debug()
 
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
-        socket_dbg(sock);
+        socket_dbg(sock, "");
     }
 
     pthread_rwlock_unlock(&slock);

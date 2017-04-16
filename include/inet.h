@@ -5,6 +5,15 @@
 #include "socket.h"
 #include "skbuff.h"
 
+#ifdef DEBUG_SOCKET
+#define inet_dbg(sock, msg, ...)                                            \
+    do {                                                                \
+        socket_dbg(sock, "INET "msg, ##__VA_ARGS__);                    \
+    } while (0)
+#else
+#define inet_dbg(msg, th, ...)
+#endif
+
 int inet_create(struct socket *sock, int protocol);
 int inet_socket(struct socket *sock, int protocol);
 int inet_connect(struct socket *sock, struct sockaddr *addr, int addr_len, int flags);
