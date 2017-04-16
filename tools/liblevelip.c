@@ -27,7 +27,9 @@ static int (*_pollchk)(struct pollfd *__fds, nfds_t __nfds, int __timeout,
 
 static int (*_ppoll)(struct pollfd *fds, nfds_t nfds,
                      const struct timespec *tmo_p, const sigset_t *sigmask) = NULL;
-
+static int (*_select)(int nfds, fd_set *restrict readfds,
+                      fd_set *restrict writefds, fd_set *restrict errorfds,
+                      struct timeval *restrict timeout);
 static ssize_t (*_sendto)(int sockfd, const void *message, size_t length,
                           int flags, const struct sockaddr *dest_addr,
                           socklen_t dest_len) = NULL;
@@ -503,6 +505,15 @@ int ppoll(struct pollfd *fds, nfds_t nfds,
     return -1;
 }
 
+int select(int nfds, fd_set *restrict readfds,
+           fd_set *restrict writefds, fd_set *restrict errorfds,
+           struct timeval *restrict timeout)
+{
+    print_err("Select not implementedd yet\n");
+    return _select(nfds, readfds, writefds, errorfds, timeout);
+}
+
+
 int setsockopt(int fd, int level, int optname,
                const void *optval, socklen_t optlen)
 {
@@ -778,6 +789,7 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _poll = dlsym(RTLD_NEXT, "poll");
     _ppoll = dlsym(RTLD_NEXT, "ppoll");
     _pollchk = dlsym(RTLD_NEXT, "__poll_chk");
+    _select = dlsym(RTLD_NEXT, "select");
     _fcntl = dlsym(RTLD_NEXT, "fcntl");
     _setsockopt = dlsym(RTLD_NEXT, "setsockopt");
     _getsockopt = dlsym(RTLD_NEXT, "getsockopt");
