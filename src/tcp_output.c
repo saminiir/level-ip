@@ -260,6 +260,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     struct sk_buff *skb = write_queue_head(sk);
 
     if (!skb) {
+        tsk->backoff = 0;
         tcpsock_dbg("TCP RTO queue empty, notifying user", sk);
         tcp_notify_user(sk);
         goto unlock;
@@ -269,11 +270,18 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     skb_reset_header(skb);
     
     tcp_transmit_skb(sk, skb, tcb->snd_una);
-    
-    tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+    if (tsk->backoff++ > 5) {
+        tsk->sk.err = -ETIMEDOUT;
+        sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
+        pthread_mutex_unlock(&sk->write_queue.lock);
+        tcp_free(sk);
+        return;
+    } else {
+        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
 
-    if (th->fin) {
-        tcp_handle_fin_state(sk);
+        if (th->fin) {
+            tcp_handle_fin_state(sk);
+        }
     }
 
 unlock:

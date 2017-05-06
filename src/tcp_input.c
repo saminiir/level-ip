@@ -137,6 +137,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     if (tcb->snd_una > tcb->iss) {
         tcp_set_state(sk, TCP_ESTABLISHED);
         tcb->snd_una = tcb->snd_nxt;
+        tsk->backoff = 0;
         tcp_send_ack(&tsk->sk);
         sock_connected(sk);
     } else {
