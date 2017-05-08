@@ -15,8 +15,8 @@ void icmpv4_incoming(struct sk_buff *skb)
         icmpv4_reply(skb);
         return;
     case ICMP_V4_DST_UNREACHABLE:
-        print_err("ICMPv4 received 'dst unreachable' code %d\n. "
-                  "Check your routes and firewall rules", icmp->code);
+        print_err("ICMPv4 received 'dst unreachable' code %d, "
+                  "check your routes and firewall rules\n", icmp->code);
         goto drop_pkt;
     default:
         print_err("ICMPv4 did not match supported types\n");

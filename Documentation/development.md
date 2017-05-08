@@ -24,6 +24,7 @@ The socket API wrapper is located under `tools` and is likewise `make`able.
 
 ```
 $ sudo mknod /dev/net/tap c 10 200
+$ sudo chmod 0666 /dev/net/tap
 ```
 
 In essence, `lvl-ip` operates as a host inside the tap device's subnet. Therefore, in order to communicate with other hosts, the tap device needs to be set in a forwarding mode.
@@ -44,17 +45,18 @@ See http://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-9.html f
 
 # Usage
 
-Level-IP is run as a daemon process:
+Level-IP is run as a daemon process, requiring the CAP_NET_ADMIN capability:
 
 ```
-$ sudo ./lvl-ip
+$ make
+$ ./lvl-ip
 ```
 
 Then, existing binaries and their socket API calls can be redirected to level-ip with:
 
 ```
 $ cd tools
-$ sudo ./level-ip curl google.com
+$ ./level-ip curl google.com
 ```
 
 # Developing

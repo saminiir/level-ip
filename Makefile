@@ -6,6 +6,8 @@ headers = $(wildcard include/*.h)
 
 lvl-ip: $(obj)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(obj) -o lvl-ip
+	@echo
+	@echo "lvl-ip needs CAP_NET_ADMIN:"
 	sudo setcap cap_setpcap,cap_net_admin=ep lvl-ip
 
 build/%.o: src/%.c ${headers}
@@ -20,8 +22,11 @@ all: lvl-ip
 	$(MAKE) -C apps/curl-poll
 
 test: all
+	@echo
+	@echo "Networking capabilites are required for test dependencies:"
 	which arping | sudo xargs setcap cap_net_raw=ep
 	which tc | sudo xargs setcap cap_net_admin=ep
+	@echo
 	cd tests && ./test-run-all
 
 clean:
