@@ -11,4 +11,6 @@ before_install:
 
 script:
   - sudo mknod /dev/net/tap c 10 200
+  - sudo chmod 0666 /dev/net/tap
+  - sudo setcap cap_net_admin+eip "$(which ip)"
   - make test

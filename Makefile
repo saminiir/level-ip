@@ -6,6 +6,7 @@ headers = $(wildcard include/*.h)
 
 lvl-ip: $(obj)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(obj) -o lvl-ip
+	sudo setcap cap_setpcap,cap_net_admin+eip lvl-ip
 
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
