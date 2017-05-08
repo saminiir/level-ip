@@ -6,7 +6,7 @@ headers = $(wildcard include/*.h)
 
 lvl-ip: $(obj)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(obj) -o lvl-ip
-	sudo setcap cap_setpcap,cap_net_admin+eip lvl-ip
+	sudo setcap cap_setpcap,cap_net_admin=ep lvl-ip
 
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
@@ -20,7 +20,9 @@ all: lvl-ip
 	$(MAKE) -C apps/curl-poll
 
 test: all
-	cd tests && sudo ./test-run-all
+	which arping | sudo xargs setcap cap_net_raw=ep
+	which tc | sudo xargs setcap cap_net_admin=ep
+	cd tests && ./test-run-all
 
 clean:
 	rm build/*.o lvl-ip
