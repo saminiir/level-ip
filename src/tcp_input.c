@@ -138,6 +138,8 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tcp_set_state(sk, TCP_ESTABLISHED);
         tcb->snd_una = tcb->snd_nxt;
         tsk->backoff = 0;
+        /* RFC 6298: Sender SHOULD set RTO <- 1 second */
+        tsk->rto = 1000;
         tcp_send_ack(&tsk->sk);
         sock_connected(sk);
     } else {
@@ -273,6 +275,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             tcb->snd_una = th->ack_seq;
             /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
+            tcp_rtt(tsk);
             tcp_clean_rto_queue(sk, tcb->snd_una);
         }
 

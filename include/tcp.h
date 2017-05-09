@@ -169,6 +169,9 @@ struct tcp_sock {
     struct tcb tcb;
     uint8_t flags;
     uint8_t backoff;
+    uint32_t srtt;
+    uint32_t rttvar;
+    uint32_t rto;
     struct timer *retransmit;
     struct timer *delack;
     struct timer *keepalive;
@@ -215,6 +218,7 @@ int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
 int tcp_free(struct sock *sk);
 int tcp_done(struct sock *sk);
+void tcp_rtt(struct tcp_sock *tsk);
 void tcp_handle_fin_state(struct sock *sk);
 void tcp_enter_time_wait(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);

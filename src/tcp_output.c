@@ -270,14 +270,19 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     skb_reset_header(skb);
     
     tcp_transmit_skb(sk, skb, tcb->snd_una);
-    if (tsk->backoff++ > 5) {
+    /* RFC 6298: 2.5 Maximum value MAY be placed on RTO, provided it is at least
+       60 seconds */
+    if (tsk->rto > 60000) {
         tsk->sk.err = -ETIMEDOUT;
         sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
         pthread_mutex_unlock(&sk->write_queue.lock);
         tcp_free(sk);
         return;
     } else {
-        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        /* RFC 6298: Section 5.5 double RTO time */
+        tsk->rto *= 2;
+        tsk->backoff++;
+        tsk->retransmit = timer_add(tsk->rto, &tcp_retransmission_timeout, tsk);
 
         if (th->fin) {
             tcp_handle_fin_state(sk);
@@ -296,7 +301,7 @@ void tcp_rearm_rto_timer(struct tcp_sock *tsk)
     if (sk->state == TCP_SYN_SENT) {
         tsk->retransmit = timer_add(TCP_SYN_BACKOFF << tsk->backoff, &tcp_connect_rto, tsk);
     } else {
-        tsk->retransmit = timer_add(500, &tcp_retransmission_timeout, tsk);
+        tsk->retransmit = timer_add(tsk->rto, &tcp_retransmission_timeout, tsk);
     }
 }
 
