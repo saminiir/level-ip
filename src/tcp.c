@@ -403,19 +403,22 @@ void tcp_rtt(struct tcp_sock *tsk)
     int r = timer_get_tick() - (tsk->retransmit->expires - tsk->rto);
     if (r < 0) return;
 
-    int k = 4;
-    
     if (!tsk->srtt) {
         /* RFC6298 2.2 first measurement is made */
         tsk->srtt = r;
         tsk->rttvar = r / 2;
-        tsk->rto = tsk->srtt + (k * tsk->rttvar);
     } else {
         /* RFC6298 2.3 a subsequent measurement is made */
         int beta = 0.25;
         int alpha = 0.125;
         tsk->rttvar = (1 - beta) * tsk->rttvar + beta * abs(tsk->srtt - r);
         tsk->srtt = (1 - alpha) * tsk->srtt + alpha * r;
-        tsk->rto = tsk->srtt + k*tsk->rttvar;
     }
+
+    int k = 4 * tsk->rttvar;
+
+    /* RFC6298 says RTO should be at least 1 second. Linux uses 200ms */
+    if (k < 200) k = 200;
+
+    tsk->rto = tsk->srtt + k;
 }
