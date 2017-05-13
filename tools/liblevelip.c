@@ -509,7 +509,7 @@ int select(int nfds, fd_set *restrict readfds,
            fd_set *restrict writefds, fd_set *restrict errorfds,
            struct timeval *restrict timeout)
 {
-    print_err("Select not implementedd yet\n");
+    print_err("Select not implemented yet\n");
     return _select(nfds, readfds, writefds, errorfds, timeout);
 }
 
