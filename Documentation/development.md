@@ -4,7 +4,7 @@ Level-IP is at a very alpha stage, has many hardcoded values and is not really i
 
 This document aims to provide information on the current features, roadmap and overall development routine. 
 
-# Developing
+# Debugging
 
 Use `tcpdump` with the IP address you're using, e.g.:
 
@@ -15,9 +15,9 @@ IP 10.0.0.5.8000 > 10.0.0.4.12000: Flags [S.], seq 1332068674, ack 1525253, win 
 IP 10.0.0.4.12000 > 10.0.0.5.8000: Flags [.], ack 1, win 512, length 0
 ```
 
-To trace program code, use gdb. 
+To trace program code, use gdb with lvl-ip's debug symbols. 
 
-Level-IP also becomes verbose when built with `make debug`. The format of the output tries to follow something `tcpdump` could output, but is still arbitrarily decided. Take a while to get used to it, and see the header files how the output is built.
+Level-IP also becomes verbose when built with `make debug`. The format of the output tries to follow something `tcpdump` could output, but is still arbitrarily decided. Take a while to get used to it, and see the header files how the output is formed.
 
 # Coding Style
 
@@ -41,7 +41,14 @@ TODO: Actual style guidelines, so far I have been just winging it.
 
 # Upcoming features
 
+* IP Fragmentation
+* IP/ICMP Diagnostics
+* TCP User Timeout
+* TCP Window Management
+* TCP Silly Window Syndrome Avoidance
+* TCP Zero-Window Probes
 * TCP Congestion Control
 * TCP Selective Acknowledgments (SACK)
 * Server socket API calls (bind, accept...)
+* Raw Socket (for arping, ping..)
 * ...
