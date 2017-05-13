@@ -162,17 +162,12 @@ struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 
 int inet_close(struct socket *sock)
 {
-    struct sock *sk = sock->sk;
-    int err = 0;
-
     if (!sock) {
         return 0;
     }
 
-    if (err) {
-        print_err("Error on socket closing\n");
-        return -1;
-    }
+    struct sock *sk = sock->sk;
+    int err = 0;
 
     pthread_mutex_lock(&sk->lock);
     sock->state = SS_DISCONNECTING;

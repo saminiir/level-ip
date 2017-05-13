@@ -222,7 +222,7 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
 
     tcp_release_rto_timer(tsk);
 
-    if (sk->state != TCP_ESTABLISHED) {
+    if (sk->state == TCP_SYN_SENT) {
         if (tsk->backoff > TCP_CONN_RETRIES) {
             tsk->sk.err = -ETIMEDOUT;
             sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
@@ -243,7 +243,7 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
             pthread_mutex_unlock(&sk->write_queue.lock);
          }
     } else {
-        print_err("TCP connect RTO triggered even when Established\n");
+        print_err("TCP connect RTO triggered even when not in SYNSENT\n");
     }
 }
 

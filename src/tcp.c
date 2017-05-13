@@ -187,6 +187,7 @@ int tcp_write(struct sock *sk, const void *buf, int len)
     case TCP_CLOSE_WAIT:
         break;
     default:
+        ret = -EBADF;
         goto out;
     }
 
@@ -203,7 +204,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
 
     switch (sk->state) {
     case TCP_CLOSE:
-        print_err("error:  connection does not exist\n");
+        ret = -EBADF;
         goto out;
     case TCP_LISTEN:
     case TCP_SYN_SENT:
@@ -232,7 +233,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
-        print_err("error:  connection closing\n");
+        ret = -EBADF;
         goto out;
     default:
         goto out;
