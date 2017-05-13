@@ -378,6 +378,7 @@ static void tcp_linger(uint32_t ts, void *arg)
     timer_release(tsk->linger);
     tsk->linger = NULL;
 
+    tcpsock_dbg("TCP linger timeout, freeing TCB", sk);
     tcp_done(sk);
 }
 
@@ -390,7 +391,9 @@ void tcp_enter_time_wait(struct sock *sk)
     tcp_clear_timers(sk);
     
     timer_cancel(tsk->linger);
-    tsk->linger = timer_add(3000, &tcp_linger, sk);
+    
+    /* RFC793 arbitrarily defines MSL to be 2 minutes */
+    tsk->linger = timer_add(120000, &tcp_linger, sk);
 }
 
 void tcp_rtt(struct tcp_sock *tsk)
