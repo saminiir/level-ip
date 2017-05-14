@@ -394,7 +394,7 @@ void tcp_enter_time_wait(struct sock *sk)
     timer_cancel(tsk->linger);
     
     /* RFC793 arbitrarily defines MSL to be 2 minutes */
-    tsk->linger = timer_add(120000, &tcp_linger, sk);
+    tsk->linger = timer_add(TCP_2MSL, &tcp_linger, sk);
 }
 
 void tcp_rtt(struct tcp_sock *tsk)

@@ -24,6 +24,8 @@
 #define TCP_OPTLEN_MSS 4
 #define TCP_OPT_MSS 2
 
+#define TCP_2MSL 60000
+
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
