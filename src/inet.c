@@ -228,6 +228,7 @@ int inet_getsockname(struct socket *sock, struct sockaddr *restrict address,
     if (sk == NULL) {
         return -1;
     }
+    
     struct sockaddr_in *res = (struct sockaddr_in *) address;
     res->sin_family = AF_INET;
     res->sin_port = htons(sk->sport);
