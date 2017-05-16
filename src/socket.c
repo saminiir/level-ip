@@ -3,6 +3,7 @@
 #include "socket.h"
 #include "inet.h"
 #include "wait.h"
+#include "timer.h"
 
 static int sock_amount = 0;
 static LIST_HEAD(sockets);
@@ -38,18 +39,43 @@ int socket_free(struct socket *sock)
         sock->ops->free(sock);
     }
 
-    pthread_rwlock_wrlock(&slock);
-
-    list_del(&sock->list);
-
     wait_free(&sock->sleep);
     
     free(sock);
+    
+    return 0;
+}
+
+static void socket_garbage_collect(uint32_t ts, void *arg)
+{
+    struct socket *sock = (struct socket *)arg;
+
+    socket_dbg(sock, "Garbage collecting");
+
+    pthread_rwlock_wrlock(&slock);
+
+    list_del(&sock->list);
     sock_amount--;
 
     pthread_rwlock_unlock(&slock);
     
-    return 0;
+    socket_free(sock);
+}
+
+int socket_delete(struct socket *sock)
+{
+    int rc = 0;
+
+    pthread_mutex_lock(&sock->sk->lock);
+
+    if (sock->state == SS_DISCONNECTING) goto out;
+
+    sock->state = SS_DISCONNECTING;
+    timer_oneshot(10000, &socket_garbage_collect, sock);
+
+out:
+    pthread_mutex_unlock(&sock->sk->lock);
+    return rc;
 }
 
 void abort_sockets() {

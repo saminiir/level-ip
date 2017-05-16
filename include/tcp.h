@@ -219,7 +219,6 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb);
 int tcp_recv_notify(struct sock *sk);
 int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
-int tcp_free(struct sock *sk);
 int tcp_done(struct sock *sk);
 void tcp_rtt(struct tcp_sock *tsk);
 void tcp_handle_fin_state(struct sock *sk);

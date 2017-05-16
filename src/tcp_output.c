@@ -226,7 +226,7 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
         if (tsk->backoff > TCP_CONN_RETRIES) {
             tsk->sk.err = -ETIMEDOUT;
             sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
-            tcp_free(sk);
+            tcp_done(sk);
         } else {
             pthread_mutex_lock(&sk->write_queue.lock);
 
@@ -276,7 +276,7 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
         tsk->sk.err = -ETIMEDOUT;
         sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
         pthread_mutex_unlock(&sk->write_queue.lock);
-        tcp_free(sk);
+        tcp_done(sk);
         return;
     } else {
         /* RFC 6298: Section 5.5 double RTO time */

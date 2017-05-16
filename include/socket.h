@@ -17,7 +17,7 @@
                     sock->sk->write_queue.qlen, ##__VA_ARGS__);         \
     } while (0)
 #else
-#define socket_dbg(sock)
+#define socket_dbg(sock, msg, ...)
 #endif
 
 struct socket;
@@ -84,6 +84,7 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
+int socket_delete(struct socket *sock);
 void abort_sockets();
 void socket_debug();
 

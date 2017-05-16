@@ -76,7 +76,7 @@ static void tcp_reset(struct sock *sk)
         break;
     }
 
-    tcp_free(sk);
+    tcp_done(sk);
 }
 
 static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
