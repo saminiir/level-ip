@@ -238,7 +238,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
     default:
         goto out;
     }
-    
+
     return tcp_receive(tsk, buf, len);    
 
 out: 
@@ -330,6 +330,7 @@ void tcp_clear_timers(struct sock *sk)
     pthread_mutex_unlock(&sk->write_queue.lock);
 
     timer_cancel(tsk->keepalive);
+    timer_cancel(tsk->linger);
 }
 
 void tcp_stop_rto_timer(struct tcp_sock *tsk)
@@ -380,8 +381,19 @@ static void tcp_linger(uint32_t ts, void *arg)
     timer_release(tsk->linger);
     tsk->linger = NULL;
 
-    tcpsock_dbg("TCP linger timeout, freeing TCB", sk);
+    tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
     tcp_done(sk);
+}
+
+static void tcp_user_timeout(uint32_t ts, void *arg)
+{
+    struct sock *sk = (struct sock *) arg;
+    struct tcp_sock *tsk = tcp_sk(sk);
+    timer_release(tsk->linger);
+    tsk->linger = NULL;
+
+    tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
+    tcp_abort(sk);
 }
 
 void tcp_enter_time_wait(struct sock *sk)
@@ -392,10 +404,20 @@ void tcp_enter_time_wait(struct sock *sk)
 
     tcp_clear_timers(sk);
     
-    timer_cancel(tsk->linger);
-    
     /* RFC793 arbitrarily defines MSL to be 2 minutes */
     tsk->linger = timer_add(TCP_2MSL, &tcp_linger, sk);
+}
+
+void tcp_rearm_user_timeout(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+
+    if (sk->state == TCP_TIME_WAIT) return;
+
+    timer_cancel(tsk->linger);
+
+    /* RFC793 set user timeout */
+    tsk->linger = timer_add(TCP_USER_TIMEOUT, &tcp_user_timeout, sk);
 }
 
 void tcp_rtt(struct tcp_sock *tsk)

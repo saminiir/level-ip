@@ -25,6 +25,7 @@
 #define TCP_OPT_MSS 2
 
 #define TCP_2MSL 60000
+#define TCP_USER_TIMEOUT 180000
 
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
@@ -229,5 +230,6 @@ void tcp_stop_rto_timer(struct tcp_sock *tsk);
 void tcp_release_rto_timer(struct tcp_sock *tsk);
 void tcp_stop_delack_timer(struct tcp_sock *tsk);
 void tcp_release_delack_timer(struct tcp_sock *tsk);
+void tcp_rearm_user_timeout(struct sock *sk);
 
 #endif

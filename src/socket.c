@@ -50,7 +50,7 @@ static void socket_garbage_collect(uint32_t ts, void *arg)
 {
     struct socket *sock = (struct socket *)arg;
 
-    socket_dbg(sock, "Garbage collecting");
+    socket_dbg(sock, "Garbage collecting (freeing) socket");
 
     pthread_rwlock_wrlock(&slock);
 

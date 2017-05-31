@@ -359,6 +359,8 @@ int tcp_send(struct tcp_sock *tsk, const void *buf, int len)
         }
     }
 
+    tcp_rearm_user_timeout(&tsk->sk);
+    
     return len;
 }
 

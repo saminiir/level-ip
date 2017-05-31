@@ -141,6 +141,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         /* RFC 6298: Sender SHOULD set RTO <- 1 second */
         tsk->rto = 1000;
         tcp_send_ack(&tsk->sk);
+        tcp_rearm_user_timeout(&tsk->sk);
         sock_connected(sk);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
@@ -450,6 +451,8 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             wait_sleep(&tsk->sk.recv_wait);
         }
     }
+
+    if (rlen >= 0) tcp_rearm_user_timeout(sk);
     
     return rlen;
 }
