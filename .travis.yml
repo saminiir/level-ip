@@ -7,8 +7,10 @@ compiler:
 
 before_install:
   - sudo apt-get -qq update
-  - sudo apt-get install -qqy iputils-arping
+  - sudo apt-get install -qqy iputils-arping libcap-dev libcap2-bin
 
 script:
   - sudo mknod /dev/net/tap c 10 200
+  - sudo chmod 0666 /dev/net/tap
+  - sudo setcap cap_net_admin=ep /bin/ip
   - make test

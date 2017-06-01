@@ -6,18 +6,18 @@
 #include "list.h"
 
 #ifdef DEBUG_SOCKET
-#define socket_dbg(sock)                                                \
+#define socket_dbg(sock, msg, ...)                                      \
     do {                                                                \
         print_debug("Socket fd %d pid %d state %d sk_state %d flags %d poll %d sport %d dport %d " \
-                    "sock-sleep %d sk-sleep %d recv-q %d send-q %d",  \
+                    "sock-sleep %d sk-sleep %d recv-q %d send-q %d: "msg,    \
                     sock->fd, sock->pid, sock->state, sock->sk->state, sock->flags, \
                     sock->sk->poll_events,                              \
                     sock->sk->sport, sock->sk->dport, sock->sleep.sleeping, \
                     sock->sk->recv_wait.sleeping, sock->sk->receive_queue.qlen, \
-                    sock->sk->write_queue.qlen);                        \
+                    sock->sk->write_queue.qlen, ##__VA_ARGS__);         \
     } while (0)
 #else
-#define socket_dbg(sock)
+#define socket_dbg(sock, msg, ...)
 #endif
 
 struct socket;
@@ -46,6 +46,10 @@ struct sock_ops {
     int (*free) (struct socket *sock);
     int (*abort) (struct socket *sock);
     int (*poll) (struct socket *sock);
+    int (*getpeername) (struct socket *sock, struct sockaddr *restrict addr,
+                        socklen_t *restrict address_len);
+    int (*getsockname) (struct socket *sock, struct sockaddr *restrict addr,
+                        socklen_t *restrict address_len);
 };
 
 struct net_family {
@@ -70,10 +74,17 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
 int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count);
 int _read(pid_t pid, int sockfd, void *buf, const unsigned int count);
 int _close(pid_t pid, int sockfd);
-int _poll(pid_t pid, int sockfd);
+int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout);
 int _fcntl(pid_t pid, int fildes, int cmd, ...);
+int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen_t *optlen);
+int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len);
+int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len);
+
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 int socket_free(struct socket *sock);
+int socket_delete(struct socket *sock);
 void abort_sockets();
 void socket_debug();
 

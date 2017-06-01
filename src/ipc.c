@@ -187,9 +187,52 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _poll(pid, data->sockfd);
+    struct pollfd fds[data->nfds];
 
-    return ipc_write_rc(sockfd, pid, IPC_POLL, rc);
+    for (int i = 0; i < data->nfds; i++) {
+        fds[i].fd = data->fds[i].fd;
+        fds[i].events = data->fds[i].events;
+        fds[i].revents = data->fds[i].revents;
+    }
+
+    rc = _poll(pid, fds, data->nfds, data->timeout);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_pollfd) * data->nfds;
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC write response\n");
+        return -1;
+    }
+
+    response->type = IPC_POLL;
+    response->pid = pid;
+
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    struct ipc_pollfd *polled = (struct ipc_pollfd *) ((struct ipc_err *)response->data)->data;
+
+    for (int i = 0; i < data->nfds; i++) {
+        polled[i].fd = fds[i].fd;
+        polled[i].events = fds[i].events;
+        polled[i].revents = fds[i].revents;
+    }
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC poll response");
+    }
+        
+    return 0;
 }
 
 static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
@@ -211,6 +254,137 @@ static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
     }
     
     return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
+}
+
+static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockopt *opts = (struct ipc_sockopt *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    rc = _getsockopt(pid, opts->fd, opts->level, opts->optname, opts->optval, &opts->optlen);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockopt) + opts->optlen;
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getsockopt response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETSOCKOPT;
+    response->pid = pid;
+
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    struct ipc_sockopt *optres = (struct ipc_sockopt *) ((struct ipc_err *)response->data)->data;
+
+    optres->fd = opts->fd;
+    optres->level = opts->level;
+    optres->optname = opts->optname;
+    optres->optlen = opts->optlen;
+    memcpy(&optres->optval, opts->optval, opts->optlen);
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getsockopt response");
+    }
+
+    return rc;
+}
+
+static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getpeername response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETPEERNAME;
+    response->pid = pid;
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    rc = _getpeername(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
+    
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    nameres->socket = name->socket;
+    
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getpeername response");
+    }
+
+    return rc;
+}
+
+static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_sockname *name = (struct ipc_sockname *)msg->data;
+
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockname);
+    struct ipc_msg *response = alloca(resplen);
+
+    if (response == NULL) {
+        print_err("Could not allocate memory for IPC getsockname response\n");
+        return -1;
+    }
+
+    response->type = IPC_GETSOCKNAME;
+    response->pid = pid;
+
+    struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
+    rc = _getsockname(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
+    
+    struct ipc_err err;
+
+    if (rc < 0) {
+        err.err = -rc;
+        err.rc = -1;
+    } else {
+        err.err = 0;
+        err.rc = rc;
+    }
+    
+    memcpy(response->data, &err, sizeof(struct ipc_err));
+
+    nameres->socket = name->socket;
+
+    if (write(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC getsockname response");
+    }
+
+    return rc;
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -239,6 +413,12 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     case IPC_FCNTL:
         return ipc_fcntl(sockfd, msg);
         break;
+    case IPC_GETSOCKOPT:
+        return ipc_getsockopt(sockfd, msg);
+    case IPC_GETPEERNAME:
+        return ipc_getpeername(sockfd, msg);
+    case IPC_GETSOCKNAME:
+        return ipc_getsockname(sockfd, msg);
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;
@@ -257,7 +437,7 @@ void *socket_ipc_open(void *args) {
         rc = demux_ipc_socket_call(sockfd, buf, blen);
 
         if (rc == -1) {
-            printf("Error on demuxing IPC socket call\n");
+            print_err("Error on demuxing IPC socket call\n");
             close(sockfd);
             return NULL;
         };
@@ -309,6 +489,13 @@ void *start_ipc_listener()
         exit(EXIT_FAILURE);
     }
 
+    if (chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |
+              S_IRGRP | S_IWGRP | S_IXGRP |
+              S_IROTH | S_IWOTH | S_IXOTH) == -1) {
+        perror("Chmod on lvl-ip IPC UNIX socket failed");
+        exit(EXIT_FAILURE);
+    }
+
     for (;;) {
         datasock = accept(fd, NULL, NULL);
         if (datasock == -1) {
@@ -319,7 +506,7 @@ void *start_ipc_listener()
         struct ipc_thread *th = ipc_alloc_thread(datasock);
         
         if (pthread_create(&th->id, NULL, &socket_ipc_open, &datasock) != 0) {
-            printf("Error on socket thread creation\n");
+            print_err("Error on socket thread creation\n");
             exit(1);
         };
     }

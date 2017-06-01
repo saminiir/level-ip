@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -eu
+
+function test_synchronous_http_get {
+    response="$("$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 8000 | strip_http_header)"
+
+    diff "$folder/curl-fixture.txt" <(echo "$response")
+}
+
+function test_poll_http_get {
+    response="$("$repo/tools/level-ip" "$repo/apps/curl-poll/curl-poll" 10.0.0.5 8000 | strip_http_header)"
+
+    diff "$folder/curl-fixture.txt" <(echo "$response")
+}
+
+function test_tcp_connection_refused {
+    "$repo/tools/level-ip" "$repo/apps/curl/curl" 10.0.0.5 9999 2>&1 | grep -q "Connection refused"
+}
+
+test_run "test_synchronous_http_get"
+test_run "test_poll_http_get"
+test_run "test_tcp_connection_refused"

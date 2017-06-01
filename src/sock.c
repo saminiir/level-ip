@@ -41,7 +41,7 @@ void sock_connected(struct sock *sk)
 
     sock->state = SS_CONNECTED;
     sk->err = 0;
-    sk->poll_events = POLLOUT;
+    sk->poll_events = (POLLOUT | POLLWRNORM | POLLWRBAND);
 
     wait_wakeup(&sock->sleep);
 }

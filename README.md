@@ -14,7 +14,9 @@ The results of the learning experience will be accompanied by explanatory blog p
 - Part 3, TCP Basics & Handshake: http://www.saminiir.com/lets-code-tcp-ip-stack-3-tcp-handshake/
 - Part 4, TCP Data Flow & Socket API: http://www.saminiir.com/lets-code-tcp-ip-stack-4-tcp-data-flow-socket-api/
 
-If you intend to compile and run Level-IP, read [Development](Documentation/development.md).
+See [Getting Started](Documentation/getting-started.md).
+
+For development documentation, start with [Development](Documentation/development.md).
 
 # Reference works
 

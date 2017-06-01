@@ -45,6 +45,26 @@ static void timers_tick()
     }
 }
 
+void timer_oneshot(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
+{
+    struct timer *t = timer_alloc();
+
+    t->refcnt = 0;
+    t->expires = tick + expire;
+    t->cancelled = 0;
+
+    if (t->expires < tick) {
+        print_err("ERR: Timer expiry integer wrap around\n");
+    }
+     
+    t->handler = handler;
+    t->arg = arg;
+
+    pthread_mutex_lock(&lock);
+    list_add_tail(&t->list, &timers);
+    pthread_mutex_unlock(&lock);
+}
+
 struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
 {
     struct timer *t = timer_alloc();

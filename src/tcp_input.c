@@ -61,6 +61,7 @@ static int tcp_verify_segment(struct tcp_sock *tsk, struct tcphdr *th, struct sk
 /* TCP RST received */
 static void tcp_reset(struct sock *sk)
 {
+    sk->poll_events = (POLLOUT | POLLWRNORM | POLLERR | POLLHUP);
     switch (sk->state) {
     case TCP_SYN_SENT:
         sk->err = -ECONNREFUSED;
@@ -75,7 +76,7 @@ static void tcp_reset(struct sock *sk)
         break;
     }
 
-    tcp_free(sk);
+    tcp_done(sk);
 }
 
 static inline int tcp_discard(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr *th)
@@ -136,7 +137,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     if (tcb->snd_una > tcb->iss) {
         tcp_set_state(sk, TCP_ESTABLISHED);
         tcb->snd_una = tcb->snd_nxt;
+        tsk->backoff = 0;
+        /* RFC 6298: Sender SHOULD set RTO <- 1 second */
+        tsk->rto = 1000;
         tcp_send_ack(&tsk->sk);
+        tcp_rearm_user_timeout(&tsk->sk);
         sock_connected(sk);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
@@ -271,6 +276,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             tcb->snd_una = th->ack_seq;
             /* Any segments on the retransmission queue which are thereby
                entirely acknowledged are removed. */
+            tcp_rtt(tsk);
             tcp_clean_rto_queue(sk, tcb->snd_una);
         }
 
@@ -365,6 +371,8 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
         tcb->rcv_nxt += 1;
         tsk->flags |= TCP_FIN;
+        sk->poll_events |= (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND);
+        
         tcp_send_ack(sk);
         tsk->sk.ops->recv_notify(&tsk->sk);
 
@@ -443,6 +451,8 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             wait_sleep(&tsk->sk.recv_wait);
         }
     }
+
+    if (rlen >= 0) tcp_rearm_user_timeout(sk);
     
     return rlen;
 }

@@ -23,6 +23,8 @@ static struct sock_ops inet_stream_ops = {
     .close = &inet_close,
     .free = &inet_free,
     .abort = &inet_abort,
+    .getpeername = &inet_getpeername,
+    .getsockname = &inet_getsockname,
 };
 
 static struct sock_type inet_ops[] = {
@@ -160,26 +162,18 @@ struct sock *inet_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 
 int inet_close(struct socket *sock)
 {
-    struct sock *sk = sock->sk;
-    int err = 0;
-
     if (!sock) {
         return 0;
     }
 
-    if (err) {
-        print_err("Error on socket closing\n");
-        return -1;
-    }
+    struct sock *sk = sock->sk;
+    int err = 0;
 
-    pthread_mutex_lock(&sk->lock);
-    sock->state = SS_DISCONNECTING;
     if (sock->sk->ops->close(sk) != 0) {
         print_err("Error on sock op close\n");
     }
 
     err = sk->err;
-    pthread_mutex_unlock(&sk->lock);
     return err;
 }
 
@@ -200,5 +194,46 @@ int inet_abort(struct socket *sock)
         sk->ops->abort(sk);
     }
 
+    return 0;
+}
+
+int inet_getpeername(struct socket *sock, struct sockaddr *restrict address,
+                     socklen_t *address_len)
+{
+    struct sock *sk = sock->sk;
+
+    if (sk == NULL) {
+        return -1;
+    }
+
+    struct sockaddr_in *res = (struct sockaddr_in *) address;
+    res->sin_family = AF_INET;
+    res->sin_port = htons(sk->dport);
+    res->sin_addr.s_addr = htonl(sk->daddr);
+    *address_len = sizeof(struct sockaddr_in);
+
+    inet_dbg(sock, "geetpeername sin_family %d sin_port %d sin_addr %d addrlen %d",
+             res->sin_family, ntohs(res->sin_port), ntohl(res->sin_addr.s_addr), *address_len);
+    
+    return 0;
+}
+int inet_getsockname(struct socket *sock, struct sockaddr *restrict address,
+                     socklen_t *address_len)
+{
+    struct sock *sk = sock->sk;
+
+    if (sk == NULL) {
+        return -1;
+    }
+    
+    struct sockaddr_in *res = (struct sockaddr_in *) address;
+    res->sin_family = AF_INET;
+    res->sin_port = htons(sk->sport);
+    res->sin_addr.s_addr = htonl(sk->saddr);
+    *address_len = sizeof(struct sockaddr_in);
+
+    inet_dbg(sock, "getsockname sin_family %d sin_port %d sin_addr %d addrlen %d",
+             res->sin_family, ntohs(res->sin_port), ntohl(res->sin_addr.s_addr), *address_len);
+    
     return 0;
 }

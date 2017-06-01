@@ -15,13 +15,17 @@
 
 void *start_ipc_listener();
 
-#define IPC_SOCKET  0x0001
-#define IPC_CONNECT 0x0002
-#define IPC_WRITE   0x0003
-#define IPC_READ    0x0004
-#define IPC_CLOSE   0x0005
-#define IPC_POLL    0x0006
-#define IPC_FCNTL   0x0007
+#define IPC_SOCKET      0x0001
+#define IPC_CONNECT     0x0002
+#define IPC_WRITE       0x0003
+#define IPC_READ        0x0004
+#define IPC_CLOSE       0x0005
+#define IPC_POLL        0x0006
+#define IPC_FCNTL       0x0007
+#define IPC_GETSOCKOPT  0x0008
+#define IPC_SETSOCKOPT  0x0009
+#define IPC_GETPEERNAME 0x000A
+#define IPC_GETSOCKNAME 0x000B
 
 struct ipc_thread {
     struct list_head list;
@@ -69,9 +73,16 @@ struct ipc_close {
     int sockfd;
 } __attribute__((packed));
 
-struct ipc_poll {
-    int sockfd;
+struct ipc_pollfd {
+    int fd;
     short int events;
+    short int revents;
+} __attribute__((packed));
+
+struct ipc_poll {
+    nfds_t nfds;
+    int timeout;
+    struct ipc_pollfd fds[];
 } __attribute__((packed));
 
 struct ipc_fcntl {
@@ -79,5 +90,19 @@ struct ipc_fcntl {
     int cmd;
     uint8_t data[];
 } __attribute__((packed));
+
+struct ipc_sockopt {
+    int fd;
+    int level;
+    int optname;
+    socklen_t optlen;
+    uint8_t optval[];
+} __attribute__((packed));
+
+struct ipc_sockname {
+    int socket;
+    socklen_t address_len;
+    uint8_t sa_data[128];
+};
 
 #endif

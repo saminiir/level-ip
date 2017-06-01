@@ -6,10 +6,10 @@ int debug = 0;
 
 static void usage(char *app)
 {
-    print_err("Usage: sudo %s\n", app);
+    print_err("Usage: %s\n", app);
     print_err("\n");
     print_err("Linux TCP/IP stack implemented with TUN/TAP devices.\n");
-    print_err("Elevated privileges are needed.\n");
+    print_err("Requires the CAP_NET_ADMIN capability. See capabilities(7).\n");
     print_err("See https://www.kernel.org/doc/Documentation/networking/tuntap.txt\n");
     print_err("\n");
     print_err("Options:\n");

@@ -178,13 +178,16 @@ int tcp_disconnect(struct sock *sk, int flags)
 int tcp_write(struct sock *sk, const void *buf, int len)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    int ret = -1;
+    int ret = sk->err;
+
+    if (ret != 0) goto out;
 
     switch (sk->state) {
     case TCP_ESTABLISHED:
     case TCP_CLOSE_WAIT:
         break;
     default:
+        ret = -EBADF;
         goto out;
     }
 
@@ -201,7 +204,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
 
     switch (sk->state) {
     case TCP_CLOSE:
-        print_err("error:  connection does not exist\n");
+        ret = -EBADF;
         goto out;
     case TCP_LISTEN:
     case TCP_SYN_SENT:
@@ -230,12 +233,12 @@ int tcp_read(struct sock *sk, void *buf, int len)
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
-        print_err("error:  connection closing\n");
+        ret = -EBADF;
         goto out;
     default:
         goto out;
     }
-    
+
     return tcp_receive(tsk, buf, len);    
 
 out: 
@@ -256,6 +259,7 @@ int tcp_close(struct sock *sk)
 {
     switch (sk->state) {
     case TCP_CLOSE:
+        return tcp_done(sk);
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
@@ -294,7 +298,7 @@ int tcp_abort(struct sock *sk)
     return tcp_done(sk);
 }
 
-int tcp_free(struct sock *sk)
+static int tcp_free(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
 
@@ -314,7 +318,7 @@ int tcp_free(struct sock *sk)
 int tcp_done(struct sock *sk)
 {
     tcp_free(sk);
-    return socket_free(sk->sock);
+    return socket_delete(sk->sock);
 }
 
 void tcp_clear_timers(struct sock *sk)
@@ -326,6 +330,7 @@ void tcp_clear_timers(struct sock *sk)
     pthread_mutex_unlock(&sk->write_queue.lock);
 
     timer_cancel(tsk->keepalive);
+    timer_cancel(tsk->linger);
 }
 
 void tcp_stop_rto_timer(struct tcp_sock *tsk)
@@ -333,6 +338,7 @@ void tcp_stop_rto_timer(struct tcp_sock *tsk)
     if (tsk) {
         timer_cancel(tsk->retransmit);
         tsk->retransmit = NULL;
+        tsk->backoff = 0;
     }
 }
 
@@ -375,7 +381,19 @@ static void tcp_linger(uint32_t ts, void *arg)
     timer_release(tsk->linger);
     tsk->linger = NULL;
 
+    tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
     tcp_done(sk);
+}
+
+static void tcp_user_timeout(uint32_t ts, void *arg)
+{
+    struct sock *sk = (struct sock *) arg;
+    struct tcp_sock *tsk = tcp_sk(sk);
+    timer_release(tsk->linger);
+    tsk->linger = NULL;
+
+    tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
+    tcp_abort(sk);
 }
 
 void tcp_enter_time_wait(struct sock *sk)
@@ -386,6 +404,48 @@ void tcp_enter_time_wait(struct sock *sk)
 
     tcp_clear_timers(sk);
     
+    /* RFC793 arbitrarily defines MSL to be 2 minutes */
+    tsk->linger = timer_add(TCP_2MSL, &tcp_linger, sk);
+}
+
+void tcp_rearm_user_timeout(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+
+    if (sk->state == TCP_TIME_WAIT) return;
+
     timer_cancel(tsk->linger);
-    tsk->linger = timer_add(3000, &tcp_linger, sk);
+
+    /* RFC793 set user timeout */
+    tsk->linger = timer_add(TCP_USER_TIMEOUT, &tcp_user_timeout, sk);
+}
+
+void tcp_rtt(struct tcp_sock *tsk)
+{
+    if (tsk->backoff > 1 || !tsk->retransmit) {
+        // Karn's Algorithm: Don't measure retransmissions
+        return;
+    }
+
+    int r = timer_get_tick() - (tsk->retransmit->expires - tsk->rto);
+    if (r < 0) return;
+
+    if (!tsk->srtt) {
+        /* RFC6298 2.2 first measurement is made */
+        tsk->srtt = r;
+        tsk->rttvar = r / 2;
+    } else {
+        /* RFC6298 2.3 a subsequent measurement is made */
+        double beta = 0.25;
+        double alpha = 0.125;
+        tsk->rttvar = (1 - beta) * tsk->rttvar + beta * abs(tsk->srtt - r);
+        tsk->srtt = (1 - alpha) * tsk->srtt + alpha * r;
+    }
+
+    int k = 4 * tsk->rttvar;
+
+    /* RFC6298 says RTO should be at least 1 second. Linux uses 200ms */
+    if (k < 200) k = 200;
+
+    tsk->rto = tsk->srtt + k;
 }

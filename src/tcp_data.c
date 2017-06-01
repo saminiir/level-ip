@@ -79,7 +79,7 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
         }
     }
 
-    if (skb_queue_empty(&sk->receive_queue)) {
+    if (skb_queue_empty(&sk->receive_queue) && !(tsk->flags & TCP_FIN)) {
         sk->poll_events &= ~POLLIN;
     }
     
@@ -105,9 +105,12 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 
         skb->refcnt++;
         skb_queue_tail(&sk->receive_queue, skb);
-        sk->poll_events |= POLLIN;
 
         tcp_consume_ofo_queue(tsk);
+
+        if (skb->dlen > 0) {
+            sk->poll_events |= (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND);
+        }
 
         tcp_stop_delack_timer(tsk);
 
@@ -115,7 +118,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
          * be excessively delayed; in particular, the delay MUST be less than
          * 0.5 seconds, and in a stream of full-sized segments there SHOULD 
          * be an ACK for at least every second segment. */
-        if (th->psh || (skb->dlen == tsk->rmss && ++tsk->delacks > 1)) {
+        if (th->psh || (skb->dlen > 1000 && ++tsk->delacks > 1)) {
             tsk->delacks = 0;
             tcp_send_ack(sk);
         } else {

@@ -24,6 +24,9 @@
 #define TCP_OPTLEN_MSS 4
 #define TCP_OPT_MSS 2
 
+#define TCP_2MSL 60000
+#define TCP_USER_TIMEOUT 180000
+
 #define tcp_sk(sk) ((struct tcp_sock *)sk)
 #define tcp_hlen(tcp) (tcp->hl << 2)
 
@@ -32,35 +35,37 @@ extern const char *tcp_dbg_states[];
 #define tcp_in_dbg(hdr, sk, skb)                                        \
     do {                                                                \
         print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u", \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u rto %d boff %d", \
                     sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
                     sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
                     hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.irs, \
                     hdr->seq + skb->dlen - tcp_sk(sk)->tcb.irs,         \
-                    hdr->ack_seq - tcp_sk(sk)->tcb.iss, hdr->win);      \
+                    hdr->ack_seq - tcp_sk(sk)->tcb.iss, hdr->win, tcp_sk(sk)->rto, tcp_sk(sk)->backoff); \
     } while (0) 
 
 #define tcp_out_dbg(hdr, sk, skb)                                       \
     do {                                                                \
         print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u", \
+                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u rto %d boff %d", \
                     sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
                     sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
                     hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
                     hdr->seq + skb->dlen - tcp_sk(sk)->tcb.iss,         \
-                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win);      \
+                    hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, tcp_sk(sk)->rto, tcp_sk(sk)->backoff); \
     } while (0)
 
 #define tcpsock_dbg(msg, sk)                                            \
     do {                                                                \
         print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (snd_una %u, snd_nxt %u, snd_wnd %u, " \
-                    "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u) state %s: "msg, \
+                    "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u recv-q %d send-q %d " \
+                    "rto %d boff %d) state %s: "msg, \
                     sk->sport, sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, \
                     sk->dport, tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
                     tcp_sk(sk)->tcb.snd_nxt - tcp_sk(sk)->tcb.iss, tcp_sk(sk)->tcb.snd_wnd, \
                     tcp_sk(sk)->tcb.snd_wl1, tcp_sk(sk)->tcb.snd_wl2,   \
                     tcp_sk(sk)->tcb.rcv_nxt - tcp_sk(sk)->tcb.irs, tcp_sk(sk)->tcb.rcv_wnd, \
-                    tcp_dbg_states[sk->state]);                                        \
+                    sk->receive_queue.qlen, sk->write_queue.qlen, tcp_sk(sk)->rto, tcp_sk(sk)->backoff, \
+                    tcp_dbg_states[sk->state]);                         \
     } while (0)
 
 #define tcp_set_state(sk, state)                                        \
@@ -168,6 +173,9 @@ struct tcp_sock {
     struct tcb tcb;
     uint8_t flags;
     uint8_t backoff;
+    int32_t srtt;
+    int32_t rttvar;
+    uint32_t rto;
     struct timer *retransmit;
     struct timer *delack;
     struct timer *keepalive;
@@ -212,8 +220,8 @@ int tcp_send_challenge_ack(struct sock *sk, struct sk_buff *skb);
 int tcp_recv_notify(struct sock *sk);
 int tcp_close(struct sock *sk);
 int tcp_abort(struct sock *sk);
-int tcp_free(struct sock *sk);
 int tcp_done(struct sock *sk);
+void tcp_rtt(struct tcp_sock *tsk);
 void tcp_handle_fin_state(struct sock *sk);
 void tcp_enter_time_wait(struct sock *sk);
 void tcp_clear_timers(struct sock *sk);
@@ -222,5 +230,6 @@ void tcp_stop_rto_timer(struct tcp_sock *tsk);
 void tcp_release_rto_timer(struct tcp_sock *tsk);
 void tcp_stop_delack_timer(struct tcp_sock *tsk);
 void tcp_release_delack_timer(struct tcp_sock *tsk);
+void tcp_rearm_user_timeout(struct sock *sk);
 
 #endif

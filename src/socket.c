@@ -3,6 +3,7 @@
 #include "socket.h"
 #include "inet.h"
 #include "wait.h"
+#include "timer.h"
 
 static int sock_amount = 0;
 static LIST_HEAD(sockets);
@@ -38,18 +39,43 @@ int socket_free(struct socket *sock)
         sock->ops->free(sock);
     }
 
-    pthread_rwlock_wrlock(&slock);
-
-    list_del(&sock->list);
-
     wait_free(&sock->sleep);
     
     free(sock);
+    
+    return 0;
+}
+
+static void socket_garbage_collect(uint32_t ts, void *arg)
+{
+    struct socket *sock = (struct socket *)arg;
+
+    socket_dbg(sock, "Garbage collecting (freeing) socket");
+
+    pthread_rwlock_wrlock(&slock);
+
+    list_del(&sock->list);
     sock_amount--;
 
     pthread_rwlock_unlock(&slock);
     
-    return 0;
+    socket_free(sock);
+}
+
+int socket_delete(struct socket *sock)
+{
+    int rc = 0;
+
+    pthread_mutex_lock(&sock->sk->lock);
+
+    if (sock->state == SS_DISCONNECTING) goto out;
+
+    sock->state = SS_DISCONNECTING;
+    timer_oneshot(10000, &socket_garbage_collect, sock);
+
+out:
+    pthread_mutex_unlock(&sock->sk->lock);
+    return rc;
 }
 
 void abort_sockets() {
@@ -62,7 +88,7 @@ void abort_sockets() {
     }
 }
 
-static struct socket *get_socket(pid_t pid, int fd)
+static struct socket *get_socket(pid_t pid, uint32_t fd)
 {
     struct list_head *item;
     struct socket *sock = NULL;
@@ -110,7 +136,7 @@ void socket_debug()
 
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
-        socket_dbg(sock);
+        socket_dbg(sock, "");
     }
 
     pthread_rwlock_unlock(&slock);
@@ -165,8 +191,8 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Connect: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        print_err("Connect: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
+        return -EBADF;
     }
 
     return sock->ops->connect(sock, addr, addrlen, 0);
@@ -177,8 +203,8 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Write: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        print_err("Write: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
+        return -EBADF;
     }
 
     return sock->ops->write(sock, buf, count);
@@ -189,8 +215,8 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Read: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        print_err("Read: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
+        return -EBADF;
     }
 
     return sock->ops->read(sock, buf, count);
@@ -201,23 +227,47 @@ int _close(pid_t pid, int sockfd)
     struct socket *sock;
 
     if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Close: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        print_err("Close: could not find socket (fd %u) for connection (pid %d)\n", sockfd, pid);
+        return -EBADF;
     }
 
     return sock->ops->close(sock);
 }
 
-int _poll(pid_t pid, int sockfd)
+int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
 {
-    struct socket *sock;
+    for (;;) {
+        int polled = 0;
 
-    if ((sock = get_socket(pid, sockfd)) == NULL) {
-        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", sockfd, pid);
-        return -1;
+        for (int i = 0; i < nfds; i++) {
+            struct socket *sock;
+            struct pollfd *poll = &fds[i];
+            if ((sock = get_socket(pid, poll->fd)) == NULL) {
+                print_err("Poll: could not find socket (fd %u) for connection (pid %d)\n", poll->fd, pid);
+                return -EBADF;
+            }
+
+            poll->revents = sock->sk->poll_events & (poll->events | POLLHUP | POLLERR | POLLNVAL);
+            if (poll->revents > 0) {
+                polled++;
+            }
+        }
+
+        if (polled > 0 || timeout == 0) {
+            return polled;
+        } else {
+            if (timeout > 0) {
+                if (timeout > 10) {
+                    timeout -= 10;
+                } else {
+                    timeout = 0;
+                }
+            }
+            usleep(1000 * 10);
+        }
     }
 
-    return sock->sk->poll_events;
+    return -EAGAIN;
 }
 
 int _fcntl(pid_t pid, int fildes, int cmd, ...)
@@ -225,8 +275,8 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     struct socket *sock;
 
     if ((sock = get_socket(pid, fildes)) == NULL) {
-        print_err("Poll: could not find socket (fd %d) for connection (pid %d)\n", fildes, pid);
-        return -1;
+        print_err("Fcntl: could not find socket (fd %u) for connection (pid %d)\n", fildes, pid);
+        return -EBADF;
     }
 
     va_list ap;
@@ -245,4 +295,64 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     }
 
     return -1;
+}
+
+int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen_t *optlen)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, fd)) == NULL) {
+        print_err("Getsockopt: could not find socket (fd %u) for connection (pid %d)\n", fd, pid);
+        return -EBADF;
+    }
+
+    switch (level) {
+    case SOL_SOCKET:
+        switch (optname) {
+        case SO_ERROR:
+            *optlen = 4;
+            *(int *)optval = sock->sk->err;
+            return 0;
+        default:
+            print_err("Getsockopt unsupported optname %d\n", optname);
+            return -ENOPROTOOPT;
+        }
+        
+        break;
+    default:
+        print_err("Getsockopt: Unsupported level %d\n", level);
+        return -EINVAL;
+    }
+
+    return 0;
+}
+
+int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Getpeername: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    int rc = sock->ops->getpeername(sock, address, address_len);
+
+    return rc;
+}
+
+int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
+                 socklen_t *restrict address_len)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Getsockname: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    int rc = sock->ops->getsockname(sock, address, address_len);
+
+    return rc;
 }

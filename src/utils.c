@@ -19,16 +19,6 @@ int run_cmd(char *cmd, ...)
     return system(buf);
 }
 
-void print_err(char *format, ...)
-{
-    va_list ap;
-    va_start(ap, format);
-
-    vfprintf(stderr, format, ap);
-
-    va_end(ap);
-}
-
 uint32_t sum_every_16bits(void *addr, int count)
 {
     register uint32_t sum = 0;
