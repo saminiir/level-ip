@@ -173,8 +173,8 @@ struct tcp_sock {
     struct tcb tcb;
     uint8_t flags;
     uint8_t backoff;
-    uint32_t srtt;
-    uint32_t rttvar;
+    int32_t srtt;
+    int32_t rttvar;
     uint32_t rto;
     struct timer *retransmit;
     struct timer *delack;

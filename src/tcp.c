@@ -436,8 +436,8 @@ void tcp_rtt(struct tcp_sock *tsk)
         tsk->rttvar = r / 2;
     } else {
         /* RFC6298 2.3 a subsequent measurement is made */
-        int beta = 0.25;
-        int alpha = 0.125;
+        double beta = 0.25;
+        double alpha = 0.125;
         tsk->rttvar = (1 - beta) * tsk->rttvar + beta * abs(tsk->srtt - r);
         tsk->srtt = (1 - alpha) * tsk->srtt + alpha * r;
     }
