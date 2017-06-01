@@ -71,12 +71,12 @@ First and foremost, Level-IP aims to be just an introduction to TCP/IP stacks. H
 * TCP data transmission
 * TCP RFC793 "Segment Arrives"
 * TCP RFC6298 Retransmission calculation
+* TCP RFC793 User Timeout
 
 ## Upcoming features
 
 * IP Fragmentation
 * IP/ICMP Diagnostics
-* TCP User Timeout
 * TCP Window Management
 * TCP Silly Window Syndrome Avoidance
 * TCP Zero-Window Probes
@@ -84,4 +84,5 @@ First and foremost, Level-IP aims to be just an introduction to TCP/IP stacks. H
 * TCP Selective Acknowledgments (SACK)
 * Server socket API calls (bind, accept...)
 * Raw Socket (for arping, ping..)
+* 'select' socket API call
 * ...
