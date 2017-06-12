@@ -271,6 +271,7 @@ int tcp_close(struct sock *sk)
     case TCP_LISTEN:
     case TCP_SYN_SENT:
     case TCP_SYN_RECEIVED:
+        return tcp_done(sk);
     case TCP_ESTABLISHED:
         /* Queue this until all preceding SENDs have been segmentized, then
            form a FIN segment and send it.  In any case, enter FIN-WAIT-1
