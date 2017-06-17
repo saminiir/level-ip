@@ -273,10 +273,11 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
     /* RFC 6298: 2.5 Maximum value MAY be placed on RTO, provided it is at least
        60 seconds */
     if (tsk->rto > 60000) {
-        tsk->sk.err = -ETIMEDOUT;
-        sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
         pthread_mutex_unlock(&sk->write_queue.lock);
         tcp_done(sk);
+
+        tsk->sk.err = -ETIMEDOUT;
+        sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
         return;
     } else {
         /* RFC 6298: Section 5.5 double RTO time */
