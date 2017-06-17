@@ -92,7 +92,8 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
 
     rlen = _read(pid, requested->sockfd, rbuf, requested->len);
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_read) + rlen;
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) +
+        sizeof(struct ipc_read) + (rlen > 0 ? rlen : 0);
     struct ipc_msg *response = alloca(resplen);
     struct ipc_err *error = (struct ipc_err *) response->data;
     struct ipc_read *actual = (struct ipc_read *) error->data;
@@ -113,7 +114,7 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     memcpy(actual->buf, rbuf, rlen > 0 ? rlen : 0);
 
     if (write(sockfd, (char *)response, resplen) == -1) {
-        perror("Error on writing IPC write response");
+        perror("Error on writing IPC read response");
     }
 
     return 0;

@@ -233,7 +233,7 @@ int tcp_read(struct sock *sk, void *buf, int len)
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
-        ret = -EBADF;
+        ret = sk->err;
         goto out;
     default:
         goto out;
