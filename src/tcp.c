@@ -259,7 +259,6 @@ int tcp_close(struct sock *sk)
 {
     switch (sk->state) {
     case TCP_CLOSE:
-        return tcp_done(sk);
     case TCP_CLOSING:
     case TCP_LAST_ACK:
     case TCP_TIME_WAIT:
@@ -305,7 +304,6 @@ static int tcp_free(struct sock *sk)
 
     pthread_mutex_lock(&sk->lock);
 
-    tcp_set_state(sk, TCP_CLOSE);
     tcp_clear_timers(sk);
     tcp_clear_queues(tsk);
 
@@ -318,6 +316,7 @@ static int tcp_free(struct sock *sk)
 
 int tcp_done(struct sock *sk)
 {
+    tcp_set_state(sk, TCP_CLOSING);
     tcp_free(sk);
     return socket_delete(sk->sock);
 }
