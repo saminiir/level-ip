@@ -50,6 +50,11 @@ static void ipc_free_thread(int sock)
     pthread_mutex_unlock(&lock);
 }
 
+static int ipc_try_send(int sockfd, const void *buf, size_t len)
+{
+    return send(sockfd, buf, len, MSG_NOSIGNAL);
+}
+
 static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
 {
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err);
@@ -75,7 +80,7 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
     
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC write response");
     }
 
@@ -113,7 +118,7 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
     actual->len = rlen;
     memcpy(actual->buf, rbuf, rlen > 0 ? rlen : 0);
 
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC read response");
     }
 
@@ -229,7 +234,7 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
         polled[i].revents = fds[i].revents;
     }
 
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC poll response");
     }
         
@@ -297,7 +302,7 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
     optres->optlen = opts->optlen;
     memcpy(&optres->optval, opts->optval, opts->optlen);
 
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getsockopt response");
     }
 
@@ -339,7 +344,7 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
 
     nameres->socket = name->socket;
     
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getpeername response");
     }
 
@@ -381,7 +386,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
 
     nameres->socket = name->socket;
 
-    if (write(sockfd, (char *)response, resplen) == -1) {
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getsockname response");
     }
 
