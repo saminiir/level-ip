@@ -167,14 +167,8 @@ int inet_close(struct socket *sock)
     }
 
     struct sock *sk = sock->sk;
-    int err = 0;
 
-    if (sock->sk->ops->close(sk) != 0) {
-        print_err("Error on sock op close\n");
-    }
-
-    err = sk->err;
-    return err;
+    return sock->sk->ops->close(sk);
 }
 
 int inet_free(struct socket *sock)
