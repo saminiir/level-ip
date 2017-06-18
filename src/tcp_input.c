@@ -22,6 +22,9 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
             skb_dequeue(&sk->write_queue);
             skb->refcnt--;
             free_skb(skb);
+            if (tsk->cwnd > 0) {
+                tsk->cwnd--;
+            }
         } else {
             break;
         }

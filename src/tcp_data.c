@@ -118,10 +118,13 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
          * be excessively delayed; in particular, the delay MUST be less than
          * 0.5 seconds, and in a stream of full-sized segments there SHOULD 
          * be an ACK for at least every second segment. */
-        if (th->psh || (skb->dlen > 1000 && ++tsk->delacks > 1)) {
+        if (tsk->cwnd < 5) {
+            tcp_send_next(sk, 3);
+            tsk->cwnd++;
+        } else if (th->psh || (skb->dlen > 1000 && ++tsk->delacks > 1)) {
             tsk->delacks = 0;
             tcp_send_ack(sk);
-        } else {
+        } else if (skb->dlen > 0) {
             tsk->delack = timer_add(200, &tcp_send_delack, &tsk->sk);
         }
     } else {

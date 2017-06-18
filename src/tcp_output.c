@@ -65,10 +65,6 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
 
     tcp_out_dbg(thdr, sk, skb);
 
-    /* Store sequence information into the socket buffer */
-    skb->seq = tcb->snd_una;
-    skb->end_seq = tcb->snd_una + skb->dlen;
-    
     thdr->sport = htons(thdr->sport);
     thdr->dport = htons(thdr->dport);
     thdr->seq = htonl(thdr->seq);
@@ -93,9 +89,17 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
         tcp_rearm_rto_timer(tsk);
     }
 
-    skb_queue_tail(&sk->write_queue, skb);
-    rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
+    if (tsk->cwnd < 5) {
+        /* Store sequence information into the socket buffer */
+        rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
+        tsk->cwnd++;
+    }
+
+    skb->seq = tcb->snd_nxt;
     tcb->snd_nxt += skb->dlen;
+    skb->end_seq = tcb->snd_nxt;
+    
+    skb_queue_tail(&sk->write_queue, skb);
     
     pthread_mutex_unlock(&sk->write_queue.lock);
 
@@ -136,6 +140,25 @@ void tcp_send_delack(uint32_t ts, void *arg)
     tcp_release_delack_timer(tsk);
 
     tcp_send_ack(sk);
+}
+
+int tcp_send_next(struct sock *sk, int amount)
+{
+    struct sk_buff *next;
+    struct list_head *item, *tmp;
+    int i = 0;
+
+    list_for_each_safe(item, tmp, &sk->write_queue.head) {
+        if (++i >= amount) break;
+        next = list_entry(item, struct sk_buff, list);
+
+        if (next == NULL) return -1;
+    
+        skb_reset_header(next);
+        tcp_transmit_skb(sk, next, next->seq);
+    }
+    
+    return 0;
 }
 
 int tcp_send_ack(struct sock *sk)

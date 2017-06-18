@@ -183,6 +183,8 @@ struct tcp_sock {
     uint8_t delacks;
     uint16_t rmss;
     uint16_t smss;
+    uint16_t cwnd;
+    
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
 
@@ -210,6 +212,7 @@ int tcp_read(struct sock *sk, void *buf, int len);
 int tcp_receive(struct tcp_sock *tsk, void *buf, int len);
 int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb);
 int tcp_send_synack(struct sock *sk);
+int tcp_send_next(struct sock *sk, int amount);
 int tcp_send_ack(struct sock *sk);
 void tcp_send_delack(uint32_t ts, void *arg);
 int tcp_queue_fin(struct sock *sk);

@@ -122,6 +122,8 @@ struct sock *tcp_alloc_sock()
     tsk->rmss = 1460;
     tsk->smss = 1460;
 
+    tsk->cwnd = 0;
+
     skb_queue_init(&tsk->ofo_queue);
     
     return (struct sock *)tsk;
