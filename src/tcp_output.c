@@ -149,7 +149,7 @@ int tcp_send_next(struct sock *sk, int amount)
     int i = 0;
 
     list_for_each_safe(item, tmp, &sk->write_queue.head) {
-        if (++i >= amount) break;
+        if (++i > amount) break;
         next = list_entry(item, struct sk_buff, list);
 
         if (next == NULL) return -1;
