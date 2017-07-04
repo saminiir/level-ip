@@ -89,10 +89,10 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
         tcp_rearm_rto_timer(tsk);
     }
 
-    if (tsk->cwnd < 5) {
+    if (tsk->inflight < 3) {
         /* Store sequence information into the socket buffer */
         rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
-        tsk->cwnd++;
+        tsk->inflight++;
     }
 
     skb->seq = tcb->snd_nxt;

@@ -123,6 +123,7 @@ struct sock *tcp_alloc_sock()
     tsk->smss = 1460;
 
     tsk->cwnd = 0;
+    tsk->inflight = 0;
 
     skb_queue_init(&tsk->ofo_queue);
     
@@ -424,7 +425,7 @@ void tcp_rearm_user_timeout(struct sock *sk)
 
 void tcp_rtt(struct tcp_sock *tsk)
 {
-    if (tsk->backoff > 1 || !tsk->retransmit) {
+    if (tsk->backoff > 0 || !tsk->retransmit) {
         // Karn's Algorithm: Don't measure retransmissions
         return;
     }

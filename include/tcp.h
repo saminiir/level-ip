@@ -184,6 +184,7 @@ struct tcp_sock {
     uint16_t rmss;
     uint16_t smss;
     uint16_t cwnd;
+    uint32_t inflight;
     
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };

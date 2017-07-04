@@ -85,3 +85,7 @@ uint32_t parse_ipv4_string(char* addr) {
     sscanf(addr, "%hhu.%hhu.%hhu.%hhu", &addr_bytes[3], &addr_bytes[2], &addr_bytes[1], &addr_bytes[0]);
     return addr_bytes[0] | addr_bytes[1] << 8 | addr_bytes[2] << 16 | addr_bytes[3] << 24;
 }
+
+uint32_t min(uint32_t x, uint32_t y) {
+    return x > y ? y : x;
+}

@@ -22,15 +22,15 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
             skb_dequeue(&sk->write_queue);
             skb->refcnt--;
             free_skb(skb);
-            if (tsk->cwnd > 0) {
-                tsk->cwnd--;
+            if (tsk->inflight > 0) {
+                tsk->inflight--;
             }
         } else {
             break;
         }
     };
 
-    if (skb == NULL) {
+    if (skb == NULL || tsk->inflight == 0) {
         /* No unacknowledged skbs, stop rto timer */
         tcp_stop_rto_timer(tsk);
     }
@@ -341,14 +341,18 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
     }
 
+    int expected = skb->seq == tcb->rcv_nxt;
+
     pthread_mutex_lock(&sk->receive_queue.lock);
     /* seventh, process the segment txt */
     switch (sk->state) {
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
     case TCP_FIN_WAIT_2:
-        tcp_data_queue(tsk, th, skb);
-        tsk->sk.ops->recv_notify(&tsk->sk);
+        if (th->psh || skb->dlen > 0) {
+            tcp_data_queue(tsk, th, skb);
+            tsk->sk.ops->recv_notify(&tsk->sk);
+        }
                 
         break;
     case TCP_CLOSE_WAIT:
@@ -361,7 +365,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     }
 
     /* eighth, check the FIN bit */
-    if (th->fin && (tcb->rcv_nxt - skb->dlen) == skb->seq) {
+    if (th->fin && expected) {
         tcpsock_dbg("Received in-sequence FIN", sk);
 
         switch (sk->state) {
@@ -409,6 +413,32 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             /* TODO: Remain in the TIME-WAIT state.  Restart the 2 MSL time-wait
                timeout. */
             break;
+        }
+    }
+
+    /* Congestion control and delacks */
+    switch (sk->state) {
+    case TCP_ESTABLISHED:
+    case TCP_FIN_WAIT_1:
+    case TCP_FIN_WAIT_2:
+        if (expected) {
+            tcp_stop_delack_timer(tsk);
+
+            int pending = min(skb_queue_len(&sk->write_queue), 3);
+            /* RFC1122:  A TCP SHOULD implement a delayed ACK, but an ACK should not
+             * be excessively delayed; in particular, the delay MUST be less than
+             * 0.5 seconds, and in a stream of full-sized segments there SHOULD 
+             * be an ACK for at least every second segment. */
+            if (tsk->inflight == 0 && pending > 0) {
+                tcp_send_next(sk, pending);
+                tsk->inflight += pending;
+                tcp_rearm_rto_timer(tsk);
+            } else if (th->psh || (skb->dlen > 1000 && ++tsk->delacks > 1)) {
+                tsk->delacks = 0;
+                tcp_send_ack(sk);
+            } else if (skb->dlen > 0) {
+                tsk->delack = timer_add(200, &tcp_send_delack, &tsk->sk);
+            }
         }
     }
 
