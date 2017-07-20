@@ -130,19 +130,22 @@ static int ipc_write(int sockfd, struct ipc_msg *msg)
     struct ipc_write *payload = (struct ipc_write *) msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
-    int dlen = payload->len - IPC_BUFLEN;
+    int head = IPC_BUFLEN - sizeof(struct ipc_write) - sizeof(struct ipc_msg);
+
     char buf[payload->len];
     
     memset(buf, 0, payload->len);
-    memcpy(buf, payload->buf, payload->len > IPC_BUFLEN ? IPC_BUFLEN : payload->len);
-    
-    // Guard for payload that is longer than IPC_BUFLEN
-    if (payload->len > IPC_BUFLEN) {
-        int res = read(sockfd, buf + IPC_BUFLEN, payload->len - IPC_BUFLEN);
+    memcpy(buf, payload->buf, payload->len > head ? head : payload->len);
+
+    // Guard for payload that is longer than initial IPC_BUFLEN
+    if (payload->len > head) {
+        int tail = payload->len - head;
+        int res = read(sockfd, &buf[head], tail);
+
         if (res == -1) {
             perror("Read on IPC payload guard");
             return -1;
-        } else if (res != dlen) {
+        } else if (res != tail) {
             print_err("Hmm, we did not read exact payload amount in IPC write\n");
         }
     }
