@@ -3,7 +3,7 @@
 #include "ipc.h"
 #include "socket.h"
 
-#define IPC_BUFLEN 4096
+#define IPC_BUFLEN 8192
 
 static LIST_HEAD(sockets);
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
