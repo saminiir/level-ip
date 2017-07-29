@@ -8,8 +8,11 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void timer_free(struct timer *t)
 {
-    if (pthread_mutex_trylock(&lock) != 0) {
-        perror("Timer free mutex lock");
+    int rc = 0;
+    if ((rc = pthread_mutex_trylock(&lock)) != 0) {
+        if (rc != EBUSY) {
+            print_err("Timer free mutex lock: %s\n", strerror(rc));
+        }
         return;
     }
 
@@ -89,8 +92,10 @@ struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void
 
 void timer_release(struct timer *t)
 {
-    if (pthread_mutex_lock(&lock) != 0) {
-        perror("Timer release lock");
+    int rc = 0;
+    
+    if ((rc = pthread_mutex_lock(&lock)) != 0) {
+        print_err("Timer release lock: %s\n", strerror(rc));
         return;
     };
 
@@ -103,8 +108,10 @@ void timer_release(struct timer *t)
 
 void timer_cancel(struct timer *t)
 {
-    if (pthread_mutex_lock(&lock) != 0) {
-        perror("Timer cancel lock");
+    int rc = 0;
+    
+    if ((rc = pthread_mutex_lock(&lock)) != 0) {
+        print_err("Timer cancel lock: %s\n", strerror(rc));
         return;
     };
 
