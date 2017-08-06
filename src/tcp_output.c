@@ -5,7 +5,7 @@
 #include "skbuff.h"
 #include "timer.h"
 
-static void tcp_retransmission_timeout(uint32_t ts, void *arg);
+static void *tcp_retransmission_timeout(void *arg);
 
 static struct sk_buff *tcp_alloc_skb(int optlen, int size)
 {
@@ -131,15 +131,19 @@ int tcp_send_synack(struct sock *sk)
 }
 
 /* Routine for timer-invoked delayed acknowledgment */
-void tcp_send_delack(uint32_t ts, void *arg)
+void *tcp_send_delack(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    struct tcp_sock *tsk = tcp_sk(sk);
+    pthread_mutex_lock(&sk->sock->lock);
 
+    struct tcp_sock *tsk = tcp_sk(sk);
     tsk->delacks = 0;
     tcp_release_delack_timer(tsk);
-
     tcp_send_ack(sk);
+
+    pthread_mutex_unlock(&sk->sock->lock);
+
+    return NULL;
 }
 
 int tcp_send_next(struct sock *sk, int amount)
@@ -237,12 +241,13 @@ static void tcp_notify_user(struct sock *sk)
     }
 }
 
-static void tcp_connect_rto(uint32_t ts, void *arg)
+static void *tcp_connect_rto(void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
+    pthread_mutex_lock(&sk->sock->lock);
     tcp_release_rto_timer(tsk);
 
     if (sk->state == TCP_SYN_SENT) {
@@ -268,14 +273,19 @@ static void tcp_connect_rto(uint32_t ts, void *arg)
     } else {
         print_err("TCP connect RTO triggered even when not in SYNSENT\n");
     }
+
+    pthread_mutex_unlock(&sk->sock->lock);
+
+    return NULL;
 }
 
-static void tcp_retransmission_timeout(uint32_t ts, void *arg)
+static void *tcp_retransmission_timeout(void *arg)
 {
     struct tcp_sock *tsk = (struct tcp_sock *) arg;
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
+    pthread_mutex_lock(&sk->sock->lock);
     pthread_mutex_lock(&sk->write_queue.lock);
 
     tcp_release_rto_timer(tsk);
@@ -301,7 +311,9 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 
         tsk->sk.err = -ETIMEDOUT;
         sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
-        return;
+
+        pthread_rwlock_unlock(&sk->sock->lock);
+        return NULL;
     } else {
         /* RFC 6298: Section 5.5 double RTO time */
         tsk->rto *= 2;
@@ -315,6 +327,9 @@ static void tcp_retransmission_timeout(uint32_t ts, void *arg)
 
 unlock:
     pthread_mutex_unlock(&sk->write_queue.lock);
+    pthread_mutex_unlock(&sk->sock->lock);
+
+    return NULL;
 }
 
 void tcp_rearm_rto_timer(struct tcp_sock *tsk)

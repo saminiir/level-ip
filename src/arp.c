@@ -49,14 +49,19 @@ static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
     struct list_head *item;
     struct arp_cache_entry *entry;
 
+    pthread_mutex_lock(&lock);
     list_for_each(item, &arp_cache) {
         entry = list_entry(item, struct arp_cache_entry, list);
 
         if (entry->hwtype == hdr->hwtype && entry->sip == data->sip) {
             memcpy(entry->smac, data->smac, 6);
+            pthread_mutex_unlock(&lock);
+            
             return 1;
         }
     }
+
+    pthread_mutex_unlock(&lock);
     
     return 0;
 }

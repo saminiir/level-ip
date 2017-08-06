@@ -14,6 +14,8 @@ const char *tcp_dbg_states[] = {
 };
 #endif
 
+static pthread_rwlock_t tcplock = PTHREAD_RWLOCK_INITIALIZER;
+
 struct net_ops tcp_ops = {
     .alloc_sock = &tcp_alloc_sock,
     .init = &tcp_v4_init_sock,
@@ -75,14 +77,15 @@ void tcp_in(struct sk_buff *skb)
         free_skb(skb);
         return;
     }
+    pthread_mutex_lock(&sk->sock->lock);
 
     tcp_in_dbg(th, sk, skb);
-    
     /* if (tcp_checksum(iph, th) != 0) { */
     /*     goto discard; */
     /* } */
-        
     tcp_input_state(sk, th, skb);
+
+    pthread_mutex_unlock(&sk->sock->lock);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -150,7 +153,12 @@ static uint16_t generate_port()
 {
     /* TODO: Generate a proper port */
     static int port = 40000;
-    return ++port + (timer_get_tick() % 10000);
+
+    pthread_rwlock_wrlock(&tcplock);
+    int copy =  ++port + (timer_get_tick() % 10000);
+    pthread_rwlock_unlock(&tcplock);
+
+    return copy;
 }
 
 int generate_iss()
@@ -379,9 +387,10 @@ void tcp_handle_fin_state(struct sock *sk)
     }
 }
 
-static void tcp_linger(uint32_t ts, void *arg)
+static void *tcp_linger(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
+    pthread_mutex_lock(&sk->sock->lock);
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
 
@@ -391,9 +400,12 @@ static void tcp_linger(uint32_t ts, void *arg)
     pthread_mutex_unlock(&sk->lock);
 
     tcp_done(sk);
+    pthread_mutex_unlock(&sk->sock->lock);
+
+    return NULL;
 }
 
-static void tcp_user_timeout(uint32_t ts, void *arg)
+static void *tcp_user_timeout(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
     struct tcp_sock *tsk = tcp_sk(sk);
@@ -405,6 +417,8 @@ static void tcp_user_timeout(uint32_t ts, void *arg)
     pthread_mutex_unlock(&sk->lock);
 
     tcp_abort(sk);
+    
+    return NULL;
 }
 
 void tcp_enter_time_wait(struct sock *sk)
@@ -426,11 +440,9 @@ void tcp_rearm_user_timeout(struct sock *sk)
 
     if (sk->state == TCP_TIME_WAIT) return;
 
-    pthread_mutex_lock(&sk->lock);
     timer_cancel(tsk->linger);
     /* RFC793 set user timeout */
     tsk->linger = timer_add(TCP_USER_TIMEOUT, &tcp_user_timeout, sk);
-    pthread_mutex_unlock(&sk->lock);
 }
 
 void tcp_rtt(struct tcp_sock *tsk)

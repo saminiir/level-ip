@@ -513,8 +513,8 @@ void *start_ipc_listener()
         }
 
         struct ipc_thread *th = ipc_alloc_thread(datasock);
-        
-        if (pthread_create(&th->id, NULL, &socket_ipc_open, &datasock) != 0) {
+
+        if (pthread_create(&th->id, NULL, &socket_ipc_open, &th->sock) != 0) {
             print_err("Error on socket thread creation\n");
             exit(1);
         };
