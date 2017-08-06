@@ -5,6 +5,7 @@
 static LIST_HEAD(timers);
 static int tick = 0;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
 static void timer_free(struct timer *t)
 {
@@ -35,6 +36,8 @@ static void timers_tick()
     struct timer *t = NULL;
 
     list_for_each_safe(item, tmp, &timers) {
+        if (!item) continue;
+        
         t = list_entry(item, struct timer, list);
 
         if (!t->cancelled && t->expires < tick) {
@@ -71,6 +74,8 @@ void timer_oneshot(uint32_t expire, void (*handler)(uint32_t, void *), void *arg
 struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg)
 {
     struct timer *t = timer_alloc();
+
+    int tick = timer_get_tick();
 
     t->refcnt = 1;
     t->expires = tick + expire;
@@ -130,7 +135,9 @@ void *timers_start()
             perror("Timer usleep");
         }
 
+        pthread_rwlock_wrlock(&rwlock);
         tick++;
+        pthread_rwlock_unlock(&rwlock);
         timers_tick();
 
         if (tick % 5000 == 0) {
@@ -141,5 +148,9 @@ void *timers_start()
 
 int timer_get_tick()
 {
-    return tick;
+    int copy = 0;
+    pthread_rwlock_rdlock(&rwlock);
+    copy = tick;
+    pthread_rwlock_unlock(&rwlock);
+    return copy;
 }
