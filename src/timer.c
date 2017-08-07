@@ -7,6 +7,29 @@ static int tick = 0;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_rwlock_t rwlock = PTHREAD_RWLOCK_INITIALIZER;
 
+#ifdef DEBUG_TIMER
+static void timer_debug()
+{
+    struct list_head *item;
+    int cnt = 0;
+
+    pthread_mutex_lock(&lock);
+
+    list_for_each(item, &timers) {
+        cnt++;
+    }
+
+    pthread_mutex_unlock(&lock);
+
+    print_debug("TIMERS: Total amount currently %d", cnt);
+}
+#else
+static void timer_debug()
+{
+    return;
+}
+#endif
+
 static void timer_free(struct timer *t)
 {
     int rc = 0;
@@ -152,6 +175,7 @@ void *timers_start()
 
         if (tick % 5000 == 0) {
             socket_debug();
+            timer_debug();
         } 
     }
 }
