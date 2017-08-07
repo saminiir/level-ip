@@ -134,14 +134,14 @@ int tcp_send_synack(struct sock *sk)
 void *tcp_send_delack(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_mutex_lock(&sk->sock->lock);
+    pthread_rwlock_wrlock(&sk->sock->lock);
 
     struct tcp_sock *tsk = tcp_sk(sk);
     tsk->delacks = 0;
     tcp_release_delack_timer(tsk);
     tcp_send_ack(sk);
 
-    pthread_mutex_unlock(&sk->sock->lock);
+    pthread_rwlock_unlock(&sk->sock->lock);
 
     return NULL;
 }
@@ -247,7 +247,7 @@ static void *tcp_connect_rto(void *arg)
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    pthread_mutex_lock(&sk->sock->lock);
+    pthread_rwlock_wrlock(&sk->sock->lock);
     tcp_release_rto_timer(tsk);
 
     if (sk->state == TCP_SYN_SENT) {
@@ -274,7 +274,7 @@ static void *tcp_connect_rto(void *arg)
         print_err("TCP connect RTO triggered even when not in SYNSENT\n");
     }
 
-    pthread_mutex_unlock(&sk->sock->lock);
+    pthread_rwlock_unlock(&sk->sock->lock);
 
     return NULL;
 }
@@ -285,7 +285,7 @@ static void *tcp_retransmission_timeout(void *arg)
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    pthread_mutex_lock(&sk->sock->lock);
+    pthread_rwlock_wrlock(&sk->sock->lock);
     pthread_mutex_lock(&sk->write_queue.lock);
 
     tcp_release_rto_timer(tsk);
@@ -327,7 +327,7 @@ static void *tcp_retransmission_timeout(void *arg)
 
 unlock:
     pthread_mutex_unlock(&sk->write_queue.lock);
-    pthread_mutex_unlock(&sk->sock->lock);
+    pthread_rwlock_unlock(&sk->sock->lock);
 
     return NULL;
 }

@@ -66,7 +66,7 @@ struct socket {
     struct sock *sk;
     struct sock_ops *ops;
     struct wait_lock sleep;
-    pthread_mutex_t lock;
+    pthread_rwlock_t lock;
 };
 
 void *socket_ipc_open(void *args);

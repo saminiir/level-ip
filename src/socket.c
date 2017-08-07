@@ -33,7 +33,7 @@ static struct socket *alloc_socket(pid_t pid)
     sock->ops = NULL;
     sock->flags = O_RDWR;
     wait_init(&sock->sleep);
-    pthread_mutex_init(&sock->lock, NULL);
+    pthread_rwlock_init(&sock->lock, NULL);
     
     return sock;
 }
@@ -56,13 +56,13 @@ static void *socket_garbage_collect(void *arg)
     struct socket *sock = (struct socket *)arg;
 
     pthread_rwlock_wrlock(&slock);
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     socket_dbg(sock, "Garbage collecting (freeing) socket");
 
     list_del(&sock->list);
     sock_amount--;
 
-    pthread_mutex_unlock(&sock->lock);    
+    pthread_rwlock_unlock(&sock->lock);    
     pthread_rwlock_unlock(&slock);
     socket_free(sock);
 
@@ -148,9 +148,9 @@ void socket_debug()
 
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
-        pthread_mutex_lock(&sock->lock);
+        pthread_rwlock_rdlock(&sock->lock);
         socket_dbg(sock, "");
-        pthread_mutex_unlock(&sock->lock);
+        pthread_rwlock_unlock(&sock->lock);
     }
 
     pthread_rwlock_unlock(&slock);
@@ -191,10 +191,10 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     list_add_tail(&sock->list, &sockets);
     sock_amount++;
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_rdlock(&sock->lock);
     pthread_rwlock_unlock(&slock);
     int rc = sock->fd;
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 
@@ -212,9 +212,9 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     int rc = sock->ops->connect(sock, addr, addrlen, 0);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
     
     return rc;
 }
@@ -228,9 +228,9 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     int rc = sock->ops->write(sock, buf, count);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
@@ -244,9 +244,9 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     int rc = sock->ops->read(sock, buf, count);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
@@ -261,9 +261,9 @@ int _close(pid_t pid, int sockfd)
     }
 
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     int rc = sock->ops->close(sock);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
@@ -281,12 +281,12 @@ int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
                 return -EBADF;
             }
 
-            pthread_mutex_lock(&sock->lock);
+            pthread_rwlock_rdlock(&sock->lock);
             poll->revents = sock->sk->poll_events & (poll->events | POLLHUP | POLLERR | POLLNVAL);
             if (poll->revents > 0) {
                 polled++;
             }
-            pthread_mutex_unlock(&sock->lock);
+            pthread_rwlock_unlock(&sock->lock);
         }
 
         if (polled > 0 || timeout == 0) {
@@ -315,7 +315,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_wrlock(&sock->lock);
     va_list ap;
     int rc = 0;
 
@@ -337,7 +337,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     rc = -1;
 
 out:
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
     return rc;
 }
 
@@ -352,7 +352,7 @@ int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen
 
     int rc = 0;
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_rdlock(&sock->lock);
     switch (level) {
     case SOL_SOCKET:
         switch (optname) {
@@ -374,7 +374,7 @@ int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen
         break;
     }
 
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
@@ -389,9 +389,9 @@ int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_rdlock(&sock->lock);
     int rc = sock->ops->getpeername(sock, address, address_len);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
@@ -406,9 +406,9 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
         return -EBADF;
     }
 
-    pthread_mutex_lock(&sock->lock);
+    pthread_rwlock_rdlock(&sock->lock);
     int rc = sock->ops->getsockname(sock, address, address_len);
-    pthread_mutex_unlock(&sock->lock);
+    pthread_rwlock_unlock(&sock->lock);
 
     return rc;
 }
