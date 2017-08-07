@@ -58,8 +58,10 @@ static void timers_tick()
 {
     struct list_head *item, *tmp = NULL;
     struct timer *t = NULL;
+    int rc = 0;
 
-    if (pthread_mutex_trylock(&lock) == EBUSY) {
+    if ((rc = pthread_mutex_lock(&lock)) != 0) {
+        print_err("Timer tick lock not acquired: %s\n", strerror(rc));
         return;
     };
     
