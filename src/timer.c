@@ -32,18 +32,8 @@ static void timer_debug()
 
 static void timer_free(struct timer *t)
 {
-    int rc = 0;
-    if ((rc = pthread_mutex_trylock(&t->lock)) != 0) {
-        if (rc != EBUSY) {
-            print_err("Timer free mutex lock: %s\n", strerror(rc));
-        }
-        return;
-    }
-
-    list_del(&t->list);
+    pthread_mutex_destroy(&t->lock);
     free(t);
-
-    pthread_mutex_unlock(&t->lock);
 }
 
 static struct timer *timer_alloc()
@@ -70,6 +60,14 @@ static void timers_tick()
         
         t = list_entry(item, struct timer, list);
 
+        if ((rc = pthread_mutex_trylock(&t->lock)) != 0) {
+            if (rc != EBUSY) {
+                print_err("Timer free mutex lock: %s\n", strerror(rc));
+            }
+            
+            continue;
+        }
+
         if (!t->cancelled && t->expires < tick) {
             t->cancelled = 1;
             pthread_t th;
@@ -77,7 +75,12 @@ static void timers_tick()
         }
 
         if (t->cancelled && t->refcnt == 0) {
+            list_del(&t->list);
+            pthread_mutex_unlock(&t->lock);
+
             timer_free(t);
+        } else {
+            pthread_mutex_unlock(&t->lock);
         }
     }
 
