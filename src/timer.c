@@ -164,12 +164,12 @@ void timer_cancel(struct timer *t)
 void *timers_start()
 {
     while (1) {
-        if (usleep(1000) != 0) {
+        if (usleep(10000) != 0) {
             perror("Timer usleep");
         }
 
         pthread_rwlock_wrlock(&rwlock);
-        tick++;
+        tick += 10;
         pthread_rwlock_unlock(&rwlock);
         timers_tick();
 
