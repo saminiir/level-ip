@@ -45,8 +45,6 @@ static void timers_tick()
         
         t = list_entry(item, struct timer, list);
 
-        pthread_mutex_lock(&t->lock);
-
         if (!t->cancelled && t->expires < tick) {
             t->cancelled = 1;
             pthread_t th;
@@ -56,8 +54,6 @@ static void timers_tick()
         if (t->cancelled && t->refcnt == 0) {
             timer_free(t);
         }
-
-        pthread_mutex_unlock(&t->lock);
     }
 
     pthread_mutex_unlock(&lock);
