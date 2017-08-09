@@ -15,7 +15,7 @@ function setup {
     /usr/bin/env python2.7 -m SimpleHTTPServer >/dev/null 2>&1 &
     httpserver="$!"
 
-    sleep 1
+    sleep 2
 }
 
 function teardown {
