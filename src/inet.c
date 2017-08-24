@@ -113,9 +113,11 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
         if (sock->flags & O_NONBLOCK) {
             goto out;
         }
-        
-        wait_sleep(&sock->sleep);
 
+        pthread_rwlock_unlock(&sock->lock);
+        wait_sleep(&sock->sleep);
+        pthread_rwlock_wrlock(&sock->lock);
+        
         switch (sk->err) {
         case -ETIMEDOUT:
         case -ECONNREFUSED:

@@ -9,6 +9,7 @@
 
 static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
 static LIST_HEAD(arp_cache);
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 static struct sk_buff *arp_alloc_skb()
 {
@@ -36,7 +37,9 @@ static int insert_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
 {
     struct arp_cache_entry *entry = arp_entry_alloc(hdr, data);
 
+    pthread_mutex_lock(&lock);
     list_add_tail(&entry->list, &arp_cache);
+    pthread_mutex_unlock(&lock);
 
     return 0;
 }
@@ -46,14 +49,19 @@ static int update_arp_translation_table(struct arp_hdr *hdr, struct arp_ipv4 *da
     struct list_head *item;
     struct arp_cache_entry *entry;
 
+    pthread_mutex_lock(&lock);
     list_for_each(item, &arp_cache) {
         entry = list_entry(item, struct arp_cache_entry, list);
 
         if (entry->hwtype == hdr->hwtype && entry->sip == data->sip) {
             memcpy(entry->smac, data->smac, 6);
+            pthread_mutex_unlock(&lock);
+            
             return 1;
         }
     }
+
+    pthread_mutex_unlock(&lock);
     
     return 0;
 }
@@ -202,6 +210,7 @@ unsigned char* arp_get_hwaddr(uint32_t sip)
     struct list_head *item;
     struct arp_cache_entry *entry;
     
+    pthread_mutex_lock(&lock);
     list_for_each(item, &arp_cache) {
         entry = list_entry(item, struct arp_cache_entry, list);
 
@@ -209,9 +218,14 @@ unsigned char* arp_get_hwaddr(uint32_t sip)
             entry->sip == sip) {
             arpcache_dbg("entry", entry);
 
-            return entry->smac;
+            uint8_t *copy = entry->smac;
+            pthread_mutex_unlock(&lock);
+
+            return copy;
         }
     }
+
+    pthread_mutex_unlock(&lock);
 
     return NULL;
 }
