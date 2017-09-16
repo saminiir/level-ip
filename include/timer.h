@@ -15,12 +15,13 @@ struct timer {
     int refcnt;
     uint32_t expires;
     int cancelled;
-    void (*handler)(uint32_t, void *);
+    void *(*handler)(void *);
     void *arg;
+    pthread_mutex_t lock;
 };
 
-struct timer *timer_add(uint32_t expire, void (*handler)(uint32_t, void *), void *arg);
-void timer_oneshot(uint32_t expire, void (*handler)(uint32_t, void *), void *arg);
+struct timer *timer_add(uint32_t expire, void *(*handler)(void *), void *arg);
+void timer_oneshot(uint32_t expire, void *(*handler)(void *), void *arg);
 void timer_release(struct timer *t);
 void timer_cancel(struct timer *t);
 void *timers_start();

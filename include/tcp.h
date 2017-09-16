@@ -215,7 +215,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb);
 int tcp_send_synack(struct sock *sk);
 int tcp_send_next(struct sock *sk, int amount);
 int tcp_send_ack(struct sock *sk);
-void tcp_send_delack(uint32_t ts, void *arg);
+void *tcp_send_delack(void *arg);
 int tcp_queue_fin(struct sock *sk);
 int tcp_send_fin(struct sock *sk);
 int tcp_send(struct tcp_sock *tsk, const void *buf, int len);
