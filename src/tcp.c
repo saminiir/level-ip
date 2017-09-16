@@ -123,7 +123,7 @@ struct sock *tcp_alloc_sock()
 
     /* TODO: Determine mss properly */
     tsk->rmss = 1460;
-    tsk->smss = 1460;
+    tsk->smss = 1300;
 
     tsk->cwnd = 0;
     tsk->inflight = 0;
