@@ -35,8 +35,7 @@ struct iphdr {
     uint8_t tos;
     uint16_t len;
     uint16_t id;
-    uint16_t flags : 3;
-    uint16_t frag_offset : 13;
+    uint16_t frag_offset;
     uint8_t ttl;
     uint8_t proto;
     uint16_t csum;
