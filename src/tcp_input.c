@@ -40,7 +40,7 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
     return rc;
 }
 
-static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
+static inline int __tcp_drop(struct sock *sk, struct sk_buff *skb)
 {
     free_skb(skb);
     return 0;
@@ -153,11 +153,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     }
     
 discard:
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     return 0;
 reset_and_discard:
     //TODO reset
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     return 0;
 }
 
@@ -235,7 +235,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
         if (!th->rst) {
             tcp_send_ack(sk);
         }
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
     
     /* second check the RST bit */
@@ -253,12 +253,12 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     if (th->syn) {
         /* RFC 5961 Section 4.2 */
         tcp_send_challenge_ack(sk, skb);
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
     
     /* fifth check the ACK field */
     if (!th->ack) {
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
 
     // ACK bit is on
@@ -267,7 +267,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
         if (tcb->snd_una <= th->ack_seq && th->ack_seq < tcb->snd_nxt) {
             tcp_set_state(sk, TCP_ESTABLISHED);
         } else {
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
@@ -285,7 +285,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
         if (th->ack_seq < tcb->snd_una) {
             // If the ACK is a duplicate, it can be ignored
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
 
         if (th->ack_seq > tcb->snd_nxt) {
@@ -294,7 +294,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             // TODO: Dropping the seg here, why would I respond with an ACK? Linux
             // does not respond either
             //tcp_send_ack(&tsk->sk);
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
 
         if (tcb->snd_una < th->ack_seq && th->ack_seq <= tcb->snd_nxt) {
@@ -448,7 +448,7 @@ unlock:
     pthread_mutex_unlock(&sk->receive_queue.lock);
     return 0;
 drop_and_unlock:
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     goto unlock;
 }
 

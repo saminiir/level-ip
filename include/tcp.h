@@ -74,11 +74,25 @@ extern const char *tcp_dbg_states[];
         __tcp_set_state(sk, state);                                     \
     } while (0)
 
+#define return_tcp_drop(sk, skb)                          \
+    do {                                                  \
+        tcpsock_dbg("dropping packet", sk);               \
+        return __tcp_drop(sk, skb);                       \
+    } while (0)
+
+#define tcp_drop(tsk, skb)                      \
+    do {                                        \
+        tcpsock_dbg("dropping packet", sk);               \
+        __tcp_drop(tsk, skb);                   \
+    } while (0)
+
 #else
 #define tcp_in_dbg(hdr, sk, skb)
 #define tcp_out_dbg(hdr, sk, skb)
 #define tcpsock_dbg(msg, sk)
 #define tcp_set_state(sk, state)  __tcp_set_state(sk, state)
+#define return_tcp_drop(tsk, skb) return __tcp_drop(tsk, skb)
+#define tcp_drop(tsk, skb) __tcp_drop(tsk, skb)
 #endif
 
 struct tcphdr {
