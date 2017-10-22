@@ -110,6 +110,7 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 
         // There is new data for user to read
         sk->poll_events |= (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND);
+        tsk->sk.ops->recv_notify(&tsk->sk);
     } else {
         /* Segment passed validation, hence it is in-window
            but not the left-most sequence. Put into out-of-order queue

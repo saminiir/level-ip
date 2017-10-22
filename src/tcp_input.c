@@ -351,7 +351,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     case TCP_FIN_WAIT_2:
         if (th->psh || skb->dlen > 0) {
             tcp_data_queue(tsk, th, skb);
-            tsk->sk.ops->recv_notify(&tsk->sk);
         }
                 
         break;
