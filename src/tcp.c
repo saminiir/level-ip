@@ -395,7 +395,7 @@ static void *tcp_linger(void *arg)
     tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
 
     pthread_mutex_lock(&sk->lock);
-    timer_release(tsk->linger);
+    timer_cancel(tsk->linger);
     tsk->linger = NULL;
     pthread_mutex_unlock(&sk->lock);
 
@@ -413,7 +413,7 @@ static void *tcp_user_timeout(void *arg)
     tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
 
     pthread_mutex_lock(&sk->lock);
-    timer_release(tsk->linger);
+    timer_cancel(tsk->linger);
     tsk->linger = NULL;
     pthread_mutex_unlock(&sk->lock);
 
