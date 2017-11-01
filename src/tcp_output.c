@@ -23,10 +23,20 @@ static struct sk_buff *tcp_alloc_skb(int optlen, int size)
 static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
 {
     struct tcp_opt_mss *opt_mss = (struct tcp_opt_mss *) th->data;
+    uint32_t i = 0;
 
     opt_mss->kind = TCP_OPT_MSS;
     opt_mss->len = TCP_OPTLEN_MSS;
     opt_mss->mss = htons(opts->mss);
+
+    i += sizeof(struct tcp_opt_mss);
+
+    if (opts->sack) {
+        th->data[i++] = TCP_OPT_NOOP;
+        th->data[i++] = TCP_OPT_NOOP;
+        th->data[i++] = TCP_OPT_SACK_OK;
+        th->data[i++] = TCP_OPTLEN_SACK;
+    }
 
     th->hl = TCP_DOFFSET + (optlen / 4);
 
@@ -40,6 +50,10 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
 
     opts->mss = tsk->rmss;
     optlen += TCP_OPTLEN_MSS;
+
+    opts->sack = 1;
+    optlen += TCP_OPT_NOOP * 2;
+    optlen += TCP_OPTLEN_SACK;
     
     return optlen;
 }

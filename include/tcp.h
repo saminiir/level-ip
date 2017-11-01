@@ -21,8 +21,11 @@
 #define TCP_SYN_BACKOFF 500
 #define TCP_CONN_RETRIES 3
 
+#define TCP_OPT_NOOP 1
 #define TCP_OPTLEN_MSS 4
 #define TCP_OPT_MSS 2
+#define TCP_OPT_SACK_OK 4
+#define TCP_OPTLEN_SACK 2
 
 #define TCP_2MSL 60000
 #define TCP_USER_TIMEOUT 180000
@@ -119,6 +122,7 @@ struct tcphdr {
 struct tcp_options {
     uint16_t options;
     uint16_t mss;
+    uint8_t sack;
 };
 
 struct tcp_opt_mss {
