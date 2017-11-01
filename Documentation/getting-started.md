@@ -4,7 +4,7 @@ Level-IP is a TCP/IP stack that is run as a single daemon process on your Linux 
 
 To interface applications against Level-IP, a wrapper library for standard libc calls is provided. This wrapper can then be used with existing binaries such as `curl`, `surf` and `firefox` to redirect communications to Level-IP.
 
-DISCLAIMER: Level-IP is not a production-ready networking stack, and does not intend to be one. The nature of lower-level networking imposes a great responsiblity to the software and any security vulnerabilites can be disastrous. Hence, do not run Level-IP for extended periods of time, purely because it has bugs (and as all software, will continue to have them).
+DISCLAIMER: Level-IP is not a production-ready networking stack, and does not intend to be one. The nature of lower-level networking imposes a great responsiblity to the software and any security vulnerabilities can be disastrous. Hence, do not run Level-IP for extended periods of time, purely because it has bugs (and as all software, will continue to have them).
 
 # Building
 
