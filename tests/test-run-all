@@ -2,7 +2,41 @@
 
 set -eu
 
-for suite in suites/*/suite-*; do
-    echo "Running $suite"
-    "$suite"
+source "utils/common"
+
+function teardown {
+    echo "Shutting down lvl-ip"
+    kill "$stackip"
+}
+
+trap teardown EXIT ERR
+
+start_stack
+echo "Started lvl-ip with pid $stackip"
+sleep 5 # wait for stack to establish itself
+
+pids=""
+
+tc qdisc add dev tap0 root handle 1: htb
+
+./suites/arp/suite-arp &
+pids="$pids $!"
+./suites/icmp/suite-icmp &
+pids="$pids $!"
+./suites/tcp/suite-curl &
+pids="$pids $!"
+./suites/tcp/suite-packet-delay &
+pids="$pids $!"
+./suites/tcp/suite-packet-duplication &
+pids="$pids $!"
+./suites/tcp/suite-packet-loss &
+pids="$pids $!"
+
+rc=0
+for i in $pids; do
+  wait $i
+  pid_rc="$?"
+  [ "$pid_rc" -ne 0 ] && rc="$pid_rc"
 done
+
+exit "$rc"

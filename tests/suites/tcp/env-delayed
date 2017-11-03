@@ -10,20 +10,20 @@ function strip_http_header {
 }
 
 function setup {
-    start_stack
-
-    /usr/bin/env python2.7 -m SimpleHTTPServer >/dev/null 2>&1 &
+    /usr/bin/env python2.7 -m SimpleHTTPServer 8002 >/dev/null 2>&1 &
     httpserver="$!"
 
-    sleep 10
+    tc class add dev tap0 parent 1: classid 1:1 htb rate 100mbit
+    tc filter add dev tap0 parent 1: protocol ip prio 1 u32 flowid 1:1 match ip sport 8002 0xffff
+    tc filter add dev tap0 parent 1: protocol ip prio 1 u32 flowid 1:1 match ip dport 8002 0xffff
+    tc qdisc add dev tap0 parent 1:1 netem delay 2000ms
 
-    tc qdisc add dev tap0 root netem delay 2000ms 
+    sleep 5
 }
 
-function teardown {
-    kill "$stackip"
+function teardown_suite {
     kill "$httpserver"
 }
 
+trap teardown_suite EXIT ERR
 setup
-trap teardown EXIT ERR

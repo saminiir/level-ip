@@ -6,7 +6,7 @@ repo="$(git rev-parse --show-toplevel)"
 folder="$(dirname $0)"
 
 function start_stack {
-    "$repo/lvl-ip" >/dev/null &
+    "$repo/lvl-ip" > ../lvl-ip-test.log 2>&1 &
     stackip="$!"
 
     sleep 2
@@ -21,16 +21,16 @@ function start_stack {
 }
 
 function test_pass {
-    echo -e "\tTest pass: $1"
+    echo -e "\t$2 Test pass: $1"
 }
 
 function test_fail {
-    echo -e "\tTest fail: $1" 2>&1
+    echo -e "\t$2 Test fail: $1" 2>&1
     exit 1
 }
 
 function test_run {
-    eval "$1" || test_fail "$1"
+    eval "$1" || test_fail "$1" "$2"
 
-    test_pass "$1"
+    test_pass "$1" "$2"
 }
