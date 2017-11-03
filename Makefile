@@ -13,15 +13,20 @@ lvl-ip: $(obj)
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
-debug: CFLAGS+= -DDEBUG_SOCKET -DDEBUG_TCP -g -fsanitize=address
+debug: CFLAGS+= -DDEBUG_SOCKET -DDEBUG_TCP -g -fsanitize=thread
 debug: lvl-ip
 
-all: lvl-ip
+apps:
 	$(MAKE) -C tools
 	$(MAKE) -C apps/curl
 	$(MAKE) -C apps/curl-poll
 
-test: all
+all: lvl-ip apps
+	$(MAKE) -C tools
+	$(MAKE) -C apps/curl
+	$(MAKE) -C apps/curl-poll
+
+test: debug apps
 	@echo
 	@echo "Networking capabilites are required for test dependencies:"
 	which arping | sudo xargs setcap cap_net_raw=ep
