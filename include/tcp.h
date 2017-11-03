@@ -34,10 +34,10 @@
 extern const char *tcp_dbg_states[];
 #define tcp_in_dbg(hdr, sk, skb)                                        \
     do {                                                                \
-        print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u rto %d boff %d", \
-                    sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
-                    sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
+        print_debug("TCP %u.%u.%u.%u.%u > %u.%u.%u.%u.%u: " \
+                    "Flags [S%uA%uP%uF%uR%u], seq %u:%u, ack %u, win %u rto %d boff %d", \
+                    (uint8_t)(sk->daddr >> 24), (uint8_t)(sk->daddr >> 16), (uint8_t)(sk->daddr >> 8), (uint8_t)(sk->daddr >> 0), sk->dport, \
+                    (uint8_t)(sk->saddr >> 24), (uint8_t)(sk->saddr >> 16), (uint8_t)(sk->saddr >> 8), (uint8_t)(sk->saddr >> 0), sk->sport, \
                     hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.irs, \
                     hdr->seq + skb->dlen - tcp_sk(sk)->tcb.irs,         \
                     hdr->ack_seq - tcp_sk(sk)->tcb.iss, hdr->win, tcp_sk(sk)->rto, tcp_sk(sk)->backoff); \
@@ -45,10 +45,10 @@ extern const char *tcp_dbg_states[];
 
 #define tcp_out_dbg(hdr, sk, skb)                                       \
     do {                                                                \
-        print_debug("TCP %hhu.%hhu.%hhu.%hhu.%u > %hhu.%hhu.%hhu.%hhu.%u: " \
-                    "Flags [S%hhuA%hhuP%hhuF%hhuR%hhu], seq %u:%u, ack %u, win %u rto %d boff %d", \
-                    sk->saddr >> 24, sk->saddr >> 16, sk->saddr >> 8, sk->saddr >> 0, sk->sport, \
-                    sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, sk->dport, \
+        print_debug("TCP %u.%u.%u.%u.%u > %u.%u.%u.%u.%u: " \
+                    "Flags [S%uA%uP%uF%uR%u], seq %u:%u, ack %u, win %u rto %d boff %d", \
+                    (uint8_t)(sk->saddr >> 24), (uint8_t)(sk->saddr >> 16), (uint8_t)(sk->saddr >> 8), (uint8_t)(sk->saddr >> 0), sk->sport, \
+                    (uint8_t)(sk->daddr >> 24), (uint8_t)(sk->daddr >> 16), (uint8_t)(sk->daddr >> 8), (uint8_t)(sk->daddr >> 0), sk->dport, \
                     hdr->syn, hdr->ack, hdr->psh, hdr->fin, hdr->rst, hdr->seq - tcp_sk(sk)->tcb.iss, \
                     hdr->seq + skb->dlen - tcp_sk(sk)->tcb.iss,         \
                     hdr->ack_seq - tcp_sk(sk)->tcb.irs, hdr->win, tcp_sk(sk)->rto, tcp_sk(sk)->backoff); \
@@ -56,10 +56,10 @@ extern const char *tcp_dbg_states[];
 
 #define tcpsock_dbg(msg, sk)                                            \
     do {                                                                \
-        print_debug("TCP x:%u > %hhu.%hhu.%hhu.%hhu.%u (snd_una %u, snd_nxt %u, snd_wnd %u, " \
+        print_debug("TCP x:%u > %u.%u.%u.%u.%u (snd_una %u, snd_nxt %u, snd_wnd %u, " \
                     "snd_wl1 %u, snd_wl2 %u, rcv_nxt %u, rcv_wnd %u recv-q %d send-q %d " \
                     "rto %d boff %d) state %s: "msg, \
-                    sk->sport, sk->daddr >> 24, sk->daddr >> 16, sk->daddr >> 8, sk->daddr >> 0, \
+                    sk->sport, (uint8_t)(sk->daddr >> 24), (uint8_t)(sk->daddr >> 16), (uint8_t)(sk->daddr >> 8), (uint8_t)(sk->daddr >> 0), \
                     sk->dport, tcp_sk(sk)->tcb.snd_una - tcp_sk(sk)->tcb.iss,      \
                     tcp_sk(sk)->tcb.snd_nxt - tcp_sk(sk)->tcb.iss, tcp_sk(sk)->tcb.snd_wnd, \
                     tcp_sk(sk)->tcb.snd_wl1, tcp_sk(sk)->tcb.snd_wl2,   \
