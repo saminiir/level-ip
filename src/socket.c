@@ -40,6 +40,9 @@ static struct socket *alloc_socket(pid_t pid)
 
 int socket_free(struct socket *sock)
 {
+    list_del(&sock->list);
+    sock_amount--;
+
     if (sock->ops) {
         sock->ops->free(sock);
     }
@@ -58,13 +61,10 @@ static void *socket_garbage_collect(void *arg)
     pthread_rwlock_wrlock(&slock);
     pthread_rwlock_wrlock(&sock->lock);
     socket_dbg(sock, "Garbage collecting (freeing) socket");
-
-    list_del(&sock->list);
-    sock_amount--;
+    socket_free(sock);
 
     pthread_rwlock_unlock(&sock->lock);    
     pthread_rwlock_unlock(&slock);
-    socket_free(sock);
 
     return NULL;
 }
