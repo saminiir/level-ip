@@ -39,4 +39,5 @@ for i in $pids; do
   [ "$pid_rc" -ne 0 ] && rc="$pid_rc"
 done
 
+grep -i -B50 "SUMMARY: ThreadSanitizer:" ../lvl-ip-test.log && exit 1
 exit "$rc"
