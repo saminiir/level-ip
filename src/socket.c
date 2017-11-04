@@ -48,6 +48,7 @@ int socket_free(struct socket *sock)
     }
 
     wait_free(&sock->sleep);
+    pthread_rwlock_unlock(&sock->lock);    
     
     free(sock);
     
@@ -63,7 +64,6 @@ static void *socket_garbage_collect(void *arg)
     socket_dbg(sock, "Garbage collecting (freeing) socket");
     socket_free(sock);
 
-    pthread_rwlock_unlock(&sock->lock);    
     pthread_rwlock_unlock(&slock);
 
     return NULL;

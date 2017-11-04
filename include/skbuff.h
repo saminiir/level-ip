@@ -26,7 +26,6 @@ struct sk_buff_head {
     struct list_head head;
 
     uint32_t qlen;
-    pthread_mutex_t lock;
 };
 
 struct sk_buff *alloc_skb(unsigned int size);
@@ -45,7 +44,6 @@ static inline void skb_queue_init(struct sk_buff_head *list)
 {
     list_init(&list->head);
     list->qlen = 0;
-    pthread_mutex_init(&list->lock, NULL);
 }
 
 static inline void skb_queue_add(struct sk_buff_head *list, struct sk_buff *new, struct sk_buff *next)

@@ -51,11 +51,7 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct sk_buff
 }
 
 static void tcp_clear_queues(struct tcp_sock *tsk) {
-    pthread_mutex_lock(&tsk->ofo_queue.lock);
-
     skb_queue_free(&tsk->ofo_queue);
-
-    pthread_mutex_unlock(&tsk->ofo_queue.lock);
 }
 
 void tcp_in(struct sk_buff *skb)
@@ -313,12 +309,8 @@ static int tcp_free(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
 
-    pthread_mutex_lock(&sk->lock);
-
     tcp_clear_timers(sk);
     tcp_clear_queues(tsk);
-
-    pthread_mutex_unlock(&sk->lock);
 
     wait_wakeup(&sk->sock->sleep);
 
@@ -335,10 +327,8 @@ int tcp_done(struct sock *sk)
 void tcp_clear_timers(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    pthread_mutex_lock(&sk->write_queue.lock);
     tcp_stop_rto_timer(tsk);
     tcp_stop_delack_timer(tsk);
-    pthread_mutex_unlock(&sk->write_queue.lock);
 
     timer_cancel(tsk->keepalive);
     tsk->keepalive = NULL;
@@ -394,10 +384,8 @@ static void *tcp_linger(void *arg)
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
 
-    pthread_mutex_lock(&sk->lock);
     timer_cancel(tsk->linger);
     tsk->linger = NULL;
-    pthread_mutex_unlock(&sk->lock);
 
     tcp_done(sk);
     pthread_rwlock_unlock(&sk->sock->lock);
@@ -412,10 +400,8 @@ static void *tcp_user_timeout(void *arg)
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
 
-    pthread_mutex_lock(&sk->lock);
     timer_cancel(tsk->linger);
     tsk->linger = NULL;
-    pthread_mutex_unlock(&sk->lock);
 
     tcp_abort(sk);
     pthread_rwlock_unlock(&sk->sock->lock);
@@ -429,11 +415,9 @@ void tcp_enter_time_wait(struct sock *sk)
 
     tcp_set_state(sk, TCP_TIME_WAIT);
 
-    pthread_mutex_lock(&sk->lock);
     tcp_clear_timers(sk);
     /* RFC793 arbitrarily defines MSL to be 2 minutes */
     tsk->linger = timer_add(TCP_2MSL, &tcp_linger, sk);
-    pthread_mutex_unlock(&sk->lock);
 }
 
 void tcp_rearm_user_timeout(struct sock *sk)

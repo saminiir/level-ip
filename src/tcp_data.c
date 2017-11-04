@@ -52,8 +52,6 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
     struct tcphdr *th;
     int rlen = 0;
 
-    pthread_mutex_lock(&sk->receive_queue.lock);
-
     while (!skb_queue_empty(&sk->receive_queue) && rlen < userlen) {
         struct sk_buff *skb = skb_peek(&sk->receive_queue);
         if (skb == NULL) break;
@@ -83,8 +81,6 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
         sk->poll_events &= ~POLLIN;
     }
     
-    pthread_mutex_unlock(&sk->receive_queue.lock);
-
     return rlen;
 }
 

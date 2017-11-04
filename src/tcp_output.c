@@ -83,8 +83,6 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
     struct tcb *tcb = &tsk->tcb;
     int rc = 0;
     
-    pthread_mutex_lock(&sk->write_queue.lock);
-
     if (skb_queue_empty(&sk->write_queue)) {
         tcp_rearm_rto_timer(tsk);
     }
@@ -100,8 +98,6 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
     skb->end_seq = tcb->snd_nxt;
     
     skb_queue_tail(&sk->write_queue, skb);
-    
-    pthread_mutex_unlock(&sk->write_queue.lock);
 
     return rc;
 }
@@ -256,8 +252,6 @@ static void *tcp_connect_rto(void *arg)
             sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
             tcp_done(sk);
         } else {
-            pthread_mutex_lock(&sk->write_queue.lock);
-
             struct sk_buff *skb = write_queue_head(sk);
 
             if (skb) {
@@ -267,8 +261,6 @@ static void *tcp_connect_rto(void *arg)
                 tsk->backoff++;
                 tcp_rearm_rto_timer(tsk);
             }
-            
-            pthread_mutex_unlock(&sk->write_queue.lock);
          }
     } else {
         print_err("TCP connect RTO triggered even when not in SYNSENT\n");
@@ -286,7 +278,6 @@ static void *tcp_retransmission_timeout(void *arg)
     struct sock *sk = &tsk->sk;
 
     pthread_rwlock_wrlock(&sk->sock->lock);
-    pthread_mutex_lock(&sk->write_queue.lock);
 
     tcp_release_rto_timer(tsk);
 
@@ -306,7 +297,6 @@ static void *tcp_retransmission_timeout(void *arg)
     /* RFC 6298: 2.5 Maximum value MAY be placed on RTO, provided it is at least
        60 seconds */
     if (tsk->rto > 60000) {
-        pthread_mutex_unlock(&sk->write_queue.lock);
         tcp_done(sk);
 
         tsk->sk.err = -ETIMEDOUT;
@@ -326,7 +316,6 @@ static void *tcp_retransmission_timeout(void *arg)
     }
 
 unlock:
-    pthread_mutex_unlock(&sk->write_queue.lock);
     pthread_rwlock_unlock(&sk->sock->lock);
 
     return NULL;

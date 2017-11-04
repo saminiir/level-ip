@@ -14,8 +14,6 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
     struct sk_buff *skb;
     int rc = 0;
     
-    pthread_mutex_lock(&sk->write_queue.lock);
-
     while ((skb = skb_peek(&sk->write_queue)) != NULL) {
         if (skb->end_seq <= una) {
             /* skb fully acknowledged */
@@ -34,8 +32,6 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
         /* No unacknowledged skbs, stop rto timer */
         tcp_stop_rto_timer(tsk);
     }
-
-    pthread_mutex_unlock(&sk->write_queue.lock);
 
     return rc;
 }
@@ -343,7 +339,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
     int expected = skb->seq == tcb->rcv_nxt;
 
-    pthread_mutex_lock(&sk->receive_queue.lock);
     /* seventh, process the segment txt */
     switch (sk->state) {
     case TCP_ESTABLISHED:
@@ -444,7 +439,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     free_skb(skb);
 
 unlock:
-    pthread_mutex_unlock(&sk->receive_queue.lock);
     return 0;
 drop_and_unlock:
     tcp_drop(sk, skb);
