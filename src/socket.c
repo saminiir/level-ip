@@ -40,8 +40,11 @@ static struct socket *alloc_socket(pid_t pid)
 
 int socket_free(struct socket *sock)
 {
+    pthread_rwlock_wrlock(&slock);
+    pthread_rwlock_wrlock(&sock->lock);
     list_del(&sock->list);
     sock_amount--;
+    pthread_rwlock_unlock(&slock);
 
     if (sock->ops) {
         sock->ops->free(sock);
@@ -59,12 +62,7 @@ static void *socket_garbage_collect(void *arg)
 {
     struct socket *sock = (struct socket *)arg;
 
-    pthread_rwlock_wrlock(&slock);
-    pthread_rwlock_wrlock(&sock->lock);
-    socket_dbg(sock, "Garbage collecting (freeing) socket");
     socket_free(sock);
-
-    pthread_rwlock_unlock(&slock);
 
     return NULL;
 }
@@ -73,15 +71,12 @@ int socket_delete(struct socket *sock)
 {
     int rc = 0;
 
-    pthread_mutex_lock(&sock->sk->lock);
-
     if (sock->state == SS_DISCONNECTING) goto out;
 
     sock->state = SS_DISCONNECTING;
     timer_oneshot(10000, &socket_garbage_collect, sock);
 
 out:
-    pthread_mutex_unlock(&sock->sk->lock);
     return rc;
 }
 
@@ -214,7 +209,17 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
 
     pthread_rwlock_wrlock(&sock->lock);
     int rc = sock->ops->connect(sock, addr, addrlen, 0);
-    pthread_rwlock_unlock(&sock->lock);
+    switch (rc) {
+    case -EINVAL:
+    case -EAFNOSUPPORT:
+    case -ECONNREFUSED:
+    case -ETIMEDOUT:
+        pthread_rwlock_unlock(&sock->lock);
+        socket_free(sock);
+        break;
+    default:
+        pthread_rwlock_unlock(&sock->lock);
+    }
     
     return rc;
 }

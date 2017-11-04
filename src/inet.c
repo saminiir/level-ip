@@ -86,8 +86,7 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
 
     if (addr->sa_family == AF_UNSPEC) {
         sk->ops->disconnect(sk, flags);
-        sock->state = sk->err ? SS_DISCONNECTING : SS_UNCONNECTED;
-        goto out;
+        return -EAFNOSUPPORT;
     }
 
     switch (sock->state) {
@@ -136,7 +135,6 @@ out:
     return sk->err;
 sock_error:
     rc = sk->err;
-    socket_free(sock);
     return rc;
 }
 
