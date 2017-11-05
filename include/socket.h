@@ -9,11 +9,11 @@
 #define socket_dbg(sock, msg, ...)                                      \
     do {                                                                \
         print_debug("Socket fd %d pid %d state %d sk_state %d flags %d poll %d sport %d dport %d " \
-                    "sock-sleep %d sk-sleep %d recv-q %d send-q %d: "msg,    \
+                    "recv-q %d send-q %d: "msg,    \
                     sock->fd, sock->pid, sock->state, sock->sk->state, sock->flags, \
                     sock->sk->poll_events,                              \
-                    sock->sk->sport, sock->sk->dport, sock->sleep.sleeping, \
-                    sock->sk->recv_wait.sleeping, sock->sk->receive_queue.qlen, \
+                    sock->sk->sport, sock->sk->dport, \
+                    sock->sk->receive_queue.qlen, \
                     sock->sk->write_queue.qlen, ##__VA_ARGS__);         \
     } while (0)
 #else
