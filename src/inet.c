@@ -113,9 +113,9 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
             goto out;
         }
 
-        pthread_rwlock_unlock(&sock->lock);
+        socket_release(sock);
         wait_sleep(&sock->sleep);
-        pthread_rwlock_wrlock(&sock->lock);
+        socket_wr_acquire(sock);
         
         switch (sk->err) {
         case -ETIMEDOUT:

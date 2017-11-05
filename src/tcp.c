@@ -73,7 +73,7 @@ void tcp_in(struct sk_buff *skb)
         free_skb(skb);
         return;
     }
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
 
     tcp_in_dbg(th, sk, skb);
     /* if (tcp_checksum(iph, th) != 0) { */
@@ -81,7 +81,7 @@ void tcp_in(struct sk_buff *skb)
     /* } */
     tcp_input_state(sk, th, skb);
 
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -380,7 +380,7 @@ void tcp_handle_fin_state(struct sock *sk)
 static void *tcp_linger(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
 
@@ -388,7 +388,7 @@ static void *tcp_linger(void *arg)
     tsk->linger = NULL;
 
     tcp_done(sk);
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 
     return NULL;
 }
@@ -396,7 +396,7 @@ static void *tcp_linger(void *arg)
 static void *tcp_user_timeout(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
 
@@ -404,7 +404,7 @@ static void *tcp_user_timeout(void *arg)
     tsk->linger = NULL;
 
     tcp_abort(sk);
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
     
     return NULL;
 }

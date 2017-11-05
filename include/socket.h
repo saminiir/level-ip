@@ -60,6 +60,7 @@ struct socket {
     struct list_head list;
     int fd;
     pid_t pid;
+    int refcnt;
     enum socket_state state;
     short type;
     int flags;
@@ -84,6 +85,10 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
                  socklen_t *restrict address_len);
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
+struct socket *socket_find(struct socket *sock);
+int socket_rd_acquire(struct socket *sock);
+int socket_wr_acquire(struct socket *sock);
+int socket_release(struct socket *sock);
 int socket_free(struct socket *sock);
 int socket_delete(struct socket *sock);
 void abort_sockets();

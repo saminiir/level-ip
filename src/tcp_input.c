@@ -474,9 +474,9 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             
             break;
         } else {
-            pthread_rwlock_unlock(&sock->lock);
+            socket_release(sock);
             wait_sleep(&tsk->sk.recv_wait);
-            pthread_rwlock_wrlock(&sock->lock);
+            socket_wr_acquire(sock);
         }
     }
 
