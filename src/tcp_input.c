@@ -474,8 +474,10 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             
             break;
         } else {
+            pthread_mutex_lock(&tsk->sk.recv_wait.lock);
             socket_release(sock);
             wait_sleep(&tsk->sk.recv_wait);
+            pthread_mutex_unlock(&tsk->sk.recv_wait.lock);
             socket_wr_acquire(sock);
         }
     }
