@@ -110,6 +110,7 @@ struct sock *tcp_alloc_sock()
     tsk->sk.state = TCP_CLOSE;
     tsk->flags = 0;
     tsk->backoff = 0;
+    tsk->sackok = 0;
 
     tsk->retransmit = NULL;
     tsk->delack = NULL;

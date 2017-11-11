@@ -4,15 +4,37 @@
 #include "skbuff.h"
 #include "sock.h"
 
-static int tcp_parse_mss(struct tcp_sock *tsk, struct tcphdr *th)
+static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
 {
-    struct tcp_opt_mss *opt_mss = (struct tcp_opt_mss *) th->data;
+    uint8_t *ptr = th->data;
+    uint8_t optlen = tcp_hlen(th) - 20;
+    struct tcp_opt_mss *opt_mss = NULL;
 
-    if (opt_mss->kind == TCP_OPT_MSS) {
-        uint16_t mss = ntohs(opt_mss->mss);
+    while (optlen > 0 && optlen < 20) {
+        switch (*ptr) {
+        case TCP_OPT_MSS:
+            opt_mss = (struct tcp_opt_mss *)ptr;
+            uint16_t mss = ntohs(opt_mss->mss);
 
-        if (mss > 536 && mss <= 1460) {
-            tsk->smss = mss;
+            if (mss > 536 && mss <= 1460) {
+                tsk->smss = mss;
+            }
+
+            ptr += sizeof(struct tcp_opt_mss);
+            optlen -= 4;
+            break;
+        case TCP_OPT_NOOP:
+            ptr += 1;
+            optlen--;
+            break;
+        case TCP_OPT_SACK_OK:
+            tsk->sackok = 1;
+            optlen--;
+            break;
+        default:
+            print_err("Unrecognized TCPOPT\n");
+            optlen--;
+            break;
         }
     }
 
@@ -156,7 +178,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tsk->rto = 1000;
         tcp_send_ack(&tsk->sk);
         tcp_rearm_user_timeout(&tsk->sk);
-        tcp_parse_mss(tsk, th);
+        tcp_parse_opts(tsk, th);
         sock_connected(sk);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
