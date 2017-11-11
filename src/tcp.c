@@ -117,9 +117,9 @@ struct sock *tcp_alloc_sock()
 
     tsk->delacks = 0;
 
-    /* TODO: Determine mss properly */
     tsk->rmss = 1460;
-    tsk->smss = 1300;
+    // Default to 536 as per spec
+    tsk->smss = 536;
 
     tsk->cwnd = 0;
     tsk->inflight = 0;
