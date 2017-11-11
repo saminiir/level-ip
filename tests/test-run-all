@@ -5,7 +5,6 @@ set -eu
 source "utils/common"
 
 function teardown {
-    echo "Shutting down lvl-ip"
     kill "$stackip"
 }
 
@@ -39,5 +38,8 @@ for i in $pids; do
   [ "$pid_rc" -ne 0 ] && rc="$pid_rc"
 done
 
-grep -i -B50 "SUMMARY: ThreadSanitizer:" ../lvl-ip-test.log
+grep -i -B50 "SUMMARY: ThreadSanitizer:" ../lvl-ip-test.log && echo "Possible threading errors found."
+
+echo
+[ "$rc" -eq 0 ] && echo "Tests pass."
 exit "$rc"
