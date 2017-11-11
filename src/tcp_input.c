@@ -15,7 +15,7 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
     int rc = 0;
     
     while ((skb = skb_peek(&sk->write_queue)) != NULL) {
-        if (skb->end_seq <= una) {
+        if (skb->seq > 0 && skb->end_seq <= una) {
             /* skb fully acknowledged */
             skb_dequeue(&sk->write_queue);
             skb->refcnt--;

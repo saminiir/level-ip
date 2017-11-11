@@ -15,6 +15,7 @@ static struct sk_buff *tcp_alloc_skb(int optlen, int size)
     skb_reserve(skb, reserved);
     skb->protocol = IP_TCP;
     skb->dlen = size;
+    skb->seq = 0;
 
     return skb;
 }
@@ -91,12 +92,11 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
         /* Store sequence information into the socket buffer */
         rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
         tsk->inflight++;
+        skb->seq = tcb->snd_nxt;
+        tcb->snd_nxt += skb->dlen;
+        skb->end_seq = tcb->snd_nxt;
     }
 
-    skb->seq = tcb->snd_nxt;
-    tcb->snd_nxt += skb->dlen;
-    skb->end_seq = tcb->snd_nxt;
-    
     skb_queue_tail(&sk->write_queue, skb);
 
     return rc;
@@ -144,6 +144,8 @@ void *tcp_send_delack(void *arg)
 
 int tcp_send_next(struct sock *sk, int amount)
 {
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
     struct sk_buff *next;
     struct list_head *item, *tmp;
     int i = 0;
@@ -155,7 +157,10 @@ int tcp_send_next(struct sock *sk, int amount)
         if (next == NULL) return -1;
     
         skb_reset_header(next);
-        tcp_transmit_skb(sk, next, next->seq);
+        tcp_transmit_skb(sk, next, tcb->snd_nxt);
+        next->seq = tcb->snd_nxt;
+        tcb->snd_nxt += next->dlen;
+        next->end_seq = tcb->snd_nxt;
     }
     
     return 0;
