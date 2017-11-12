@@ -461,3 +461,33 @@ void tcp_rtt(struct tcp_sock *tsk)
 
     tsk->rto = tsk->srtt + k;
 }
+
+int tcp_calculate_sacks(struct tcp_sock *tsk)
+{
+//    struct tcb *tcb = &tsk->tcb;
+
+    int sack_idx = 0;
+    struct tcp_sack_block *sb = &tsk->sacks[sack_idx];
+
+    sb->left = 0;
+    sb->right = 0;
+
+    struct sk_buff *next;
+    struct list_head *item, *tmp;
+
+    list_for_each_safe(item, tmp, &tsk->ofo_queue.head) {
+        next = list_entry(item, struct sk_buff, list);
+
+        printf("sb->left edge %u, right %u, next seq %u, next end seq %u\n", sb->left, sb->right, next->seq, next->end_seq);
+
+        if (sb->left == 0) sb->left = next->seq;
+        if (sb->right == 0) sb->right = next->end_seq;
+        else if (sb->right == next->seq) sb->right = next->end_seq;
+        else {
+            printf("Gap in ofo queue\n");
+            break;
+        }
+    }
+    
+    return 0;
+}

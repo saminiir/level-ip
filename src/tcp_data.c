@@ -113,6 +113,10 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
            for later processing */
         tcp_data_insert_ordered(&tsk->ofo_queue, skb);
 
+        if (tsk->sackok) {
+            tcp_calculate_sacks(tsk); 
+        }
+        
         /* RFC5581: A TCP receiver SHOULD send an immediate duplicate ACK when an out-
          * of-order segment arrives.  The purpose of this ACK is to inform the
          * sender that a segment was received out-of-order and which sequence

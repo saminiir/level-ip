@@ -25,6 +25,7 @@
 #define TCP_OPTLEN_MSS 4
 #define TCP_OPT_MSS 2
 #define TCP_OPT_SACK_OK 4
+#define TCP_OPT_SACK 5
 #define TCP_OPTLEN_SACK 2
 
 #define TCP_2MSL 60000
@@ -184,6 +185,13 @@ struct tcb {
     uint32_t irs;
 };
 
+struct tcp_sack_block {
+    uint32_t left;
+    uint32_t right;
+    struct tcp_sack_block *next;
+} __attribute__((packed));
+
+
 struct tcp_sock {
     struct sock sk;
     int fd;
@@ -205,6 +213,7 @@ struct tcp_sock {
     uint32_t inflight;
 
     uint8_t sackok;
+    struct tcp_sack_block sacks[4];
     
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
@@ -255,5 +264,6 @@ void tcp_release_rto_timer(struct tcp_sock *tsk);
 void tcp_stop_delack_timer(struct tcp_sock *tsk);
 void tcp_release_delack_timer(struct tcp_sock *tsk);
 void tcp_rearm_user_timeout(struct sock *sk);
+int tcp_calculate_sacks(struct tcp_sock *tsk);
 
 #endif

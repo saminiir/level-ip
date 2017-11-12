@@ -20,7 +20,7 @@ static struct sk_buff *tcp_alloc_skb(int optlen, int size)
     return skb;
 }
 
-static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
+static int tcp_write_syn_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
 {
     struct tcp_opt_mss *opt_mss = (struct tcp_opt_mss *) th->data;
     uint32_t i = 0;
@@ -58,6 +58,28 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
     return optlen;
 }
 
+static int tcp_write_options(struct tcp_sock *tsk, struct tcphdr *th)
+{
+    uint8_t *ptr = th->data;
+
+    if (!tsk->sackok || tsk->sacks[0].left == 0) return 0;
+    printf("Writing sack blocks\n");
+    printf("rcv nxt %u, left %u, right %u\n", tsk->tcb.rcv_nxt, tsk->sacks[0].left, tsk->sacks[0].right);
+
+    *ptr++ = TCP_OPT_NOOP;
+    *ptr++ = TCP_OPT_NOOP;
+    *ptr++ = TCP_OPT_SACK;
+    *ptr++ = 10;
+    struct tcp_sack_block *sb = (struct tcp_sack_block *)ptr;
+    sb->left = htonl(tsk->sacks[0].left);
+    sb->right = htonl(tsk->sacks[0].right);
+
+    tsk->sacks[0].left = 0;
+    tsk->sacks[0].right = 0;
+    
+    return 0;
+}
+
 static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
@@ -77,6 +99,8 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
     thdr->win = tcb->rcv_wnd;
     thdr->csum = 0;
     thdr->urp = 0;
+
+    tcp_write_options(tsk, thdr);
 
     tcp_out_dbg(thdr, sk, skb);
 
@@ -180,6 +204,24 @@ int tcp_send_next(struct sock *sk, int amount)
     return 0;
 }
 
+static int tcp_options_len(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    uint8_t optlen = 0;
+
+    if (tsk->sackok) {
+        for (int i = 0; i < 4; i++) {
+            if (tsk->sacks[i].left != 0) {
+                optlen += 32;
+            }
+        }
+    }
+
+    if (optlen == 32) optlen += 8;
+
+    return optlen;
+}
+
 int tcp_send_ack(struct sock *sk)
 {
     if (sk->state == TCP_CLOSE) return 0;
@@ -188,11 +230,13 @@ int tcp_send_ack(struct sock *sk)
     struct tcphdr *th;
     struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
+    int optlen = tcp_options_len(sk);
 
-    skb = tcp_alloc_skb(0, 0);
+    skb = tcp_alloc_skb(optlen, 0);
     
     th = tcp_hdr(skb);
     th->ack = 1;
+    th->hl = TCP_DOFFSET + (optlen / 4);
 
     rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
     free_skb(skb);
@@ -216,7 +260,7 @@ static int tcp_send_syn(struct sock *sk)
     skb = tcp_alloc_skb(tcp_options_len, 0);
     th = tcp_hdr(skb);
 
-    tcp_write_options(th, &opts, tcp_options_len);
+    tcp_write_syn_options(th, &opts, tcp_options_len);
     sk->state = TCP_SYN_SENT;
     th->syn = 1;
 
