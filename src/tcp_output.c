@@ -104,7 +104,9 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
     thdr->csum = 0;
     thdr->urp = 0;
 
-    tcp_write_options(tsk, thdr);
+    if (thdr->hl > 5) {
+        tcp_write_options(tsk, thdr);
+    }
 
     tcp_out_dbg(thdr, sk, skb);
 
@@ -216,12 +218,14 @@ static int tcp_options_len(struct sock *sk)
     if (tsk->sackok) {
         for (int i = 0; i < tsk->sacklen; i++) {
             if (tsk->sacks[i].left != 0) {
-                optlen += 32;
+                optlen += 8;
             }
         }
+
+        optlen += 2;
     }
 
-    if (optlen == 32) optlen += 8;
+    while (optlen % 4 > 0) optlen++;
 
     return optlen;
 }
