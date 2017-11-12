@@ -108,24 +108,11 @@ struct sock *tcp_alloc_sock()
 
     memset(tsk, 0, sizeof(struct tcp_sock));
     tsk->sk.state = TCP_CLOSE;
-    tsk->flags = 0;
-    tsk->backoff = 0;
     tsk->sackok = 1;
-    tsk->sacklen = 0;
-    tsk->tsopt = 0;
     
-    tsk->retransmit = NULL;
-    tsk->delack = NULL;
-    tsk->keepalive = NULL;
-
-    tsk->delacks = 0;
-
     tsk->rmss = 1460;
     // Default to 536 as per spec
     tsk->smss = 536;
-
-    tsk->cwnd = 0;
-    tsk->inflight = 0;
 
     skb_queue_init(&tsk->ofo_queue);
     
