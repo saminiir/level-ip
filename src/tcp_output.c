@@ -51,9 +51,13 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
     opts->mss = tsk->rmss;
     optlen += TCP_OPTLEN_MSS;
 
-    opts->sack = 1;
-    optlen += TCP_OPT_NOOP * 2;
-    optlen += TCP_OPTLEN_SACK;
+    if (tsk->sackok) {
+        opts->sack = 1;
+        optlen += TCP_OPT_NOOP * 2;
+        optlen += TCP_OPTLEN_SACK;
+    } else {
+        opts->sack = 0;
+    }
     
     return optlen;
 }

@@ -28,7 +28,6 @@ static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
             optlen--;
             break;
         case TCP_OPT_SACK_OK:
-            tsk->sackok = 1;
             optlen--;
             break;
         default:
