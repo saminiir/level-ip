@@ -68,19 +68,26 @@ static int tcp_write_options(struct tcp_sock *tsk, struct tcphdr *th)
 
     if (!tsk->sackok || tsk->sacks[0].left == 0) return 0;
     printf("Writing sack blocks\n");
-    printf("rcv nxt %u, left %u, right %u\n", tsk->tcb.rcv_nxt, tsk->sacks[0].left, tsk->sacks[0].right);
 
     *ptr++ = TCP_OPT_NOOP;
     *ptr++ = TCP_OPT_NOOP;
     *ptr++ = TCP_OPT_SACK;
-    *ptr++ = 10;
-    struct tcp_sack_block *sb = (struct tcp_sack_block *)ptr;
-    sb->left = htonl(tsk->sacks[0].left);
-    sb->right = htonl(tsk->sacks[0].right);
+    *ptr++ = 2 + tsk->sacklen * 8;
 
-    tsk->sacks[0].left = 0;
-    tsk->sacks[0].right = 0;
-    
+    struct tcp_sack_block *sb = (struct tcp_sack_block *)ptr;
+
+    for (int i = tsk->sacklen - 1; i >= 0; i--) {
+        sb->left = htonl(tsk->sacks[i].left);
+        sb->right = htonl(tsk->sacks[i].right);
+        tsk->sacks[i].left = 0;
+        tsk->sacks[i].right = 0;
+
+        sb += 1;
+        ptr += sizeof(struct tcp_sack_block);
+    }
+
+    tsk->sacklen = 0;
+
     return 0;
 }
 
@@ -215,7 +222,7 @@ static int tcp_options_len(struct sock *sk)
     struct tcp_sock *tsk = tcp_sk(sk);
     uint8_t optlen = 0;
 
-    if (tsk->sackok) {
+    if (tsk->sackok && tsk->sacklen > 0) {
         for (int i = 0; i < tsk->sacklen; i++) {
             if (tsk->sacks[i].left != 0) {
                 optlen += 8;

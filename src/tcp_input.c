@@ -50,8 +50,8 @@ static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
 
     if (sack_seen && tsk->sackok) {
         // There's room for 4 sack blocks without TS OPT
-        if (tsk->tsopt) tsk->sacklen = 3;
-        else tsk->sacklen = 4;
+        if (tsk->tsopt) tsk->sacks_allowed = 3;
+        else tsk->sacks_allowed = 4;
     } else {
         tsk->sackok = 0;
     }

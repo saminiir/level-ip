@@ -189,9 +189,7 @@ struct tcb {
 struct tcp_sack_block {
     uint32_t left;
     uint32_t right;
-    struct tcp_sack_block *next;
 } __attribute__((packed));
-
 
 struct tcp_sock {
     struct sock sk;
@@ -214,8 +212,9 @@ struct tcp_sock {
     uint32_t inflight;
 
     uint8_t sackok;
-    struct tcp_sack_block sacks[4];
+    uint8_t sacks_allowed;
     uint8_t sacklen;
+    struct tcp_sack_block sacks[4];
 
     uint8_t tsopt;
     
