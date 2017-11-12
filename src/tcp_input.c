@@ -447,7 +447,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             } else {
                 tcp_set_state(sk, TCP_CLOSING);
             }
-            
+
             break;
         case TCP_FIN_WAIT_2:
             /* Enter the TIME-WAIT state.  Start the time-wait timer, turn

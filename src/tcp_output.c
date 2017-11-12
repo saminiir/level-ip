@@ -67,7 +67,6 @@ static int tcp_write_options(struct tcp_sock *tsk, struct tcphdr *th)
     uint8_t *ptr = th->data;
 
     if (!tsk->sackok || tsk->sacks[0].left == 0) return 0;
-    printf("Writing sack blocks\n");
 
     *ptr++ = TCP_OPT_NOOP;
     *ptr++ = TCP_OPT_NOOP;
@@ -133,6 +132,7 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
+    struct tcphdr * th = tcp_hdr(skb);
     int rc = 0;
     
     if (skb_queue_empty(&sk->write_queue)) {
@@ -146,6 +146,8 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
         skb->seq = tcb->snd_nxt;
         tcb->snd_nxt += skb->dlen;
         skb->end_seq = tcb->snd_nxt;
+
+        if (th->fin) tcb->snd_nxt++;
     }
 
     skb_queue_tail(&sk->write_queue, skb);
@@ -197,6 +199,7 @@ int tcp_send_next(struct sock *sk, int amount)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
+    struct tcphdr *th;
     struct sk_buff *next;
     struct list_head *item, *tmp;
     int i = 0;
@@ -206,12 +209,16 @@ int tcp_send_next(struct sock *sk, int amount)
         next = list_entry(item, struct sk_buff, list);
 
         if (next == NULL) return -1;
-    
+
         skb_reset_header(next);
         tcp_transmit_skb(sk, next, tcb->snd_nxt);
+
         next->seq = tcb->snd_nxt;
         tcb->snd_nxt += next->dlen;
         next->end_seq = tcb->snd_nxt;
+
+        th = tcp_hdr(next);
+        if (th->fin) tcb->snd_nxt++;
     }
     
     return 0;
@@ -500,7 +507,6 @@ int tcp_queue_fin(struct sock *sk)
 {
     struct sk_buff *skb;
     struct tcphdr *th;
-    struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -512,7 +518,6 @@ int tcp_queue_fin(struct sock *sk)
     tcpsock_dbg("Queueing fin", sk);
     
     rc = tcp_queue_transmit_skb(sk, skb);
-    tcb->snd_nxt++;
 
     return rc;
 }

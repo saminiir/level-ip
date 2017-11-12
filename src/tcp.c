@@ -464,8 +464,6 @@ int tcp_calculate_sacks(struct tcp_sock *tsk)
     list_for_each_safe(item, tmp, &tsk->ofo_queue.head) {
         next = list_entry(item, struct sk_buff, list);
 
-        printf("sb->left edge %u, right %u, next seq %u, next end seq %u\n", sb->left, sb->right, next->seq, next->end_seq);
-
         if (sb->left == 0) {
             sb->left = next->seq;
             tsk->sacklen++;
