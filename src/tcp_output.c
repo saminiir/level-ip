@@ -214,7 +214,7 @@ static int tcp_options_len(struct sock *sk)
     uint8_t optlen = 0;
 
     if (tsk->sackok) {
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < tsk->sacklen; i++) {
             if (tsk->sacks[i].left != 0) {
                 optlen += 32;
             }

@@ -9,7 +9,9 @@ static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
     uint8_t *ptr = th->data;
     uint8_t optlen = tcp_hlen(th) - 20;
     struct tcp_opt_mss *opt_mss = NULL;
-
+    uint8_t sack_seen = 0;
+    uint8_t tsopt_seen = 0;
+    
     while (optlen > 0 && optlen < 20) {
         switch (*ptr) {
         case TCP_OPT_MSS:
@@ -28,6 +30,11 @@ static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
             optlen--;
             break;
         case TCP_OPT_SACK_OK:
+            sack_seen = 1;
+            optlen--;
+            break;
+        case TCP_OPT_TS:
+            tsopt_seen = 1;
             optlen--;
             break;
         default:
@@ -35,6 +42,18 @@ static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
             optlen--;
             break;
         }
+    }
+
+    if (!tsopt_seen) {
+        tsk->tsopt = 0;
+    }
+
+    if (sack_seen && tsk->sackok) {
+        // There's room for 4 sack blocks without TS OPT
+        if (tsk->tsopt) tsk->sacklen = 3;
+        else tsk->sacklen = 4;
+    } else {
+        tsk->sackok = 0;
     }
 
     return 0;

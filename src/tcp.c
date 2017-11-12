@@ -111,6 +111,9 @@ struct sock *tcp_alloc_sock()
     tsk->flags = 0;
     tsk->backoff = 0;
     tsk->sackok = 1;
+    tsk->sacklen = 0;
+    tsk->tsopt = 0;
+    
     tsk->retransmit = NULL;
     tsk->delack = NULL;
     tsk->keepalive = NULL;

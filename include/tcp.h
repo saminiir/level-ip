@@ -27,6 +27,7 @@
 #define TCP_OPT_SACK_OK 4
 #define TCP_OPT_SACK 5
 #define TCP_OPTLEN_SACK 2
+#define TCP_OPT_TS 8
 
 #define TCP_2MSL 60000
 #define TCP_USER_TIMEOUT 180000
@@ -214,6 +215,9 @@ struct tcp_sock {
 
     uint8_t sackok;
     struct tcp_sack_block sacks[4];
+    uint8_t sacklen;
+
+    uint8_t tsopt;
     
     struct sk_buff_head ofo_queue; /* Out-of-order queue */
 };
