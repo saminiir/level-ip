@@ -10,18 +10,15 @@ function strip_http_header {
 }
 
 function setup {
-    start_stack
-
-    /usr/bin/env python2.7 -m SimpleHTTPServer >/dev/null 2>&1 &
+    /usr/bin/env python2.7 -m SimpleHTTPServer 8001 >/dev/null 2>&1 &
     httpserver="$!"
 
-    sleep 10
+    sleep 5
 }
 
-function teardown {
-    kill "$stackip"
+function teardown_suite {
     kill "$httpserver"
 }
 
 setup
-trap teardown EXIT ERR
+trap teardown_suite EXIT ERR

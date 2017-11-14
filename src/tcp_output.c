@@ -15,17 +15,28 @@ static struct sk_buff *tcp_alloc_skb(int optlen, int size)
     skb_reserve(skb, reserved);
     skb->protocol = IP_TCP;
     skb->dlen = size;
+    skb->seq = 0;
 
     return skb;
 }
 
-static int tcp_write_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
+static int tcp_write_syn_options(struct tcphdr *th, struct tcp_options *opts, int optlen)
 {
     struct tcp_opt_mss *opt_mss = (struct tcp_opt_mss *) th->data;
+    uint32_t i = 0;
 
     opt_mss->kind = TCP_OPT_MSS;
     opt_mss->len = TCP_OPTLEN_MSS;
     opt_mss->mss = htons(opts->mss);
+
+    i += sizeof(struct tcp_opt_mss);
+
+    if (opts->sack) {
+        th->data[i++] = TCP_OPT_NOOP;
+        th->data[i++] = TCP_OPT_NOOP;
+        th->data[i++] = TCP_OPT_SACK_OK;
+        th->data[i++] = TCP_OPTLEN_SACK;
+    }
 
     th->hl = TCP_DOFFSET + (optlen / 4);
 
@@ -39,8 +50,44 @@ static int tcp_syn_options(struct sock *sk, struct tcp_options *opts)
 
     opts->mss = tsk->rmss;
     optlen += TCP_OPTLEN_MSS;
+
+    if (tsk->sackok) {
+        opts->sack = 1;
+        optlen += TCP_OPT_NOOP * 2;
+        optlen += TCP_OPTLEN_SACK;
+    } else {
+        opts->sack = 0;
+    }
     
     return optlen;
+}
+
+static int tcp_write_options(struct tcp_sock *tsk, struct tcphdr *th)
+{
+    uint8_t *ptr = th->data;
+
+    if (!tsk->sackok || tsk->sacks[0].left == 0) return 0;
+
+    *ptr++ = TCP_OPT_NOOP;
+    *ptr++ = TCP_OPT_NOOP;
+    *ptr++ = TCP_OPT_SACK;
+    *ptr++ = 2 + tsk->sacklen * 8;
+
+    struct tcp_sack_block *sb = (struct tcp_sack_block *)ptr;
+
+    for (int i = tsk->sacklen - 1; i >= 0; i--) {
+        sb->left = htonl(tsk->sacks[i].left);
+        sb->right = htonl(tsk->sacks[i].right);
+        tsk->sacks[i].left = 0;
+        tsk->sacks[i].right = 0;
+
+        sb += 1;
+        ptr += sizeof(struct tcp_sack_block);
+    }
+
+    tsk->sacklen = 0;
+
+    return 0;
 }
 
 static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
@@ -63,6 +110,10 @@ static int tcp_transmit_skb(struct sock *sk, struct sk_buff *skb, uint32_t seq)
     thdr->csum = 0;
     thdr->urp = 0;
 
+    if (thdr->hl > 5) {
+        tcp_write_options(tsk, thdr);
+    }
+
     tcp_out_dbg(thdr, sk, skb);
 
     thdr->sport = htons(thdr->sport);
@@ -81,27 +132,25 @@ static int tcp_queue_transmit_skb(struct sock *sk, struct sk_buff *skb)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
     struct tcb *tcb = &tsk->tcb;
+    struct tcphdr * th = tcp_hdr(skb);
     int rc = 0;
     
-    pthread_mutex_lock(&sk->write_queue.lock);
-
     if (skb_queue_empty(&sk->write_queue)) {
         tcp_rearm_rto_timer(tsk);
     }
 
-    if (tsk->inflight < 3) {
+    if (tsk->inflight == 0) {
         /* Store sequence information into the socket buffer */
         rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
         tsk->inflight++;
+        skb->seq = tcb->snd_nxt;
+        tcb->snd_nxt += skb->dlen;
+        skb->end_seq = tcb->snd_nxt;
+
+        if (th->fin) tcb->snd_nxt++;
     }
 
-    skb->seq = tcb->snd_nxt;
-    tcb->snd_nxt += skb->dlen;
-    skb->end_seq = tcb->snd_nxt;
-    
     skb_queue_tail(&sk->write_queue, skb);
-    
-    pthread_mutex_unlock(&sk->write_queue.lock);
 
     return rc;
 }
@@ -134,20 +183,23 @@ int tcp_send_synack(struct sock *sk)
 void *tcp_send_delack(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
 
     struct tcp_sock *tsk = tcp_sk(sk);
     tsk->delacks = 0;
     tcp_release_delack_timer(tsk);
     tcp_send_ack(sk);
 
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 
     return NULL;
 }
 
 int tcp_send_next(struct sock *sk, int amount)
 {
+    struct tcp_sock *tsk = tcp_sk(sk);
+    struct tcb *tcb = &tsk->tcb;
+    struct tcphdr *th;
     struct sk_buff *next;
     struct list_head *item, *tmp;
     int i = 0;
@@ -157,12 +209,39 @@ int tcp_send_next(struct sock *sk, int amount)
         next = list_entry(item, struct sk_buff, list);
 
         if (next == NULL) return -1;
-    
+
         skb_reset_header(next);
-        tcp_transmit_skb(sk, next, next->seq);
+        tcp_transmit_skb(sk, next, tcb->snd_nxt);
+
+        next->seq = tcb->snd_nxt;
+        tcb->snd_nxt += next->dlen;
+        next->end_seq = tcb->snd_nxt;
+
+        th = tcp_hdr(next);
+        if (th->fin) tcb->snd_nxt++;
     }
     
     return 0;
+}
+
+static int tcp_options_len(struct sock *sk)
+{
+    struct tcp_sock *tsk = tcp_sk(sk);
+    uint8_t optlen = 0;
+
+    if (tsk->sackok && tsk->sacklen > 0) {
+        for (int i = 0; i < tsk->sacklen; i++) {
+            if (tsk->sacks[i].left != 0) {
+                optlen += 8;
+            }
+        }
+
+        optlen += 2;
+    }
+
+    while (optlen % 4 > 0) optlen++;
+
+    return optlen;
 }
 
 int tcp_send_ack(struct sock *sk)
@@ -173,11 +252,13 @@ int tcp_send_ack(struct sock *sk)
     struct tcphdr *th;
     struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
+    int optlen = tcp_options_len(sk);
 
-    skb = tcp_alloc_skb(0, 0);
+    skb = tcp_alloc_skb(optlen, 0);
     
     th = tcp_hdr(skb);
     th->ack = 1;
+    th->hl = TCP_DOFFSET + (optlen / 4);
 
     rc = tcp_transmit_skb(sk, skb, tcb->snd_nxt);
     free_skb(skb);
@@ -201,7 +282,7 @@ static int tcp_send_syn(struct sock *sk)
     skb = tcp_alloc_skb(tcp_options_len, 0);
     th = tcp_hdr(skb);
 
-    tcp_write_options(th, &opts, tcp_options_len);
+    tcp_write_syn_options(th, &opts, tcp_options_len);
     sk->state = TCP_SYN_SENT;
     th->syn = 1;
 
@@ -247,7 +328,7 @@ static void *tcp_connect_rto(void *arg)
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
     tcp_release_rto_timer(tsk);
 
     if (sk->state == TCP_SYN_SENT) {
@@ -256,8 +337,6 @@ static void *tcp_connect_rto(void *arg)
             sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
             tcp_done(sk);
         } else {
-            pthread_mutex_lock(&sk->write_queue.lock);
-
             struct sk_buff *skb = write_queue_head(sk);
 
             if (skb) {
@@ -267,14 +346,12 @@ static void *tcp_connect_rto(void *arg)
                 tsk->backoff++;
                 tcp_rearm_rto_timer(tsk);
             }
-            
-            pthread_mutex_unlock(&sk->write_queue.lock);
          }
     } else {
         print_err("TCP connect RTO triggered even when not in SYNSENT\n");
     }
 
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 
     return NULL;
 }
@@ -285,8 +362,7 @@ static void *tcp_retransmission_timeout(void *arg)
     struct tcb *tcb = &tsk->tcb;
     struct sock *sk = &tsk->sk;
 
-    pthread_rwlock_wrlock(&sk->sock->lock);
-    pthread_mutex_lock(&sk->write_queue.lock);
+    socket_wr_acquire(sk->sock);
 
     tcp_release_rto_timer(tsk);
 
@@ -306,13 +382,12 @@ static void *tcp_retransmission_timeout(void *arg)
     /* RFC 6298: 2.5 Maximum value MAY be placed on RTO, provided it is at least
        60 seconds */
     if (tsk->rto > 60000) {
-        pthread_mutex_unlock(&sk->write_queue.lock);
         tcp_done(sk);
 
         tsk->sk.err = -ETIMEDOUT;
         sk->poll_events |= (POLLOUT | POLLERR | POLLHUP);
 
-        pthread_rwlock_unlock(&sk->sock->lock);
+        socket_release(sk->sock);
         return NULL;
     } else {
         /* RFC 6298: Section 5.5 double RTO time */
@@ -326,8 +401,7 @@ static void *tcp_retransmission_timeout(void *arg)
     }
 
 unlock:
-    pthread_mutex_unlock(&sk->write_queue.lock);
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 
     return NULL;
 }
@@ -433,7 +507,6 @@ int tcp_queue_fin(struct sock *sk)
 {
     struct sk_buff *skb;
     struct tcphdr *th;
-    struct tcb *tcb = &tcp_sk(sk)->tcb;
     int rc = 0;
 
     skb = tcp_alloc_skb(0, 0);
@@ -445,7 +518,6 @@ int tcp_queue_fin(struct sock *sk)
     tcpsock_dbg("Queueing fin", sk);
     
     rc = tcp_queue_transmit_skb(sk, skb);
-    tcb->snd_nxt++;
 
     return rc;
 }

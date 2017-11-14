@@ -24,6 +24,7 @@ static struct socket *alloc_socket(pid_t pid)
     list_init(&sock->list);
 
     sock->pid = pid;
+    sock->refcnt = 1;
 
     pthread_rwlock_wrlock(&slock);
     sock->fd = fd++;
@@ -38,32 +39,59 @@ static struct socket *alloc_socket(pid_t pid)
     return sock;
 }
 
+int socket_rd_acquire(struct socket *sock)
+{
+    int rc = pthread_rwlock_wrlock(&sock->lock);
+    sock->refcnt++;
+    return rc;
+}
+
+int socket_wr_acquire(struct socket *sock)
+{
+    int rc = pthread_rwlock_wrlock(&sock->lock);
+    sock->refcnt++;
+    return rc;
+}
+
+int socket_release(struct socket *sock)
+{
+    int rc = 0;
+    sock->refcnt--;
+
+    if (sock->refcnt == 0) {
+        rc = pthread_rwlock_unlock(&sock->lock);
+        free(sock);
+    } else {
+        rc = pthread_rwlock_unlock(&sock->lock);
+    }
+
+    return rc;
+}
+
 int socket_free(struct socket *sock)
 {
+    pthread_rwlock_wrlock(&slock);
+    socket_wr_acquire(sock);
+    list_del(&sock->list);
+    sock_amount--;
+    pthread_rwlock_unlock(&slock);
+
     if (sock->ops) {
         sock->ops->free(sock);
     }
 
     wait_free(&sock->sleep);
-    
-    free(sock);
+    socket_release(sock);
     
     return 0;
 }
 
 static void *socket_garbage_collect(void *arg)
 {
-    struct socket *sock = (struct socket *)arg;
+    struct socket *sock = socket_find((struct socket *)arg);
 
-    pthread_rwlock_wrlock(&slock);
-    pthread_rwlock_wrlock(&sock->lock);
-    socket_dbg(sock, "Garbage collecting (freeing) socket");
+    if (sock == NULL) return NULL;
 
-    list_del(&sock->list);
-    sock_amount--;
-
-    pthread_rwlock_unlock(&sock->lock);    
-    pthread_rwlock_unlock(&slock);
     socket_free(sock);
 
     return NULL;
@@ -73,15 +101,12 @@ int socket_delete(struct socket *sock)
 {
     int rc = 0;
 
-    pthread_mutex_lock(&sock->sk->lock);
-
     if (sock->state == SS_DISCONNECTING) goto out;
 
     sock->state = SS_DISCONNECTING;
     timer_oneshot(10000, &socket_garbage_collect, sock);
 
 out:
-    pthread_mutex_unlock(&sock->sk->lock);
     return rc;
 }
 
@@ -138,6 +163,24 @@ found:
     return sock;
 }
 
+struct socket *socket_find(struct socket *find)
+{
+    struct list_head *item;
+    struct socket *sock = NULL;
+
+    pthread_rwlock_rdlock(&slock);
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+        if (sock == find) goto out;
+    }
+    
+    sock = NULL;
+
+out:
+    pthread_rwlock_unlock(&slock);
+    return sock;
+}
+
 #ifdef DEBUG_SOCKET
 void socket_debug()
 {
@@ -148,9 +191,9 @@ void socket_debug()
 
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
-        pthread_rwlock_rdlock(&sock->lock);
+        socket_rd_acquire(sock);
         socket_dbg(sock, "");
-        pthread_rwlock_unlock(&sock->lock);
+        socket_release(sock);
     }
 
     pthread_rwlock_unlock(&slock);
@@ -191,10 +234,10 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     list_add_tail(&sock->list, &sockets);
     sock_amount++;
 
-    pthread_rwlock_rdlock(&sock->lock);
+    socket_rd_acquire(sock);
     pthread_rwlock_unlock(&slock);
     int rc = sock->fd;
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 
@@ -212,9 +255,20 @@ int _connect(pid_t pid, int sockfd, const struct sockaddr *addr, socklen_t addrl
         return -EBADF;
     }
 
-    pthread_rwlock_wrlock(&sock->lock);
+    socket_wr_acquire(sock);
+
     int rc = sock->ops->connect(sock, addr, addrlen, 0);
-    pthread_rwlock_unlock(&sock->lock);
+    switch (rc) {
+    case -EINVAL:
+    case -EAFNOSUPPORT:
+    case -ECONNREFUSED:
+    case -ETIMEDOUT:
+        socket_release(sock);
+        socket_free(sock);
+        break;
+    default:
+        socket_release(sock);
+    }
     
     return rc;
 }
@@ -228,9 +282,9 @@ int _write(pid_t pid, int sockfd, const void *buf, const unsigned int count)
         return -EBADF;
     }
 
-    pthread_rwlock_wrlock(&sock->lock);
+    socket_wr_acquire(sock);
     int rc = sock->ops->write(sock, buf, count);
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }
@@ -244,9 +298,9 @@ int _read(pid_t pid, int sockfd, void *buf, const unsigned int count)
         return -EBADF;
     }
 
-    pthread_rwlock_wrlock(&sock->lock);
+    socket_wr_acquire(sock);
     int rc = sock->ops->read(sock, buf, count);
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }
@@ -261,9 +315,9 @@ int _close(pid_t pid, int sockfd)
     }
 
 
-    pthread_rwlock_wrlock(&sock->lock);
+    socket_wr_acquire(sock);
     int rc = sock->ops->close(sock);
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }
@@ -281,12 +335,12 @@ int _poll(pid_t pid, struct pollfd fds[], nfds_t nfds, int timeout)
                 return -EBADF;
             }
 
-            pthread_rwlock_rdlock(&sock->lock);
+            socket_rd_acquire(sock);
             poll->revents = sock->sk->poll_events & (poll->events | POLLHUP | POLLERR | POLLNVAL);
             if (poll->revents > 0) {
                 polled++;
             }
-            pthread_rwlock_unlock(&sock->lock);
+            socket_release(sock);
         }
 
         if (polled > 0 || timeout == 0) {
@@ -315,7 +369,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
         return -EBADF;
     }
 
-    pthread_rwlock_wrlock(&sock->lock);
+    socket_wr_acquire(sock);
     va_list ap;
     int rc = 0;
 
@@ -337,7 +391,7 @@ int _fcntl(pid_t pid, int fildes, int cmd, ...)
     rc = -1;
 
 out:
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
     return rc;
 }
 
@@ -352,7 +406,7 @@ int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen
 
     int rc = 0;
 
-    pthread_rwlock_rdlock(&sock->lock);
+    socket_rd_acquire(sock);
     switch (level) {
     case SOL_SOCKET:
         switch (optname) {
@@ -374,7 +428,7 @@ int _getsockopt(pid_t pid, int fd, int level, int optname, void *optval, socklen
         break;
     }
 
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }
@@ -389,9 +443,9 @@ int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
         return -EBADF;
     }
 
-    pthread_rwlock_rdlock(&sock->lock);
+    socket_rd_acquire(sock);
     int rc = sock->ops->getpeername(sock, address, address_len);
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }
@@ -406,9 +460,9 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
         return -EBADF;
     }
 
-    pthread_rwlock_rdlock(&sock->lock);
+    socket_rd_acquire(sock);
     int rc = sock->ops->getsockname(sock, address, address_len);
-    pthread_rwlock_unlock(&sock->lock);
+    socket_release(sock);
 
     return rc;
 }

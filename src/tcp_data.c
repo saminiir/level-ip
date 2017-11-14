@@ -52,8 +52,6 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
     struct tcphdr *th;
     int rlen = 0;
 
-    pthread_mutex_lock(&sk->receive_queue.lock);
-
     while (!skb_queue_empty(&sk->receive_queue) && rlen < userlen) {
         struct sk_buff *skb = skb_peek(&sk->receive_queue);
         if (skb == NULL) break;
@@ -83,8 +81,6 @@ int tcp_data_dequeue(struct tcp_sock *tsk, void *user_buf, int userlen)
         sk->poll_events &= ~POLLIN;
     }
     
-    pthread_mutex_unlock(&sk->receive_queue.lock);
-
     return rlen;
 }
 
@@ -110,12 +106,17 @@ int tcp_data_queue(struct tcp_sock *tsk, struct tcphdr *th, struct sk_buff *skb)
 
         // There is new data for user to read
         sk->poll_events |= (POLLIN | POLLPRI | POLLRDNORM | POLLRDBAND);
+        tsk->sk.ops->recv_notify(&tsk->sk);
     } else {
         /* Segment passed validation, hence it is in-window
            but not the left-most sequence. Put into out-of-order queue
            for later processing */
         tcp_data_insert_ordered(&tsk->ofo_queue, skb);
 
+        if (tsk->sackok) {
+            tcp_calculate_sacks(tsk); 
+        }
+        
         /* RFC5581: A TCP receiver SHOULD send an immediate duplicate ACK when an out-
          * of-order segment arrives.  The purpose of this ACK is to inform the
          * sender that a segment was received out-of-order and which sequence

@@ -3,4 +3,4 @@
 set -eu
 
 source "$(dirname $0)/env-duplication"
-source "$(dirname $0)/tests"
+source "$(dirname $0)/tests" 8003 "$0"

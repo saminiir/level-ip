@@ -4,6 +4,61 @@
 #include "skbuff.h"
 #include "sock.h"
 
+static int tcp_parse_opts(struct tcp_sock *tsk, struct tcphdr *th)
+{
+    uint8_t *ptr = th->data;
+    uint8_t optlen = tcp_hlen(th) - 20;
+    struct tcp_opt_mss *opt_mss = NULL;
+    uint8_t sack_seen = 0;
+    uint8_t tsopt_seen = 0;
+    
+    while (optlen > 0 && optlen < 20) {
+        switch (*ptr) {
+        case TCP_OPT_MSS:
+            opt_mss = (struct tcp_opt_mss *)ptr;
+            uint16_t mss = ntohs(opt_mss->mss);
+
+            if (mss > 536 && mss <= 1460) {
+                tsk->smss = mss;
+            }
+
+            ptr += sizeof(struct tcp_opt_mss);
+            optlen -= 4;
+            break;
+        case TCP_OPT_NOOP:
+            ptr += 1;
+            optlen--;
+            break;
+        case TCP_OPT_SACK_OK:
+            sack_seen = 1;
+            optlen--;
+            break;
+        case TCP_OPT_TS:
+            tsopt_seen = 1;
+            optlen--;
+            break;
+        default:
+            print_err("Unrecognized TCPOPT\n");
+            optlen--;
+            break;
+        }
+    }
+
+    if (!tsopt_seen) {
+        tsk->tsopt = 0;
+    }
+
+    if (sack_seen && tsk->sackok) {
+        // There's room for 4 sack blocks without TS OPT
+        if (tsk->tsopt) tsk->sacks_allowed = 3;
+        else tsk->sacks_allowed = 4;
+    } else {
+        tsk->sackok = 0;
+    }
+
+    return 0;
+}
+
 /*
  * Acks all segments from retransmissionn queue that are "older"
  * than current unacknowledged sequence
@@ -14,10 +69,8 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
     struct sk_buff *skb;
     int rc = 0;
     
-    pthread_mutex_lock(&sk->write_queue.lock);
-
     while ((skb = skb_peek(&sk->write_queue)) != NULL) {
-        if (skb->end_seq <= una) {
+        if (skb->seq > 0 && skb->end_seq <= una) {
             /* skb fully acknowledged */
             skb_dequeue(&sk->write_queue);
             skb->refcnt--;
@@ -35,12 +88,10 @@ static int tcp_clean_rto_queue(struct sock *sk, uint32_t una)
         tcp_stop_rto_timer(tsk);
     }
 
-    pthread_mutex_unlock(&sk->write_queue.lock);
-
     return rc;
 }
 
-static inline int tcp_drop(struct tcp_sock *tsk, struct sk_buff *skb)
+static inline int __tcp_drop(struct sock *sk, struct sk_buff *skb)
 {
     free_skb(skb);
     return 0;
@@ -145,6 +196,7 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
         tsk->rto = 1000;
         tcp_send_ack(&tsk->sk);
         tcp_rearm_user_timeout(&tsk->sk);
+        tcp_parse_opts(tsk, th);
         sock_connected(sk);
     } else {
         tcp_set_state(sk, TCP_SYN_RECEIVED);
@@ -153,11 +205,11 @@ static int tcp_synsent(struct tcp_sock *tsk, struct sk_buff *skb, struct tcphdr 
     }
     
 discard:
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     return 0;
 reset_and_discard:
     //TODO reset
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     return 0;
 }
 
@@ -235,7 +287,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
         if (!th->rst) {
             tcp_send_ack(sk);
         }
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
     
     /* second check the RST bit */
@@ -253,12 +305,12 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     if (th->syn) {
         /* RFC 5961 Section 4.2 */
         tcp_send_challenge_ack(sk, skb);
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
     
     /* fifth check the ACK field */
     if (!th->ack) {
-        return tcp_drop(tsk, skb);
+        return_tcp_drop(sk, skb);
     }
 
     // ACK bit is on
@@ -267,7 +319,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
         if (tcb->snd_una <= th->ack_seq && th->ack_seq < tcb->snd_nxt) {
             tcp_set_state(sk, TCP_ESTABLISHED);
         } else {
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
     case TCP_ESTABLISHED:
     case TCP_FIN_WAIT_1:
@@ -285,7 +337,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
         if (th->ack_seq < tcb->snd_una) {
             // If the ACK is a duplicate, it can be ignored
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
 
         if (th->ack_seq > tcb->snd_nxt) {
@@ -294,7 +346,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             // TODO: Dropping the seg here, why would I respond with an ACK? Linux
             // does not respond either
             //tcp_send_ack(&tsk->sk);
-            return tcp_drop(tsk, skb);
+            return_tcp_drop(sk, skb);
         }
 
         if (tcb->snd_una < th->ack_seq && th->ack_seq <= tcb->snd_nxt) {
@@ -343,7 +395,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
 
     int expected = skb->seq == tcb->rcv_nxt;
 
-    pthread_mutex_lock(&sk->receive_queue.lock);
     /* seventh, process the segment txt */
     switch (sk->state) {
     case TCP_ESTABLISHED:
@@ -351,7 +402,6 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     case TCP_FIN_WAIT_2:
         if (th->psh || skb->dlen > 0) {
             tcp_data_queue(tsk, th, skb);
-            tsk->sk.ops->recv_notify(&tsk->sk);
         }
                 
         break;
@@ -397,7 +447,7 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
             } else {
                 tcp_set_state(sk, TCP_CLOSING);
             }
-            
+
             break;
         case TCP_FIN_WAIT_2:
             /* Enter the TIME-WAIT state.  Start the time-wait timer, turn
@@ -445,10 +495,9 @@ int tcp_input_state(struct sock *sk, struct tcphdr *th, struct sk_buff *skb)
     free_skb(skb);
 
 unlock:
-    pthread_mutex_unlock(&sk->receive_queue.lock);
     return 0;
 drop_and_unlock:
-    tcp_drop(tsk, skb);
+    tcp_drop(sk, skb);
     goto unlock;
 }
 
@@ -481,9 +530,11 @@ int tcp_receive(struct tcp_sock *tsk, void *buf, int len)
             
             break;
         } else {
-            pthread_rwlock_unlock(&sock->lock);
+            pthread_mutex_lock(&tsk->sk.recv_wait.lock);
+            socket_release(sock);
             wait_sleep(&tsk->sk.recv_wait);
-            pthread_rwlock_wrlock(&sock->lock);
+            pthread_mutex_unlock(&tsk->sk.recv_wait.lock);
+            socket_wr_acquire(sock);
         }
     }
 

@@ -9,11 +9,11 @@
 #define socket_dbg(sock, msg, ...)                                      \
     do {                                                                \
         print_debug("Socket fd %d pid %d state %d sk_state %d flags %d poll %d sport %d dport %d " \
-                    "sock-sleep %d sk-sleep %d recv-q %d send-q %d: "msg,    \
+                    "recv-q %d send-q %d: "msg,    \
                     sock->fd, sock->pid, sock->state, sock->sk->state, sock->flags, \
                     sock->sk->poll_events,                              \
-                    sock->sk->sport, sock->sk->dport, sock->sleep.sleeping, \
-                    sock->sk->recv_wait.sleeping, sock->sk->receive_queue.qlen, \
+                    sock->sk->sport, sock->sk->dport, \
+                    sock->sk->receive_queue.qlen, \
                     sock->sk->write_queue.qlen, ##__VA_ARGS__);         \
     } while (0)
 #else
@@ -60,6 +60,7 @@ struct socket {
     struct list_head list;
     int fd;
     pid_t pid;
+    int refcnt;
     enum socket_state state;
     short type;
     int flags;
@@ -84,6 +85,10 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
                  socklen_t *restrict address_len);
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
+struct socket *socket_find(struct socket *sock);
+int socket_rd_acquire(struct socket *sock);
+int socket_wr_acquire(struct socket *sock);
+int socket_release(struct socket *sock);
 int socket_free(struct socket *sock);
 int socket_delete(struct socket *sock);
 void abort_sockets();

@@ -51,11 +51,7 @@ static void tcp_init_segment(struct tcphdr *th, struct iphdr *ih, struct sk_buff
 }
 
 static void tcp_clear_queues(struct tcp_sock *tsk) {
-    pthread_mutex_lock(&tsk->ofo_queue.lock);
-
     skb_queue_free(&tsk->ofo_queue);
-
-    pthread_mutex_unlock(&tsk->ofo_queue.lock);
 }
 
 void tcp_in(struct sk_buff *skb)
@@ -77,7 +73,7 @@ void tcp_in(struct sk_buff *skb)
         free_skb(skb);
         return;
     }
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
 
     tcp_in_dbg(th, sk, skb);
     /* if (tcp_checksum(iph, th) != 0) { */
@@ -85,7 +81,7 @@ void tcp_in(struct sk_buff *skb)
     /* } */
     tcp_input_state(sk, th, skb);
 
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 }
 
 int tcp_udp_checksum(uint32_t saddr, uint32_t daddr, uint8_t proto,
@@ -112,21 +108,11 @@ struct sock *tcp_alloc_sock()
 
     memset(tsk, 0, sizeof(struct tcp_sock));
     tsk->sk.state = TCP_CLOSE;
-    tsk->flags = 0;
-    tsk->backoff = 0;
-
-    tsk->retransmit = NULL;
-    tsk->delack = NULL;
-    tsk->keepalive = NULL;
-
-    tsk->delacks = 0;
-
-    /* TODO: Determine mss properly */
+    tsk->sackok = 1;
+    
     tsk->rmss = 1460;
-    tsk->smss = 1300;
-
-    tsk->cwnd = 0;
-    tsk->inflight = 0;
+    // Default to 536 as per spec
+    tsk->smss = 536;
 
     skb_queue_init(&tsk->ofo_queue);
     
@@ -313,12 +299,8 @@ static int tcp_free(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
 
-    pthread_mutex_lock(&sk->lock);
-
     tcp_clear_timers(sk);
     tcp_clear_queues(tsk);
-
-    pthread_mutex_unlock(&sk->lock);
 
     wait_wakeup(&sk->sock->sleep);
 
@@ -335,10 +317,8 @@ int tcp_done(struct sock *sk)
 void tcp_clear_timers(struct sock *sk)
 {
     struct tcp_sock *tsk = tcp_sk(sk);
-    pthread_mutex_lock(&sk->write_queue.lock);
     tcp_stop_rto_timer(tsk);
     tcp_stop_delack_timer(tsk);
-    pthread_mutex_unlock(&sk->write_queue.lock);
 
     timer_cancel(tsk->keepalive);
     tsk->keepalive = NULL;
@@ -390,17 +370,15 @@ void tcp_handle_fin_state(struct sock *sk)
 static void *tcp_linger(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP time-wait timeout, freeing TCB", sk);
 
-    pthread_mutex_lock(&sk->lock);
-    timer_release(tsk->linger);
+    timer_cancel(tsk->linger);
     tsk->linger = NULL;
-    pthread_mutex_unlock(&sk->lock);
 
     tcp_done(sk);
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
 
     return NULL;
 }
@@ -408,17 +386,15 @@ static void *tcp_linger(void *arg)
 static void *tcp_user_timeout(void *arg)
 {
     struct sock *sk = (struct sock *) arg;
-    pthread_rwlock_wrlock(&sk->sock->lock);
+    socket_wr_acquire(sk->sock);
     struct tcp_sock *tsk = tcp_sk(sk);
     tcpsock_dbg("TCP user timeout, freeing TCB and aborting conn", sk);
 
-    pthread_mutex_lock(&sk->lock);
-    timer_release(tsk->linger);
+    timer_cancel(tsk->linger);
     tsk->linger = NULL;
-    pthread_mutex_unlock(&sk->lock);
 
     tcp_abort(sk);
-    pthread_rwlock_unlock(&sk->sock->lock);
+    socket_release(sk->sock);
     
     return NULL;
 }
@@ -429,11 +405,9 @@ void tcp_enter_time_wait(struct sock *sk)
 
     tcp_set_state(sk, TCP_TIME_WAIT);
 
-    pthread_mutex_lock(&sk->lock);
     tcp_clear_timers(sk);
     /* RFC793 arbitrarily defines MSL to be 2 minutes */
     tsk->linger = timer_add(TCP_2MSL, &tcp_linger, sk);
-    pthread_mutex_unlock(&sk->lock);
 }
 
 void tcp_rearm_user_timeout(struct sock *sk)
@@ -475,4 +449,37 @@ void tcp_rtt(struct tcp_sock *tsk)
     if (k < 200) k = 200;
 
     tsk->rto = tsk->srtt + k;
+}
+
+int tcp_calculate_sacks(struct tcp_sock *tsk)
+{
+    struct tcp_sack_block *sb = &tsk->sacks[tsk->sacklen];
+
+    sb->left = 0;
+    sb->right = 0;
+
+    struct sk_buff *next;
+    struct list_head *item, *tmp;
+
+    list_for_each_safe(item, tmp, &tsk->ofo_queue.head) {
+        next = list_entry(item, struct sk_buff, list);
+
+        if (sb->left == 0) {
+            sb->left = next->seq;
+            tsk->sacklen++;
+        }
+        
+        if (sb->right == 0) sb->right = next->end_seq;
+        else if (sb->right == next->seq) sb->right = next->end_seq;
+        else {
+            if (tsk->sacklen >= tsk->sacks_allowed) break;
+            
+            sb = &tsk->sacks[tsk->sacklen];
+            sb->left = next->seq;
+            sb->right = next->end_seq;
+            tsk->sacklen++;
+        }
+    }
+    
+    return 0;
 }

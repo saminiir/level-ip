@@ -6,31 +6,31 @@ repo="$(git rev-parse --show-toplevel)"
 folder="$(dirname $0)"
 
 function start_stack {
-    "$repo/lvl-ip" >/dev/null &
+    "$repo/lvl-ip" > ../lvl-ip-test.log 2>&1 &
     stackip="$!"
 
-    sleep 2
-
-    for i in {1..10}; do
+    for i in {1..3}; do
         ping -c1 -w1 10.0.0.5 >/dev/null || continue
 
         return 0
     done
 
+    echo "Stack did not start up correctly" >&2
+    cat ../lvl-ip-test.log
     return 1
 }
 
 function test_pass {
-    echo -e "\tTest pass: $1"
+    echo -e "\t$2 Test pass: $1"
 }
 
 function test_fail {
-    echo -e "\tTest fail: $1" 2>&1
+    echo -e "\t$2 Test fail: $1" 2>&1
     exit 1
 }
 
 function test_run {
-    eval "$1" || test_fail "$1"
+    eval "$1" || test_fail "$1" "$2"
 
-    test_pass "$1"
+    test_pass "$1" "$2"
 }

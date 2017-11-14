@@ -16,11 +16,11 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     struct rtentry *rt;
     struct iphdr *ihdr = ip_hdr(skb);
 
-    rt = route_lookup(ihdr->daddr);
+    rt = route_lookup(sk->daddr);
 
     if (!rt) {
-        // Raise error
         // TODO: dest_unreachable
+        print_err("IP output route lookup fail\n");
         return -1;
     }
 
@@ -34,8 +34,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->tos = 0;
     ihdr->len = skb->len;
     ihdr->id = ihdr->id;
-    ihdr->flags = 0;
-    ihdr->frag_offset = 0;
+    ihdr->frag_offset = 0x4000;
     ihdr->ttl = 64;
     ihdr->proto = skb->protocol;
     ihdr->saddr = skb->dev->addr;
@@ -49,6 +48,7 @@ int ip_output(struct sock *sk, struct sk_buff *skb)
     ihdr->daddr = htonl(ihdr->daddr);
     ihdr->saddr = htonl(ihdr->saddr);
     ihdr->csum = htons(ihdr->csum);
+    ihdr->frag_offset = htons(ihdr->frag_offset);
 
     ip_send_check(ihdr);
 

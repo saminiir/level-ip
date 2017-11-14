@@ -4,19 +4,8 @@ set -eu
 
 source "$(dirname $0)/../../utils/common"
 
-function setup {
-    start_stack
-}
-
-function teardown {
-    kill "$stackip"
-}
-
 function test_arp {
     arping -c3 -I tap0 10.0.0.4 >/dev/null
 }
 
-trap teardown EXIT ERR
-setup
-
-test_run "test_arp"
+test_run "test_arp" "$0"
