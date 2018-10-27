@@ -13,6 +13,21 @@ extern struct netdev *loop;
 extern char *tapaddr;
 extern char *taproute;
 
+static uint8_t route_mask_len(uint32_t mask)
+{
+    uint8_t bits_set = 0;
+
+    while (mask) {
+        if (mask & 1) {
+            bits_set++;
+        }
+
+        mask >>= 1;
+    }
+
+    return bits_set;
+}
+
 static struct rtentry *route_alloc(uint32_t dst, uint32_t gateway, uint32_t netmask,
                                    uint8_t flags, uint32_t metric, struct netdev *dev)
 {
@@ -47,14 +62,21 @@ struct rtentry *route_lookup(uint32_t daddr)
 {
     struct list_head *item;
     struct rtentry *rt = NULL;
+    struct rtentry *lpm_rt = NULL;
+    uint8_t         longest_match = 0;
 
     list_for_each(item, &routes) {
         rt = list_entry(item, struct rtentry, list);
-        if ((daddr & rt->netmask) == (rt->dst & rt->netmask)) break;
+        if ((daddr & rt->netmask) == (rt->dst & rt->netmask)) {
+            if (!lpm_rt || (route_mask_len(rt->netmask) > longest_match)) {
+                lpm_rt = rt;
+                longest_match = route_mask_len(rt->netmask);
+            }
+        }
         // If no matches, we default to to default gw (last item)
     }
     
-    return rt;
+    return lpm_rt;
 }
 
 void free_routes()
