@@ -6,6 +6,7 @@ static int tun_fd;
 static char* dev;
 
 char *tapaddr = "10.0.0.5";
+char *cidr = "10.0.0.5/24";
 char *taproute = "10.0.0.0/24";
 
 static int set_if_route(char *dev, char *cidr)
@@ -83,7 +84,7 @@ void tun_init()
         print_err("ERROR when setting route for if\n");
     }
 
-    if (set_if_address(dev, tapaddr) != 0) {
+    if (set_if_address(dev, cidr) != 0) {
         print_err("ERROR when setting addr for if\n");
     }
 }
