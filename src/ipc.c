@@ -476,47 +476,36 @@ void *start_ipc_listener()
     }
         
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        perror("IPC listener UNIX socket");
-        exit(EXIT_FAILURE);
+        exit_with_error(fd, "IPC listener UNIX socket");
     }
 
     memset(&un, 0, sizeof(struct sockaddr_un));
     un.sun_family = AF_UNIX;
     strncpy(un.sun_path, sockname, sizeof(un.sun_path) - 1);
 
-    rc = bind(fd, (const struct sockaddr *) &un, sizeof(struct sockaddr_un));
-  
-    if (rc == -1) {
-        perror("IPC bind");
-        exit(EXIT_FAILURE);
+    if ((rc = bind(fd, (const struct sockaddr *) &un, sizeof(struct sockaddr_un))) == -1) {
+        exit_with_error(rc, "IPC bind");
     }
 
-    rc = listen(fd, 20);
-
-    if (rc == -1) {
-        perror("IPC listen");
-        exit(EXIT_FAILURE);
+    if ((rc = listen(fd, 20)) == -1) {
+        exit_with_error(rc, "IPC listen");
     }
 
-    if (chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |
-              S_IRGRP | S_IWGRP | S_IXGRP |
-              S_IROTH | S_IWOTH | S_IXOTH) == -1) {
-        perror("Chmod on lvl-ip IPC UNIX socket failed");
-        exit(EXIT_FAILURE);
+    if ((rc = chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |
+                    S_IRGRP | S_IWGRP | S_IXGRP |
+                    S_IROTH | S_IWOTH | S_IXOTH)) == -1) {
+        exit_with_error(rc, "Chmod on lvl-ip IPC UNIX socket failed");
     }
 
     for (;;) {
-        datasock = accept(fd, NULL, NULL);
-        if (datasock == -1) {
-            perror("IPC accept");
-            exit(EXIT_FAILURE);
+        if ((datasock = accept(fd, NULL, NULL)) == -1) {
+            exit_with_error(datasock ,"IPC accept");
         }
 
         struct ipc_thread *th = ipc_alloc_thread(datasock);
 
-        if (pthread_create(&th->id, NULL, &socket_ipc_open, &th->sock) != 0) {
-            print_err("Error on socket thread creation\n");
-            exit(1);
+        if ((rc = pthread_create(&th->id, NULL, &socket_ipc_open, &th->sock)) != 0) {
+            exit_with_error(rc, "Error on socket thread creation");
         };
     }
 

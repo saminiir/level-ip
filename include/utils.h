@@ -9,6 +9,9 @@
 #define print_err(str, ...)                     \
     fprintf(stderr, str, ##__VA_ARGS__);
 
+#define exit_with_error(en, msg)                                        \
+    do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
 int run_cmd(char *cmd, ...);
 uint32_t sum_every_16bits(void *addr, int count);
 uint16_t checksum(void *addr, int count, int start_sum);
