@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "socket.h"
 #include "inet.h"
+#include "netlink.h"
 #include "wait.h"
 #include "timer.h"
 
@@ -10,9 +11,11 @@ static LIST_HEAD(sockets);
 static pthread_rwlock_t slock = PTHREAD_RWLOCK_INITIALIZER;
 
 extern struct net_family inet;
+extern struct net_family netlink;
 
 static struct net_family *families[128] = {
     [AF_INET] = &inet,
+    [AF_NETLINK] = &netlink,
 };
 
 static struct socket *alloc_socket(pid_t pid)

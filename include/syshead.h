@@ -13,6 +13,7 @@
 #include <arpa/inet.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
+#include <linux/netlink.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <signal.h>
