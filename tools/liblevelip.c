@@ -41,6 +41,8 @@ static int (*_getpeername)(int socket, struct sockaddr *restrict address,
                            socklen_t *restrict address_len) = NULL;
 static int (*_getsockname)(int socket, struct sockaddr *restrict address,
                            socklen_t *restrict address_len) = NULL;
+static ssize_t (*_sendmsg)(int socket, const struct msghdr *message, int flags) = NULL;
+static ssize_t (*_recvmsg)(int socket, struct msghdr *message, int flags) = NULL;
 
 static int lvlip_socks_count = 0;
 static LIST_HEAD(lvlip_socks);
@@ -360,6 +362,13 @@ ssize_t sendto(int fd, const void *buf, size_t len,
     return write(fd, buf, len);
 }
 
+ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
+{
+    if (!lvlip_get_sock(socket)) return _sendmsg(socket, message, flags);
+
+    return 0;
+}
+
 ssize_t recv(int fd, void *buf, size_t len, int flags)
 {
     return recvfrom(fd, buf, len, flags, NULL, 0);
@@ -373,6 +382,13 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
                                           flags, address, addrlen);
 
     return read(fd, buf, len);
+}
+
+ssize_t recvmsg(int socket, struct msghdr *message, int flags)
+{
+    if (!lvlip_get_sock(socket)) return _recvmsg(socket, message, flags);
+
+    return 0;
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
@@ -822,6 +838,8 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _getpeername = dlsym(RTLD_NEXT, "getpeername");
     _getsockname = dlsym(RTLD_NEXT, "getsockname");
     _bind = dlsym(RTLD_NEXT, "bind");
+    _sendmsg = dlsym(RTLD_NEXT, "sendmsg");
+    _recvmsg = dlsym(RTLD_NEXT, "recvmsg");
 
     list_init(&lvlip_socks);
 
