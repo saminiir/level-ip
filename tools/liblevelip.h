@@ -3,6 +3,7 @@
 
 #include <poll.h>
 #include <dlfcn.h>
+#include <linux/netlink.h>
 #include "list.h"
 #include "utils.h"
 

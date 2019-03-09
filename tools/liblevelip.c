@@ -59,13 +59,21 @@ static inline struct lvlip_sock *lvlip_get_sock(int fd) {
 
 static int is_socket_supported(int domain, int type, int protocol)
 {
-    if (domain != AF_INET) return 0;
+    int supported = 0;
 
-    if (!(type & SOCK_STREAM)) return 0;
+    switch (domain) {
+    case AF_INET:
+        if (type & SOCK_STREAM && 
+            protocol == IPPROTO_TCP) supported = 1;
+        break;
+    case AF_NETLINK:
+        if (protocol & NETLINK_SOCK_DIAG) supported = 1;
+        break;
+    default:
+        supported = 0;
+    }
 
-    if (protocol != 0 && protocol != IPPROTO_TCP) return 0;
-
-    return 1;
+    return supported;
 }
 
 static int init_socket(char *sockname)
