@@ -11,6 +11,7 @@ static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
                            char * * ubp_av, void (*init) (void), void (*fini) (void), \
                            void (*rtld_fini) (void), void (* stack_end));
 
+static int (*_bind)(int socket, const struct sockaddr *address, socklen_t address_len) = NULL;
 static int (*_fcntl)(int fildes, int cmd, ...) = NULL;
 static int (*_setsockopt)(int fd, int level, int optname,
                          const void *optval, socklen_t optlen) = NULL;
@@ -786,6 +787,18 @@ int fcntl(int fildes, int cmd, ...)
     return rc;
 }
 
+int bind(int socket, const struct sockaddr *address, socklen_t address_len)
+{
+    struct lvlip_sock *sock = lvlip_get_sock(socket);
+
+    if (sock == NULL) {
+        /* No lvl-ip IPC socket associated */
+        return _bind(socket, address, address_len);
+    }
+
+    return 0;
+}
+
 int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
                       char * * ubp_av, void (*init) (void), void (*fini) (void),
                       void (*rtld_fini) (void), void (* stack_end))
@@ -808,6 +821,7 @@ int __libc_start_main(int (*main) (int, char * *, char * *), int argc,
     _close = dlsym(RTLD_NEXT, "close");
     _getpeername = dlsym(RTLD_NEXT, "getpeername");
     _getsockname = dlsym(RTLD_NEXT, "getsockname");
+    _bind = dlsym(RTLD_NEXT, "bind");
 
     list_init(&lvlip_socks);
 
