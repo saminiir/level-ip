@@ -364,9 +364,39 @@ ssize_t sendto(int fd, const void *buf, size_t len,
 
 ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 {
-    if (!lvlip_get_sock(socket)) return _sendmsg(socket, message, flags);
+    struct lvlip_sock *sock = lvlip_get_sock(socket);
 
-    return 0;
+    if (sock == NULL) return _sendmsg(socket, message, flags);
+
+    lvl_sock_dbg("Sendmsg called", sock);
+
+	int len = 0;
+	len += message->msg_namelen;
+	len += message->msg_iovlen;
+	len += message->msg_controllen;
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_sendmsg) + len;
+    int pid = getpid();
+
+    struct ipc_msg *msg = alloca(msglen);
+    msg->type = IPC_SENDMSG;
+    msg->pid = pid;
+
+    struct ipc_sendmsg payload = {
+        .msg_namelen = message->msg_namelen,
+		.msg_iovlen = message->msg_iovlen,
+		.msg_controllen = message->msg_controllen,
+		.flags = flags,
+	};
+
+	printf("namelen %d, iovlen %d, controllen %d\n", payload.msg_namelen, payload.msg_iovlen, payload.msg_controllen);
+	printf("sizeof %lu\n", sizeof(struct msghdr));
+	printf("sizeof %lu\n", sizeof(struct iovec));
+
+	
+    memcpy(msg->data, &payload, sizeof(struct ipc_sendmsg));
+    //memcpy(((struct ipc_sendmsg *)msg->data)->buf, buf, len);
+
+    return transmit_lvlip(sock->lvlfd, msg, msglen);
 }
 
 ssize_t recv(int fd, void *buf, size_t len, int flags)

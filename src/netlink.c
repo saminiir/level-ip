@@ -25,6 +25,8 @@ static struct sock_ops netlink_stream_ops = {
     .abort = &netlink_abort,
     .getpeername = &netlink_getpeername,
     .getsockname = &netlink_getsockname,
+    .sendmsg = &netlink_sendmsg,
+    .recvmsg = &netlink_recvmsg,
 };
 
 static struct sock_type netlink_ops[] = {
@@ -216,6 +218,7 @@ int netlink_getpeername(struct socket *sock, struct sockaddr *restrict address,
     
     return 0;
 }
+
 int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
                      socklen_t *address_len)
 {
@@ -231,5 +234,31 @@ int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
     res->nl_family = AF_NETLINK;
     *address_len = sizeof(struct sockaddr_nl);
 
+    return 0;
+}
+
+int netlink_sendmsg(struct socket *sock, struct msghdr *message, int flags)
+{
+    struct sock *sk = sock->sk;
+
+    printf("netlink sendmsg called\n");
+
+    if (sk == NULL) {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
+{
+    struct sock *sk = sock->sk;
+
+    printf("netlink recvmsg called\n");
+
+    if (sk == NULL) {
+        return -1;
+    }
+    
     return 0;
 }

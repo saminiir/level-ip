@@ -469,3 +469,8 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
 
     return rc;
 }
+
+ssize_t _sendmsg(pid_t pid, int sockfd, const struct msghdr *msg, int flags)
+{
+    return 0;
+}

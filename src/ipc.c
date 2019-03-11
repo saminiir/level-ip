@@ -396,6 +396,17 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
+static int ipc_sendmsg(int sockfd, struct ipc_msg *msg)
+{
+    //struct ipc_sendmsg *payload = (struct ipc_sendmsg *) msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+        
+    //rc = _sendmsg(pid, payload->sockfd, buf, payload->len);
+
+    return ipc_write_rc(sockfd, pid, IPC_SENDMSG, rc);
+}
+
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
 {
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
@@ -403,31 +414,26 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     switch (msg->type) {
     case IPC_SOCKET:
         return ipc_socket(sockfd, msg);
-        break;
     case IPC_CONNECT:
         return ipc_connect(sockfd, msg);
-        break;
     case IPC_WRITE:
         return ipc_write(sockfd, msg);
-        break;
     case IPC_READ:
         return ipc_read(sockfd, msg);
-        break;
     case IPC_CLOSE:
         return ipc_close(sockfd, msg);
-        break;
     case IPC_POLL:
         return ipc_poll(sockfd, msg);
-        break;
     case IPC_FCNTL:
         return ipc_fcntl(sockfd, msg);
-        break;
     case IPC_GETSOCKOPT:
         return ipc_getsockopt(sockfd, msg);
     case IPC_GETPEERNAME:
         return ipc_getpeername(sockfd, msg);
     case IPC_GETSOCKNAME:
         return ipc_getsockname(sockfd, msg);
+    case IPC_SENDMSG:
+        return ipc_sendmsg(sockfd, msg);
     default:
         print_err("No such IPC type %d\n", msg->type);
         break;

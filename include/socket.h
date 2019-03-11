@@ -50,6 +50,8 @@ struct sock_ops {
                         socklen_t *restrict address_len);
     int (*getsockname) (struct socket *sock, struct sockaddr *restrict addr,
                         socklen_t *restrict address_len);
+    int (*sendmsg) (struct socket *sock, struct msghdr *message, int flags);
+    int (*recvmsg) (struct socket *sock, struct msghdr *message, int flags);
 };
 
 struct net_family {
