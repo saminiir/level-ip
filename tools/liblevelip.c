@@ -416,16 +416,12 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
         size_t iovlen = message->msg_iov[i].iov_len;
         struct ipc_iovec *v = (struct ipc_iovec *) ptr;
         v->iov_len = iovlen;
-        printf("iovlen test %lu\n", v->iov_len);
 
         memcpy(v->iov_base, message->msg_iov[i].iov_base, iovlen);
         ptr = v->iov_base + iovlen;
     }
 
-    int rc = transmit_lvlip(sock->lvlfd, msg, msglen);
-    printf("Rc %d\n", rc);
-
-    return rc;
+    return transmit_lvlip(sock->lvlfd, msg, msglen);
 }
 
 ssize_t recv(int fd, void *buf, size_t len, int flags)
@@ -445,9 +441,56 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 {
-    if (!lvlip_get_sock(socket)) return _recvmsg(socket, message, flags);
+    struct lvlip_sock *sock = lvlip_get_sock(socket);
 
-    return 0;
+    if (sock == NULL) return _recvmsg(socket, message, flags);
+
+    lvl_sock_dbg("Recvmsg called", sock);
+
+    int len = 0;
+    len += message->msg_namelen;
+    len += message->msg_controllen;
+
+    for (int i = 0; i < message->msg_iovlen; i++) {
+        len += sizeof(size_t);
+        len += message->msg_iov[i].iov_len;
+    }
+
+    int msglen = sizeof(struct ipc_msg) + sizeof(struct ipc_msghdr) + len;
+    int pid = getpid();
+
+    struct ipc_msg *msg = alloca(msglen);
+    memset(msg, 0, msglen);
+
+    msg->type = IPC_RECVMSG;
+    msg->pid = pid;
+
+    struct ipc_msghdr *payload = (struct ipc_msghdr *)msg->data;
+    payload->sockfd = socket;
+    payload->msg_namelen = message->msg_namelen;
+    payload->msg_iovlen = message->msg_iovlen;
+    payload->msg_controllen = message->msg_controllen;
+    payload->flags = flags;
+
+    uint8_t *ptr = payload->data;
+    memcpy(ptr, message->msg_name, payload->msg_namelen);
+    ptr += payload->msg_namelen;
+
+    memcpy(ptr, message->msg_control, payload->msg_controllen);
+    ptr += payload->msg_controllen;
+
+    for (int i = 0; i < payload->msg_iovlen; i++) {
+        size_t iovlen = message->msg_iov[i].iov_len;
+        struct ipc_iovec *v = (struct ipc_iovec *) ptr;
+        v->iov_len = iovlen;
+
+        memcpy(v->iov_base, message->msg_iov[i].iov_base, iovlen);
+        ptr = v->iov_base + iovlen;
+    }
+
+    int rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+
+    return rc;
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)

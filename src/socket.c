@@ -485,3 +485,19 @@ int _sendmsg(pid_t pid, int socket, const struct msghdr *msg, int flags)
 
     return rc;
 }
+
+int _recvmsg(pid_t pid, int socket, struct msghdr *msg, int flags)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Recvmsg: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    socket_rd_acquire(sock);
+    int rc = sock->ops->recvmsg(sock, msg, flags);
+    socket_release(sock);
+
+    return rc;
+}

@@ -433,19 +433,25 @@ static int ipc_sendmsg(int sockfd, struct ipc_msg *msg)
 
     init_msghdr(payload, &message, iov);
 
-    for (int i = 0; i < message.msg_iovlen; i++) {
-        printf("iov len lol %lu\n", iov[i].iov_len);
-    }
-
-    printf("Debug iovec len %d\n", (uint8_t)iov[0].iov_len);
-
-    printf("Debg msghdr iovlen %lu, namelen %d, controllen %lu\n", message.msg_iovlen, message.msg_namelen, message.msg_controllen);
-
     rc = _sendmsg(pid, payload->sockfd, &message, payload->flags);
 
-    printf("msghdr rc %d\n", rc);
-
     return ipc_write_rc(sockfd, pid, IPC_SENDMSG, rc);
+}
+
+static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
+{
+    struct ipc_msghdr *payload = (struct ipc_msghdr *) msg->data;
+    pid_t pid = msg->pid;
+    int rc = -1;
+
+    struct msghdr message;
+    struct iovec iov[payload->msg_iovlen];
+
+    init_msghdr(payload, &message, iov);
+
+    rc = _recvmsg(pid, payload->sockfd, &message, payload->flags);
+
+    return ipc_write_rc(sockfd, pid, IPC_RECVMSG, rc);
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
@@ -475,6 +481,8 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
             return ipc_getsockname(sockfd, msg);
         case IPC_SENDMSG:
             return ipc_sendmsg(sockfd, msg);
+        case IPC_RECVMSG:
+            return ipc_recvmsg(sockfd, msg);
         default:
             print_err("No such IPC type %d\n", msg->type);
             break;

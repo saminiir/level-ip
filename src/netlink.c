@@ -224,8 +224,6 @@ int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
 {
     struct sock *sk = sock->sk;
 
-    printf("netlink getsockname called\n");
-
     if (sk == NULL) {
         return -1;
     }
@@ -241,15 +239,12 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
 {
     struct sock *sk = sock->sk;
 
-    printf("netlink sendmsg called\n");
-
     if (sk == NULL) {
         return -1;
     }
 
     int rc = 0;
 
-    printf("iovlen %lu\n", message->msg_iovlen);
     for (int i = 0; i<message->msg_iovlen; i++) {
         rc += message->msg_iov[i].iov_len;
     }
@@ -261,11 +256,9 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 {
     struct sock *sk = sock->sk;
 
-    printf("netlink recvmsg called\n");
-
     if (sk == NULL) {
         return -1;
     }
 
-    return 0;
+    return 1282;
 }
