@@ -2,7 +2,7 @@ CPPFLAGS = -I ../include -Wall -Werror
 
 all: liblevelip
 
-debug: CFLAGS+= -DDEBUG_API
+debug: CFLAGS+= -g -DDEBUG_API
 debug: liblevelip
 
 liblevelip: liblevelip.c

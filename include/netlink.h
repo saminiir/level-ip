@@ -26,7 +26,7 @@ int netlink_getpeername(struct socket *sock, struct sockaddr *restrict address,
                      socklen_t *restrict address_len);
 int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
                      socklen_t *restrict address_len);
-int netlink_sendmsg(struct socket *sock, struct msghdr *message, int flags);
+int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags);
 int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags);
 
 struct sock *netlink_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport);

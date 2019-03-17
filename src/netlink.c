@@ -8,7 +8,7 @@
 extern struct net_ops tcp_ops;
 
 static int netlink_stream_connect(struct socket *sock, const struct sockaddr *addr,
-                               int addr_len, int flags);
+        int addr_len, int flags);
 
 static int netlink_OPS = 1;
 
@@ -59,9 +59,9 @@ int netlink_create(struct socket *sock, int protocol)
 
     sk = sk_alloc(skt->net_ops, protocol);
     sk->protocol = protocol;
-    
+
     sock_init_data(sock, sk);
-    
+
     return 0;
 }
 
@@ -71,17 +71,17 @@ int netlink_socket(struct socket *sock, int protocol)
 }
 
 int netlink_connect(struct socket *sock, struct sockaddr *addr,
-                 int addr_len, int flags)
+        int addr_len, int flags)
 {
     return 0;
 }
 
 static int netlink_stream_connect(struct socket *sock, const struct sockaddr *addr,
-                        int addr_len, int flags)
+        int addr_len, int flags)
 {
     struct sock *sk = sock->sk;
     int rc = 0;
-    
+
     if (addr_len < sizeof(addr->sa_family)) {
         return -EINVAL;
     }
@@ -92,52 +92,52 @@ static int netlink_stream_connect(struct socket *sock, const struct sockaddr *ad
     }
 
     switch (sock->state) {
-    default:
-        sk->err = -EINVAL;
-        goto out;
-    case SS_CONNECTED:
-        sk->err = -EISCONN;
-        goto out;
-    case SS_CONNECTING:
-        sk->err = -EALREADY;
-        goto out;
-    case SS_UNCONNECTED:
-        sk->err = -EISCONN;
-        if (sk->state != TCP_CLOSE) {
+        default:
+            sk->err = -EINVAL;
             goto out;
-        }
-
-        sk->ops->connect(sk, addr, addr_len, flags);
-        sock->state = SS_CONNECTING;
-        sk->err = -EINPROGRESS;
-
-        if (sock->flags & O_NONBLOCK) {
+        case SS_CONNECTED:
+            sk->err = -EISCONN;
             goto out;
-        }
+        case SS_CONNECTING:
+            sk->err = -EALREADY;
+            goto out;
+        case SS_UNCONNECTED:
+            sk->err = -EISCONN;
+            if (sk->state != TCP_CLOSE) {
+                goto out;
+            }
 
-        pthread_mutex_lock(&sock->sleep.lock);
-        while (sock->state == SS_CONNECTING && sk->err == -EINPROGRESS) {
-            socket_release(sock);
-            wait_sleep(&sock->sleep);
+            sk->ops->connect(sk, addr, addr_len, flags);
+            sock->state = SS_CONNECTING;
+            sk->err = -EINPROGRESS;
+
+            if (sock->flags & O_NONBLOCK) {
+                goto out;
+            }
+
+            pthread_mutex_lock(&sock->sleep.lock);
+            while (sock->state == SS_CONNECTING && sk->err == -EINPROGRESS) {
+                socket_release(sock);
+                wait_sleep(&sock->sleep);
+                socket_wr_acquire(sock);
+            }
+            pthread_mutex_unlock(&sock->sleep.lock);
             socket_wr_acquire(sock);
-        }
-        pthread_mutex_unlock(&sock->sleep.lock);
-        socket_wr_acquire(sock);
-        
-        switch (sk->err) {
-        case -ETIMEDOUT:
-        case -ECONNREFUSED:
-            goto sock_error;
-        }
 
-        if (sk->err != 0) {
-            goto out;
-        }
+            switch (sk->err) {
+                case -ETIMEDOUT:
+                case -ECONNREFUSED:
+                    goto sock_error;
+            }
 
-        sock->state = SS_CONNECTED;
-        break;
+            if (sk->err != 0) {
+                goto out;
+            }
+
+            sock->state = SS_CONNECTED;
+            break;
     }
-    
+
 out:
     return sk->err;
 sock_error:
@@ -163,7 +163,7 @@ struct sock *netlink_lookup(struct sk_buff *skb, uint16_t sport, uint16_t dport)
 {
     struct socket *sock = socket_lookup(sport, dport);
     if (sock == NULL) return NULL;
-    
+
     return sock->sk;
 }
 
@@ -183,14 +183,14 @@ int netlink_free(struct socket *sock)
     struct sock *sk = sock->sk;
     sock_free(sk);
     free(sock->sk);
-    
+
     return 0;
 }
 
 int netlink_abort(struct socket *sock)
 {
     struct sock *sk = sock->sk;
-    
+
     if (sk) {
         sk->ops->abort(sk);
     }
@@ -199,7 +199,7 @@ int netlink_abort(struct socket *sock)
 }
 
 int netlink_getpeername(struct socket *sock, struct sockaddr *restrict address,
-                     socklen_t *address_len)
+        socklen_t *address_len)
 {
     struct sock *sk = sock->sk;
 
@@ -214,13 +214,13 @@ int netlink_getpeername(struct socket *sock, struct sockaddr *restrict address,
     *address_len = sizeof(struct sockaddr_in);
 
     netlink_dbg(sock, "geetpeername sin_family %d sin_port %d sin_addr %d addrlen %d",
-             res->sin_family, ntohs(res->sin_port), ntohl(res->sin_addr.s_addr), *address_len);
-    
+            res->sin_family, ntohs(res->sin_port), ntohl(res->sin_addr.s_addr), *address_len);
+
     return 0;
 }
 
 int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
-                     socklen_t *address_len)
+        socklen_t *address_len)
 {
     struct sock *sk = sock->sk;
 
@@ -229,7 +229,7 @@ int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
     if (sk == NULL) {
         return -1;
     }
-    
+
     struct sockaddr_nl *res = (struct sockaddr_nl *) address;
     res->nl_family = AF_NETLINK;
     *address_len = sizeof(struct sockaddr_nl);
@@ -237,7 +237,7 @@ int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
     return 0;
 }
 
-int netlink_sendmsg(struct socket *sock, struct msghdr *message, int flags)
+int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags)
 {
     struct sock *sk = sock->sk;
 
@@ -246,8 +246,15 @@ int netlink_sendmsg(struct socket *sock, struct msghdr *message, int flags)
     if (sk == NULL) {
         return -1;
     }
-    
-    return 0;
+
+    int rc = 0;
+
+    printf("iovlen %lu\n", message->msg_iovlen);
+    for (int i = 0; i<message->msg_iovlen; i++) {
+        rc += message->msg_iov[i].iov_len;
+    }
+
+    return rc;
 }
 
 int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
@@ -259,6 +266,6 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
     if (sk == NULL) {
         return -1;
     }
-    
+
     return 0;
 }

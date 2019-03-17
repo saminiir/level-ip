@@ -470,7 +470,18 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
     return rc;
 }
 
-ssize_t _sendmsg(pid_t pid, int sockfd, const struct msghdr *msg, int flags)
+int _sendmsg(pid_t pid, int socket, const struct msghdr *msg, int flags)
 {
-    return 0;
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Sendmsg: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    socket_wr_acquire(sock);
+    int rc = sock->ops->sendmsg(sock, msg, flags);
+    socket_release(sock);
+
+    return rc;
 }

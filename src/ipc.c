@@ -29,7 +29,7 @@ static void ipc_free_thread(int sock)
 {
     struct list_head *item, *tmp = NULL;
     struct ipc_thread *th = NULL;
-    
+
     pthread_mutex_lock(&lock);
 
     list_for_each_safe(item, tmp, &sockets) {
@@ -77,7 +77,7 @@ static int ipc_write_rc(int sockfd, pid_t pid, uint16_t type, int rc)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
@@ -107,7 +107,7 @@ static int ipc_read(int sockfd, struct ipc_msg *msg)
         print_err("Could not allocate memory for IPC read response\n");
         return -1;
     }
-    
+
     response->type = IPC_READ;
     response->pid = pid;
 
@@ -133,7 +133,7 @@ static int ipc_write(int sockfd, struct ipc_msg *msg)
     int head = IPC_BUFLEN - sizeof(struct ipc_write) - sizeof(struct ipc_msg);
 
     char buf[payload->len];
-    
+
     memset(buf, 0, payload->len);
     memcpy(buf, payload->buf, payload->len > head ? head : payload->len);
 
@@ -149,7 +149,7 @@ static int ipc_write(int sockfd, struct ipc_msg *msg)
             print_err("Hmm, we did not read exact payload amount in IPC write\n");
         }
     }
-        
+
     rc = _write(pid, payload->sockfd, buf, payload->len);
 
     return ipc_write_rc(sockfd, pid, IPC_WRITE, rc);
@@ -226,7 +226,7 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     struct ipc_pollfd *polled = (struct ipc_pollfd *) ((struct ipc_err *)response->data)->data;
@@ -240,7 +240,7 @@ static int ipc_poll(int sockfd, struct ipc_msg *msg)
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC poll response");
     }
-        
+
     return 0;
 }
 
@@ -251,17 +251,17 @@ static int ipc_fcntl(int sockfd, struct ipc_msg *msg)
     int rc = -1;
 
     switch (fc->cmd) {
-    case F_GETFL:
-        rc = _fcntl(pid, fc->sockfd, fc->cmd);
-        break;
-    case F_SETFL:
-        rc = _fcntl(pid, fc->sockfd, fc->cmd, *(int *)fc->data);
-        break;
-    default:
-        print_err("IPC Fcntl cmd not supported %d\n", fc->cmd);
-        rc = -EINVAL;
+        case F_GETFL:
+            rc = _fcntl(pid, fc->sockfd, fc->cmd);
+            break;
+        case F_SETFL:
+            rc = _fcntl(pid, fc->sockfd, fc->cmd, *(int *)fc->data);
+            break;
+        default:
+            print_err("IPC Fcntl cmd not supported %d\n", fc->cmd);
+            rc = -EINVAL;
     }
-    
+
     return ipc_write_rc(sockfd, pid, IPC_FCNTL, rc);
 }
 
@@ -294,7 +294,7 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     struct ipc_sockopt *optres = (struct ipc_sockopt *) ((struct ipc_err *)response->data)->data;
@@ -332,7 +332,7 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
 
     struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
     rc = _getpeername(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
-    
+
     struct ipc_err err;
 
     if (rc < 0) {
@@ -342,11 +342,11 @@ static int ipc_getpeername(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     nameres->socket = name->socket;
-    
+
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getpeername response");
     }
@@ -374,7 +374,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
 
     struct ipc_sockname *nameres = (struct ipc_sockname *) ((struct ipc_err *)response->data)->data;
     rc = _getsockname(pid, name->socket, (struct sockaddr *)nameres->sa_data, &nameres->address_len);
-    
+
     struct ipc_err err;
 
     if (rc < 0) {
@@ -384,7 +384,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
         err.err = 0;
         err.rc = rc;
     }
-    
+
     memcpy(response->data, &err, sizeof(struct ipc_err));
 
     nameres->socket = name->socket;
@@ -396,13 +396,54 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
+int init_msghdr(struct ipc_msghdr *ipc, struct msghdr *message, struct iovec *iov)
+{
+    uint8_t *ptr = ipc->data;
+    message->msg_name = ptr;
+    message->msg_namelen = ipc->msg_namelen;
+    ptr += message->msg_namelen;
+
+    message->msg_control = ptr;
+    message->msg_controllen = ipc->msg_controllen;
+    ptr += message->msg_controllen;
+
+    message->msg_iovlen = ipc->msg_iovlen;
+
+    for (int i = 0; i < message->msg_iovlen; i++) {
+        struct ipc_iovec *v = (struct ipc_iovec *) ptr;
+        iov[i].iov_len = v->iov_len;
+        iov[i].iov_base = v->iov_base;
+        ptr = v->iov_base;
+        ptr += iov[i].iov_len;
+    }
+
+    message->msg_iov = iov;
+
+    return 0;
+}
+
 static int ipc_sendmsg(int sockfd, struct ipc_msg *msg)
 {
-    //struct ipc_sendmsg *payload = (struct ipc_sendmsg *) msg->data;
+    struct ipc_msghdr *payload = (struct ipc_msghdr *) msg->data;
     pid_t pid = msg->pid;
     int rc = -1;
-        
-    //rc = _sendmsg(pid, payload->sockfd, buf, payload->len);
+
+    struct msghdr message;
+    struct iovec iov[payload->msg_iovlen];
+
+    init_msghdr(payload, &message, iov);
+
+    for (int i = 0; i < message.msg_iovlen; i++) {
+        printf("iov len lol %lu\n", iov[i].iov_len);
+    }
+
+    printf("Debug iovec len %d\n", (uint8_t)iov[0].iov_len);
+
+    printf("Debg msghdr iovlen %lu, namelen %d, controllen %lu\n", message.msg_iovlen, message.msg_namelen, message.msg_controllen);
+
+    rc = _sendmsg(pid, payload->sockfd, &message, payload->flags);
+
+    printf("msghdr rc %d\n", rc);
 
     return ipc_write_rc(sockfd, pid, IPC_SENDMSG, rc);
 }
@@ -412,33 +453,33 @@ static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
     struct ipc_msg *msg = (struct ipc_msg *)cmdbuf;
 
     switch (msg->type) {
-    case IPC_SOCKET:
-        return ipc_socket(sockfd, msg);
-    case IPC_CONNECT:
-        return ipc_connect(sockfd, msg);
-    case IPC_WRITE:
-        return ipc_write(sockfd, msg);
-    case IPC_READ:
-        return ipc_read(sockfd, msg);
-    case IPC_CLOSE:
-        return ipc_close(sockfd, msg);
-    case IPC_POLL:
-        return ipc_poll(sockfd, msg);
-    case IPC_FCNTL:
-        return ipc_fcntl(sockfd, msg);
-    case IPC_GETSOCKOPT:
-        return ipc_getsockopt(sockfd, msg);
-    case IPC_GETPEERNAME:
-        return ipc_getpeername(sockfd, msg);
-    case IPC_GETSOCKNAME:
-        return ipc_getsockname(sockfd, msg);
-    case IPC_SENDMSG:
-        return ipc_sendmsg(sockfd, msg);
-    default:
-        print_err("No such IPC type %d\n", msg->type);
-        break;
+        case IPC_SOCKET:
+            return ipc_socket(sockfd, msg);
+        case IPC_CONNECT:
+            return ipc_connect(sockfd, msg);
+        case IPC_WRITE:
+            return ipc_write(sockfd, msg);
+        case IPC_READ:
+            return ipc_read(sockfd, msg);
+        case IPC_CLOSE:
+            return ipc_close(sockfd, msg);
+        case IPC_POLL:
+            return ipc_poll(sockfd, msg);
+        case IPC_FCNTL:
+            return ipc_fcntl(sockfd, msg);
+        case IPC_GETSOCKOPT:
+            return ipc_getsockopt(sockfd, msg);
+        case IPC_GETPEERNAME:
+            return ipc_getpeername(sockfd, msg);
+        case IPC_GETSOCKNAME:
+            return ipc_getsockname(sockfd, msg);
+        case IPC_SENDMSG:
+            return ipc_sendmsg(sockfd, msg);
+        default:
+            print_err("No such IPC type %d\n", msg->type);
+            break;
     };
-    
+
     return 0;
 }
 
@@ -463,7 +504,7 @@ void *socket_ipc_open(void *args) {
     if (rc == -1) {
         perror("socket ipc read");
     }
-    
+
     return NULL;
 }
 
@@ -474,13 +515,13 @@ void *start_ipc_listener()
     char *sockname = "/tmp/lvlip.socket";
 
     unlink(sockname);
-    
+
     if (strnlen(sockname, sizeof(un.sun_path)) == sizeof(un.sun_path)) {
         // Path is too long
         print_err("Path for UNIX socket is too long\n");
         exit(-1);
     }
-        
+
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
         exit_with_error(fd, "IPC listener UNIX socket");
     }
