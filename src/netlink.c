@@ -245,7 +245,18 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
 
     int rc = 0;
 
+    printf("sizeof nlmsghdr %lu\n", sizeof(struct nlmsghdr));
+
     for (int i = 0; i<message->msg_iovlen; i++) {
+        struct iovec *v = &message->msg_iov[i];
+        struct nlmsghdr *nl = v->iov_base;
+        struct sock_diag_req *sdr = v->iov_base + sizeof(struct nlmsghdr);
+
+        printf("nl len %d, nl type %d, nl flags %d\n", nl->nlmsg_len, nl->nlmsg_type, nl->nlmsg_flags);
+        printf("sdr family %d, proto %d\n", sdr->sdiag_family, sdr->sdiag_protocol);
+        
+        printf("type is sock_diag %d\n", nl->nlmsg_type == SOCK_DIAG_BY_FAMILY);
+        printf("type is sock_diag %d\n", 1 == 1);
         rc += message->msg_iov[i].iov_len;
     }
 
@@ -260,5 +271,26 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
         return -1;
     }
 
-    return 1282;
+    printf("peek %d, trunc %d\n", flags & MSG_PEEK, flags & MSG_TRUNC);
+
+    printf("sizeof %lu\n", sizeof(struct nlmsgerr));
+
+    printf("recv claled\n");
+
+    if (flags & (MSG_PEEK | MSG_TRUNC)) {
+        return 20;
+    }
+
+    struct iovec *v = message->msg_iov;
+
+    struct nlmsghdr *nl = v->iov_base;
+
+    nl->nlmsg_len = 20;
+    nl->nlmsg_type = NLMSG_DONE;
+    nl->nlmsg_flags = NLM_F_MULTI;
+    nl->nlmsg_seq = 123456;
+    nl->nlmsg_pid = 0;
+    v->iov_len = 20;
+
+    return 20;
 }

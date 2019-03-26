@@ -488,9 +488,65 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         ptr = v->iov_base + iovlen;
     }
 
-    int rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+    // Send mocked syscall to lvl-ip
+    if (_write(sock->lvlfd, (char *)msg, msglen) == -1) {
+        perror("Error on writing IPC recvmsg");
+    }
 
-    return rc;
+    int rlen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_msghdr);
+    char rbuf[rlen];
+    memset(rbuf, 0, rlen);
+
+    // Read return value from lvl-ip
+    if (_read(sock->lvlfd, rbuf, rlen) == -1) {
+        perror("Could not read IPC recvmsg response");
+    }
+
+    struct ipc_msg *response = (struct ipc_msg *) rbuf;
+
+    if (response->type != IPC_RECVMSG || response->pid != pid) {
+        print_err("ERR: IPC recvmsg response expected: type %d, pid %d\n"
+                "                          actual: type %d, pid %d\n",
+                IPC_RECVMSG, pid, response->type, response->pid);
+        return -1;
+    }
+
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    if (error->rc < 0) {
+        errno = error->err;
+        return error->rc;
+    }
+
+    int iovbuf_len = sizeof(struct ipc_iovec) + error->rc;
+    char iovbuf[iovbuf_len];
+    memset(iovbuf, 0, iovbuf_len);
+
+    if (_read(sock->lvlfd, iovbuf, iovbuf_len) == -1) {
+        perror("Could not read IPC recvmsg iov response");
+    }
+
+    struct ipc_msghdr *imh = (struct ipc_msghdr *)error->data;
+    message->msg_iovlen = imh->msg_iovlen;
+
+    uint8_t *iptr = (uint8_t *)iovbuf;
+    for (int i = 0; i < imh->msg_iovlen; i++) {
+        struct iovec *v = &message->msg_iov[i];
+        struct ipc_iovec *iv = (struct ipc_iovec *)iptr;
+        
+        v->iov_len = iv->iov_len;
+        memcpy(v->iov_base, iv->iov_base, iv->iov_len);
+
+        iptr += sizeof(struct ipc_iovec);
+        iptr += iv->iov_len;
+    }
+
+    if (message->msg_iov[0].iov_len > 0) {
+      struct nlmsghdr *nl = message->msg_iov[0].iov_base;
+
+      printf("%d\n", nl->nlmsg_type);
+    }
+
+    return error->rc;
 }
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)

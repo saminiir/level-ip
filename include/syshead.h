@@ -14,6 +14,8 @@
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <linux/netlink.h>
+#include <linux/sock_diag.h>
+#include <linux/inet_diag.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
 #include <signal.h>

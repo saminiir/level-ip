@@ -396,7 +396,7 @@ static int ipc_getsockname(int sockfd, struct ipc_msg *msg)
     return rc;
 }
 
-int init_msghdr(struct ipc_msghdr *ipc, struct msghdr *message, struct iovec *iov)
+int deserialize_msghdr(struct ipc_msghdr *ipc, struct msghdr *message, struct iovec *iov)
 {
     uint8_t *ptr = ipc->data;
     message->msg_name = ptr;
@@ -422,6 +422,28 @@ int init_msghdr(struct ipc_msghdr *ipc, struct msghdr *message, struct iovec *io
     return 0;
 }
 
+int serialize_msghdr(struct ipc_msghdr *imh, struct msghdr *hdr)
+{
+    imh->msg_namelen = hdr->msg_namelen;
+    imh->msg_iovlen = hdr->msg_iovlen;
+    imh->msg_controllen = hdr->msg_controllen;
+    imh->flags = hdr->msg_flags;
+
+    uint8_t *ptr = imh->data;
+    for (int i = 0; i < hdr->msg_iovlen; i++) {
+        struct ipc_iovec *v = (struct ipc_iovec *)ptr;
+        struct iovec *iov = &hdr->msg_iov[i];
+
+        v->iov_len = iov->iov_len;
+        memcpy(v->iov_base, iov->iov_base, iov->iov_len);
+
+        ptr += sizeof(struct ipc_iovec);
+        ptr += v->iov_len;
+    }
+
+    return 0;
+}
+
 static int ipc_sendmsg(int sockfd, struct ipc_msg *msg)
 {
     struct ipc_msghdr *payload = (struct ipc_msghdr *) msg->data;
@@ -431,7 +453,7 @@ static int ipc_sendmsg(int sockfd, struct ipc_msg *msg)
     struct msghdr message;
     struct iovec iov[payload->msg_iovlen];
 
-    init_msghdr(payload, &message, iov);
+    deserialize_msghdr(payload, &message, iov);
 
     rc = _sendmsg(pid, payload->sockfd, &message, payload->flags);
 
@@ -447,11 +469,39 @@ static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
     struct msghdr message;
     struct iovec iov[payload->msg_iovlen];
 
-    init_msghdr(payload, &message, iov);
+    deserialize_msghdr(payload, &message, iov);
 
     rc = _recvmsg(pid, payload->sockfd, &message, payload->flags);
 
-    return ipc_write_rc(sockfd, pid, IPC_RECVMSG, rc);
+    printf("ipc msg len is now %d\n", payload->msg_iovlen);
+
+    int iovlen = 0;
+
+    for (int i = 0; i < payload->msg_iovlen; i++) {
+        iovlen += iov[i].iov_len;
+        iovlen += sizeof(struct ipc_iovec);
+    }
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) +
+        sizeof(struct ipc_msghdr) + sizeof(struct ipc_iovec) + iovlen;
+    struct ipc_msg *response = alloca(resplen);
+    struct ipc_err *error = (struct ipc_err *) response->data;
+    struct ipc_msghdr *actual = (struct ipc_msghdr *) error->data;
+
+    serialize_msghdr(actual, &message);
+    actual->sockfd = sockfd;
+
+    response->type = IPC_RECVMSG;
+    response->pid = pid;
+
+    error->rc = rc < 0 ? -1 : rc;
+    error->err = rc < 0 ? -rc : 0;
+
+    if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
+        perror("Error on writing IPC recvmsg response");
+     }
+
+    return rc;
 }
 
 static int demux_ipc_socket_call(int sockfd, char *cmdbuf, int blen)
