@@ -421,7 +421,11 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
         ptr = v->iov_base + iovlen;
     }
 
-    return transmit_lvlip(sock->lvlfd, msg, msglen);
+    int rc = transmit_lvlip(sock->lvlfd, msg, msglen);
+
+    lvl_sock_dbg("Sendmsg returning rc %d", sock, rc);
+    
+    return rc;
 }
 
 ssize_t recv(int fd, void *buf, size_t len, int flags)
@@ -445,7 +449,8 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
 
     if (sock == NULL) return _recvmsg(socket, message, flags);
 
-    lvl_sock_dbg("Recvmsg called", sock);
+    lvl_sock_dbg("Recvmsg called with flags MSG_PEEK %d, MSG_TRUNC %d", sock,
+                 flags & MSG_PEEK, flags & MSG_TRUNC);
 
     int len = 0;
     len += message->msg_namelen;
@@ -549,11 +554,18 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         iptr += iv->iov_len;
     }
 
-    if (message->msg_iov[0].iov_len > 0) {
-      struct nlmsghdr *nl = message->msg_iov[0].iov_base;
+    struct nlmsghdr *nl = message->msg_iov[0].iov_base;
 
-      printf("%d\n", nl->nlmsg_type);
-    }
+    lvl_sock_dbg("Recvmsg nlmsghdr len %d, seq %d, pid %d, " \
+                 "NLMSG_ERROR %d, NLMSG_DONE %d, NL_F_MULTI %d",
+                 sock,
+                 nl->nlmsg_len,
+                 nl->nlmsg_seq,
+                 nl->nlmsg_pid,
+                 nl->nlmsg_type == NLMSG_ERROR,
+                 nl->nlmsg_type == NLMSG_DONE,
+                 nl->nlmsg_flags == NLM_F_MULTI);
+    lvl_sock_dbg("Recvmsg returning rc %d", sock, error->rc);
 
     return error->rc;
 }

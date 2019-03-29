@@ -274,6 +274,7 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
     struct iovec *v = message->msg_iov;
 
     struct nlmsghdr *nl = v->iov_base;
+    memset(nl, 0, sizeof(struct nlmsghdr));
 
     if (flags & (MSG_PEEK | MSG_TRUNC)) {
         nl->nlmsg_flags = MSG_TRUNC;
