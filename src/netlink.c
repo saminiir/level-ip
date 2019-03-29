@@ -271,19 +271,14 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
         return -1;
     }
 
-    printf("peek %d, trunc %d\n", flags & MSG_PEEK, flags & MSG_TRUNC);
-
-    printf("sizeof %lu\n", sizeof(struct nlmsgerr));
-
-    printf("recv claled\n");
-
-    if (flags & (MSG_PEEK | MSG_TRUNC)) {
-        return 20;
-    }
-
     struct iovec *v = message->msg_iov;
 
     struct nlmsghdr *nl = v->iov_base;
+
+    if (flags & (MSG_PEEK | MSG_TRUNC)) {
+        nl->nlmsg_flags = MSG_TRUNC;
+        return 20;
+    }
 
     nl->nlmsg_len = 20;
     nl->nlmsg_type = NLMSG_DONE;

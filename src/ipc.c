@@ -483,7 +483,7 @@ static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
     }
 
     int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) +
-        sizeof(struct ipc_msghdr) + sizeof(struct ipc_iovec) + iovlen;
+        sizeof(struct ipc_msghdr) + iovlen;
     struct ipc_msg *response = alloca(resplen);
     struct ipc_err *error = (struct ipc_err *) response->data;
     struct ipc_msghdr *actual = (struct ipc_msghdr *) error->data;

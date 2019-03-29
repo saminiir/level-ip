@@ -502,6 +502,8 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         perror("Could not read IPC recvmsg response");
     }
 
+    lvl_sock_dbg("Recvmsg reading %d bytes for header", sock, rlen);
+    
     struct ipc_msg *response = (struct ipc_msg *) rbuf;
 
     if (response->type != IPC_RECVMSG || response->pid != pid) {
@@ -517,16 +519,23 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         return error->rc;
     }
 
+    struct ipc_msghdr *imh = (struct ipc_msghdr *)error->data;
+    message->msg_iovlen = imh->msg_iovlen;
+
     int iovbuf_len = sizeof(struct ipc_iovec) + error->rc;
     char iovbuf[iovbuf_len];
     memset(iovbuf, 0, iovbuf_len);
+
+    lvl_sock_dbg("Recvmsg reading %d bytes for iov", sock, iovbuf_len);
 
     if (_read(sock->lvlfd, iovbuf, iovbuf_len) == -1) {
         perror("Could not read IPC recvmsg iov response");
     }
 
-    struct ipc_msghdr *imh = (struct ipc_msghdr *)error->data;
-    message->msg_iovlen = imh->msg_iovlen;
+    if (flags & MSG_TRUNC || flags & MSG_PEEK) {
+        lvl_sock_dbg("Recvmsg returning %d bytes because of trunc or peek", sock, error->rc);
+        return error->rc;
+    }
 
     uint8_t *iptr = (uint8_t *)iovbuf;
     for (int i = 0; i < imh->msg_iovlen; i++) {
