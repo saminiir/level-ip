@@ -87,3 +87,28 @@ Try browsing the Web, with Level-IP doing the packet transfer:
     [saminiir@localhost tools]$ ./level-ip firefox google.com
 
 That's it!
+
+
+# Troubleshooting
+
+Common errors:
+
+## Tun module not loaded/available
+
+`tun` is required to be loaded:
+
+```
+$ lsmod | grep tun
+tun                    57344  2
+```
+
+Try loading it
+```
+$ modprobe tun
+```
+
+Otherwise, consult your distro's documentation on setting it up.
+
+## Missing capabilities for Level-IP
+
+`lvl-ip` requires the `CAP_NET_ADMIN` capability to bind to the tap device.
