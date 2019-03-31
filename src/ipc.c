@@ -161,7 +161,12 @@ static int ipc_connect(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _connect(pid, payload->sockfd, &payload->addr, payload->addrlen);
+    struct sockaddr addr;
+
+    addr.sa_family = payload->addr.sa_family;
+    memcpy(addr.sa_data, payload->addr.sa_data, sizeof(addr.sa_data));
+
+    rc = _connect(pid, payload->sockfd, &addr, payload->addrlen);
 
     return ipc_write_rc(sockfd, pid, IPC_CONNECT, rc);
 }
@@ -272,9 +277,11 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
     pid_t pid = msg->pid;
     int rc = -1;
 
-    rc = _getsockopt(pid, opts->fd, opts->level, opts->optname, opts->optval, &opts->optlen);
+    socklen_t optlen;
 
-    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockopt) + opts->optlen;
+    rc = _getsockopt(pid, opts->fd, opts->level, opts->optname, opts->optval, &optlen);
+
+    int resplen = sizeof(struct ipc_msg) + sizeof(struct ipc_err) + sizeof(struct ipc_sockopt) + optlen;
     struct ipc_msg *response = alloca(resplen);
 
     if (response == NULL) {
@@ -302,8 +309,8 @@ static int ipc_getsockopt(int sockfd, struct ipc_msg *msg)
     optres->fd = opts->fd;
     optres->level = opts->level;
     optres->optname = opts->optname;
-    optres->optlen = opts->optlen;
-    memcpy(&optres->optval, opts->optval, opts->optlen);
+    optres->optlen = optlen;
+    memcpy(&optres->optval, opts->optval, optlen);
 
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC getsockopt response");
@@ -496,6 +503,8 @@ static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
 
     error->rc = rc < 0 ? -1 : rc;
     error->err = rc < 0 ? -rc : 0;
+
+    printf("IPC recvmsg sending %d bytes\n", resplen);
 
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC recvmsg response");
