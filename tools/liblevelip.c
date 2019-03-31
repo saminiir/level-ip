@@ -423,6 +423,9 @@ ssize_t sendmsg(int socket, const struct msghdr *message, int flags)
 
     int rc = transmit_lvlip(sock->lvlfd, msg, msglen);
 
+    struct sockaddr_nl *snl = message->msg_name;
+    snl->nl_pid = 0;
+
     lvl_sock_dbg("Sendmsg returning rc %d", sock, rc);
     
     return rc;
@@ -554,17 +557,12 @@ ssize_t recvmsg(int socket, struct msghdr *message, int flags)
         iptr += iv->iov_len;
     }
 
-    struct nlmsghdr *nl = message->msg_iov[0].iov_base;
+    struct sockaddr_nl *snl = message->msg_name;
+    snl->nl_family = AF_NETLINK;
+    snl->nl_pad = 0;
+    snl->nl_pid = 0;
+    snl->nl_groups = 0;
 
-    lvl_sock_dbg("Recvmsg nlmsghdr len %d, seq %d, pid %d, " \
-                 "NLMSG_ERROR %d, NLMSG_DONE %d, NL_F_MULTI %d",
-                 sock,
-                 nl->nlmsg_len,
-                 nl->nlmsg_seq,
-                 nl->nlmsg_pid,
-                 nl->nlmsg_type == NLMSG_ERROR,
-                 nl->nlmsg_type == NLMSG_DONE,
-                 nl->nlmsg_flags == NLM_F_MULTI);
     lvl_sock_dbg("Recvmsg returning rc %d", sock, error->rc);
 
     return error->rc;

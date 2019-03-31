@@ -230,6 +230,7 @@ int netlink_getsockname(struct socket *sock, struct sockaddr *restrict address,
 
     struct sockaddr_nl *res = (struct sockaddr_nl *) address;
     res->nl_family = AF_NETLINK;
+    res->nl_pid = 0;
     *address_len = sizeof(struct sockaddr_nl);
 
     return 0;
@@ -245,14 +246,13 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
 
     int rc = 0;
 
-    printf("sizeof nlmsghdr %lu\n", sizeof(struct nlmsghdr));
-
     for (int i = 0; i<message->msg_iovlen; i++) {
         struct iovec *v = &message->msg_iov[i];
         struct nlmsghdr *nl = v->iov_base;
         struct sock_diag_req *sdr = v->iov_base + sizeof(struct nlmsghdr);
 
         printf("nl len %d, nl type %d, nl flags %d\n", nl->nlmsg_len, nl->nlmsg_type, nl->nlmsg_flags);
+        printf("nl pid %d, nl seq %d\n", nl->nlmsg_pid, nl->nlmsg_seq);
         printf("sdr family %d, proto %d\n", sdr->sdiag_family, sdr->sdiag_protocol);
         
         printf("type is sock_diag %d\n", nl->nlmsg_type == SOCK_DIAG_BY_FAMILY);
@@ -271,6 +271,8 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
         return -1;
     }
 
+    struct sockaddr_nl *snl = message->msg_name;
+    memset(snl, 0, sizeof(struct sockaddr_nl));
     struct iovec *v = message->msg_iov;
 
     struct nlmsghdr *nl = v->iov_base;
@@ -287,6 +289,8 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
     nl->nlmsg_seq = 123456;
     nl->nlmsg_pid = 0;
     v->iov_len = 20;
+
+    printf("Returning nlmsghdr: nlmsg_type DONE %d, flags MULTI %d\n", nl->nlmsg_type & NLMSG_DONE, nl->nlmsg_flags & NLM_F_MULTI);
 
     return 20;
 }
