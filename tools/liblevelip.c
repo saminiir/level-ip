@@ -67,7 +67,7 @@ static int is_socket_supported(int domain, int type, int protocol)
     switch (domain) {
         case AF_INET:
             if (type & SOCK_STREAM && 
-                    protocol == IPPROTO_TCP) supported = 1;
+                (protocol == IPPROTO_TCP || protocol == 0)) supported = 1;
             break;
         case AF_NETLINK:
             if (protocol & NETLINK_SOCK_DIAG) supported = 1;
