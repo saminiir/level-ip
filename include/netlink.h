@@ -14,6 +14,13 @@
 #define netlink_dbg(msg, th, ...)
 #endif
 
+struct nl_message {
+    struct list_head list;
+    struct socket *sock;
+    struct nlmsghdr nl;
+    uint8_t data[];
+};
+
 int netlink_create(struct socket *sock, int protocol);
 int netlink_socket(struct socket *sock, int protocol);
 int netlink_connect(struct socket *sock, struct sockaddr *addr, int addr_len, int flags);

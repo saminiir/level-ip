@@ -7,10 +7,15 @@
 
 extern struct net_ops tcp_ops;
 
+static int message_amount = 0;
+static LIST_HEAD(messages);
+static pthread_rwlock_t mlock = PTHREAD_RWLOCK_INITIALIZER;
+
 static int netlink_stream_connect(struct socket *sock, const struct sockaddr *addr,
         int addr_len, int flags);
 
 static int netlink_OPS = 1;
+
 
 struct net_family netlink = {
     .create = netlink_create,
@@ -37,6 +42,18 @@ static struct sock_type netlink_ops[] = {
         .protocol = IPPROTO_TCP,
     }
 };
+
+struct nl_message *alloc_message(struct socket *sock, const struct nlmsghdr *nl, void *payload, int flags)
+{
+    struct nl_message *nlmsg = malloc(sizeof (struct nl_message) + nl->nlmsg_len);
+    list_init(&nlmsg->list);
+
+    nlmsg->sock = sock;
+    memcpy(&nlmsg->nl, nl, sizeof(struct nlmsghdr));
+    memcpy(nlmsg->data, payload, nl->nlmsg_len);
+    
+    return nlmsg;
+}
 
 int netlink_create(struct socket *sock, int protocol)
 {
@@ -245,11 +262,19 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
     }
 
     int rc = 0;
+    struct nl_message *nlmsg;
 
     for (int i = 0; i<message->msg_iovlen; i++) {
         struct iovec *v = &message->msg_iov[i];
         struct nlmsghdr *nl = v->iov_base;
         struct sock_diag_req *sdr = v->iov_base + sizeof(struct nlmsghdr);
+
+        nlmsg = alloc_message(sock, nl, (void *)sdr, 0);
+
+        pthread_rwlock_wrlock(&mlock);
+        list_add_tail(&nlmsg->list, &messages);
+        message_amount++;
+        pthread_rwlock_unlock(&mlock);
 
         printf("nl len %d, nl type %d, nl flags %d\n", nl->nlmsg_len, nl->nlmsg_type, nl->nlmsg_flags);
         printf("nl pid %d, nl seq %d\n", nl->nlmsg_pid, nl->nlmsg_seq);
@@ -257,7 +282,7 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
         
         printf("type is sock_diag %d\n", nl->nlmsg_type == SOCK_DIAG_BY_FAMILY);
         printf("type is sock_diag %d\n", 1 == 1);
-        rc += message->msg_iov[i].iov_len;
+        rc += nl->nlmsg_len;
     }
 
     return rc;
