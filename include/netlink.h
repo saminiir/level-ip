@@ -16,7 +16,7 @@
 
 struct nl_message {
     struct list_head list;
-    struct socket *sock;
+    int fd;
     struct nlmsghdr nl;
     uint8_t data[];
 };

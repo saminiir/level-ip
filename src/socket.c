@@ -44,7 +44,7 @@ static struct socket *alloc_socket(pid_t pid)
 
 int socket_rd_acquire(struct socket *sock)
 {
-    int rc = pthread_rwlock_wrlock(&sock->lock);
+    int rc = pthread_rwlock_rdlock(&sock->lock);
     sock->refcnt++;
     return rc;
 }

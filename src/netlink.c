@@ -45,12 +45,13 @@ static struct sock_type netlink_ops[] = {
 
 struct nl_message *alloc_message(struct socket *sock, const struct nlmsghdr *nl, void *payload, int flags)
 {
-    struct nl_message *nlmsg = malloc(sizeof (struct nl_message) + nl->nlmsg_len);
+    int payload_size = nl->nlmsg_len - sizeof(struct nlmsghdr);
+    struct nl_message *nlmsg = malloc(sizeof (struct nl_message) + payload_size);
     list_init(&nlmsg->list);
 
-    nlmsg->sock = sock;
+    nlmsg->fd = sock->fd;
     memcpy(&nlmsg->nl, nl, sizeof(struct nlmsghdr));
-    memcpy(nlmsg->data, payload, nl->nlmsg_len);
+    memcpy(nlmsg->data, payload, payload_size);
     
     return nlmsg;
 }
@@ -264,6 +265,8 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
     int rc = 0;
     struct nl_message *nlmsg;
 
+    printf("Netlink message amount %d\n", message_amount);
+
     for (int i = 0; i<message->msg_iovlen; i++) {
         struct iovec *v = &message->msg_iov[i];
         struct nlmsghdr *nl = v->iov_base;
@@ -288,6 +291,25 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
     return rc;
 }
 
+struct nl_message *find_netlink_request(int sockfd)
+{
+    struct list_head *item;
+    struct nl_message *entry;
+    struct nl_message *nlm = NULL;
+    
+    pthread_rwlock_wrlock(&mlock);
+    list_for_each(item, &messages) {
+        entry = list_entry(item, struct nl_message, list);
+
+        if (entry->fd == sockfd) {
+            nlm = entry;
+        }
+    }
+    pthread_rwlock_unlock(&mlock);
+
+    return nlm;
+}
+
 int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 {
     struct sock *sk = sock->sk;
@@ -302,6 +324,12 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 
     struct nlmsghdr *nl = v->iov_base;
     memset(nl, 0, sizeof(struct nlmsghdr));
+
+    struct nl_message *nlm = find_netlink_request(sock->fd);
+
+    if (nlm == NULL) {
+        return -EBADF;
+    }
 
     if (flags & (MSG_PEEK | MSG_TRUNC)) {
         nl->nlmsg_flags = MSG_TRUNC;
