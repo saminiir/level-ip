@@ -49,7 +49,7 @@ struct nl_message *alloc_message(struct socket *sock, const struct nlmsghdr *nl,
     struct nl_message *nlmsg = malloc(sizeof (struct nl_message) + payload_size);
     list_init(&nlmsg->list);
 
-    nlmsg->fd = sock->fd;
+    nlmsg->sock = sock;
     memcpy(&nlmsg->nl, nl, sizeof(struct nlmsghdr));
     memcpy(nlmsg->data, payload, payload_size);
     
@@ -301,13 +301,18 @@ struct nl_message *find_netlink_request(int sockfd)
     list_for_each(item, &messages) {
         entry = list_entry(item, struct nl_message, list);
 
-        if (entry->fd == sockfd) {
+        if (entry->sock->fd == sockfd) {
             nlm = entry;
         }
     }
     pthread_rwlock_unlock(&mlock);
 
     return nlm;
+}
+
+int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *nlm)
+{
+    return 20;
 }
 
 int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
@@ -327,13 +332,15 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 
     struct nl_message *nlm = find_netlink_request(sock->fd);
 
+    int rc = demux_netlink_request(nl, nlm);
+
     if (nlm == NULL) {
         return -EBADF;
     }
 
     if (flags & (MSG_PEEK | MSG_TRUNC)) {
         nl->nlmsg_flags = MSG_TRUNC;
-        return 20;
+        return rc;
     }
 
     nl->nlmsg_len = 20;
