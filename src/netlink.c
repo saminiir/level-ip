@@ -310,9 +310,54 @@ struct nl_message *find_netlink_request(int sockfd)
     return nlm;
 }
 
-int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *nlm)
+int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
 {
     return 20;
+}
+
+int process_netlink_request_not_supported(struct nlmsghdr *nl, struct nl_message *req)
+{
+    return 20;
+}
+
+int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *req, int flags)
+{
+    int rc = -1;
+
+    struct sock_diag_req *sdr = (struct sock_diag_req *)req->data;
+
+    switch (sdr->sdiag_family) {
+    case AF_INET:
+        switch (sdr->sdiag_protocol) {
+        case IPPROTO_TCP:
+            rc = process_netlink_request_tcp(nl, req);
+            break;
+        default:
+            rc = process_netlink_request_not_supported(nl, req);
+            break;
+        }
+        break;
+    default:
+        rc = process_netlink_request_not_supported(nl, req);
+        break;
+    }
+    
+    if (flags & (MSG_PEEK | MSG_TRUNC)) {
+        // Empty out msg_iov contents
+        nl->nlmsg_flags = MSG_TRUNC;
+        return rc;
+    }
+
+    // Remove nl_message from list
+    nl->nlmsg_len = 20;
+    nl->nlmsg_type = NLMSG_DONE;
+    nl->nlmsg_flags = NLM_F_MULTI;
+    nl->nlmsg_seq = 123456;
+    nl->nlmsg_pid = 0;
+
+    printf("Returning nlmsghdr: nlmsg_type DONE %d, flags MULTI %d\n", nl->nlmsg_type & NLMSG_DONE, nl->nlmsg_flags & NLM_F_MULTI);
+    
+    return rc;
 }
 
 int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
@@ -332,25 +377,13 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 
     struct nl_message *nlm = find_netlink_request(sock->fd);
 
-    int rc = demux_netlink_request(nl, nlm);
-
     if (nlm == NULL) {
         return -EBADF;
     }
 
-    if (flags & (MSG_PEEK | MSG_TRUNC)) {
-        nl->nlmsg_flags = MSG_TRUNC;
-        return rc;
-    }
+    int rc = demux_netlink_request(nl, nlm, flags);
 
-    nl->nlmsg_len = 20;
-    nl->nlmsg_type = NLMSG_DONE;
-    nl->nlmsg_flags = NLM_F_MULTI;
-    nl->nlmsg_seq = 123456;
-    nl->nlmsg_pid = 0;
-    v->iov_len = 20;
+    v->iov_len = rc;
 
-    printf("Returning nlmsghdr: nlmsg_type DONE %d, flags MULTI %d\n", nl->nlmsg_type & NLMSG_DONE, nl->nlmsg_flags & NLM_F_MULTI);
-
-    return 20;
+    return rc;
 }
