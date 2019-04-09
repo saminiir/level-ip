@@ -35,7 +35,7 @@ static int tun_alloc(char *dev)
     if( (fd = open("/dev/net/tap", O_RDWR)) < 0 ) {
         perror("Cannot open TUN/TAP dev\n"
                     "Make sure one exists with " 
-                    "'$ mknod /dev/net/tap c 10 200'");
+                    "'mknod /dev/net/tap c 10 200'");
         exit(1);
     }
 

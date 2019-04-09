@@ -310,9 +310,46 @@ struct nl_message *find_netlink_request(int sockfd)
     return nlm;
 }
 
+int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
+{
+    struct inet_diag_msg *idm = (struct inet_diag_msg *) ptr;
+
+    idm->idiag_family = AF_INET;
+    idm->idiag_state = TCP_ESTABLISHED;
+    idm->idiag_timer = 0;
+    idm->idiag_retrans = 0;
+    idm->idiag_expires = 0;
+    idm->idiag_rqueue = 0;
+    idm->idiag_wqueue = 0;
+    idm->idiag_uid = 0;
+    idm->idiag_inode = 0;
+    
+    return sizeof(struct inet_diag_msg);
+}
+
 int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
 {
-    return 20;
+
+    struct inet_diag_msg *idm = (struct inet_diag_msg *)(nl + sizeof(struct nlmsghdr));
+    //struct sock_diag_req *sdr = (struct sock_diag_req *)(req->data);
+    idm->idiag_family = AF_INET;
+
+    struct inet_diag_msg *tmp = NULL;
+
+    int rc = filter_sockets(AF_INET, IPPROTO_TCP, (uint8_t **)&tmp, convert_socket_to_inet_tcp_diag_msg, sizeof(struct inet_diag_msg));
+
+    if (rc < 0) {
+        perror("Failed on netlink TCP processing");
+        return -1;
+    }
+
+    printf("Pointer memory location %p\n", tmp);
+
+    for (int i = 0; i < rc; i++) {
+        printf("received inet_diag_msg %d\n", tmp[i].idiag_family);
+    }
+
+    return rc;
 }
 
 int process_netlink_request_not_supported(struct nlmsghdr *nl, struct nl_message *req)

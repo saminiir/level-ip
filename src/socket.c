@@ -44,7 +44,7 @@ static struct socket *alloc_socket(pid_t pid)
 
 int socket_rd_acquire(struct socket *sock)
 {
-    int rc = pthread_rwlock_rdlock(&sock->lock);
+    int rc = pthread_rwlock_wrlock(&sock->lock);
     sock->refcnt++;
     return rc;
 }
@@ -184,6 +184,52 @@ out:
     return sock;
 }
 
+int filter_sockets(int family, int proto, uint8_t **store,
+                   int (*f)(struct socket *s, uint8_t *ptr), int size)
+{
+    struct list_head *item;
+    struct socket *sock = NULL;
+
+    int rc = 0;
+    int allocated = 0;
+    int amount = 0;
+
+    // Socket mutex should already be locked upstairs
+    
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+
+        if (sock->family == family && sock->sk->protocol == proto) {
+            allocated += size;
+
+            *store = realloc(*store, allocated);
+            if (*store == NULL) {
+                perror("Failed on allocating socket filter store memory");
+                goto error;
+            }
+            
+            rc = f(sock, *store);
+
+            if (rc < 0) {
+                perror("Failed on socket filtering");
+                goto error;
+            }
+
+            amount++;
+            store += rc;
+        }
+    }
+
+    printf("Iterated through sockets %d\n", amount);
+
+    printf("Store pointer location %p\n", *store);
+
+    return amount;
+
+error:
+    return -1;
+}
+
 #ifdef DEBUG_SOCKET
 void socket_debug()
 {
@@ -219,6 +265,7 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     }
 
     sock->type = type;
+    sock->family = domain;
 
     family = families[domain];
 
@@ -495,9 +542,11 @@ int _recvmsg(pid_t pid, int socket, struct msghdr *msg, int flags)
         return -EBADF;
     }
 
+    pthread_rwlock_rdlock(&slock);
     socket_rd_acquire(sock);
     int rc = sock->ops->recvmsg(sock, msg, flags);
     socket_release(sock);
-
+    pthread_rwlock_unlock(&slock);
+    
     return rc;
 }

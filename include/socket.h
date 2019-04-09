@@ -64,6 +64,7 @@ struct socket {
     pid_t pid;
     int refcnt;
     enum socket_state state;
+    int family;
     short type;
     int flags;
     struct sock *sk;
@@ -90,6 +91,8 @@ int _recvmsg (pid_t pid, int socket, struct msghdr *message, int flags);
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 struct socket *socket_find(struct socket *sock);
+int filter_sockets(int family, int proto, uint8_t **store,
+                   int (*f)(struct socket *s, uint8_t *ptr), int size);
 int socket_rd_acquire(struct socket *sock);
 int socket_wr_acquire(struct socket *sock);
 int socket_release(struct socket *sock);
