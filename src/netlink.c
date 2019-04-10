@@ -345,11 +345,35 @@ int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
 
     printf("Pointer memory location %p\n", tmp);
 
+    struct
+    {
+        struct nlmsghdr nlh;
+        struct inet_diag_msg idm;
+        struct nlattr nla;
+        uint8_t flag;
+    } resp[rc];
+
+    int size = 0;
+
     for (int i = 0; i < rc; i++) {
-        printf("received inet_diag_msg %d\n", tmp[i].idiag_family);
+        resp->nlh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
+        resp->nlh.nlmsg_flags = NLM_F_MULTI;
+        resp->nlh.nlmsg_seq = 123456;
+        resp->nlh.nlmsg_pid = 0;
+        resp->nla.nla_len = 5;
+        resp->nla.nla_type = INET_DIAG_SHUTDOWN;
+        resp->flag = 0;
+
+        memcpy(&resp->idm, (tmp + i), sizeof(struct inet_diag_msg));
+
+        size += sizeof(resp);
     }
 
-    return rc;
+    if (tmp != NULL) {
+        free(tmp);
+    }
+
+    return size;
 }
 
 int process_netlink_request_not_supported(struct nlmsghdr *nl, struct nl_message *req)

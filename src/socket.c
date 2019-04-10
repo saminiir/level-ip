@@ -208,7 +208,7 @@ int filter_sockets(int family, int proto, uint8_t **store,
                 goto error;
             }
             
-            rc = f(sock, *store);
+            rc = f(sock, (*store + (rc * amount)));
 
             if (rc < 0) {
                 perror("Failed on socket filtering");
@@ -216,7 +216,6 @@ int filter_sockets(int family, int proto, uint8_t **store,
             }
 
             amount++;
-            store += rc;
         }
     }
 
