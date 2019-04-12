@@ -348,6 +348,7 @@ int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
     idm->idiag_inode = 0;
     idm->id.idiag_sport = htons(1337);
     idm->id.idiag_dport = htons(1337);
+    idm->id.idiag_if = 0;
     
     return sizeof(struct inet_diag_msg);
 }
