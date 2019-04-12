@@ -56,6 +56,27 @@ struct nl_message *alloc_message(struct socket *sock, const struct nlmsghdr *nl,
     return nlmsg;
 }
 
+int message_free(struct nl_message *nlm)
+{
+    int rc = pthread_rwlock_wrlock(&mlock);
+
+    if (rc != 0) {
+        perror("Could not acquire message lock");
+        return rc;
+    }
+    
+    list_del(&nlm->list);
+    message_amount--;
+    
+    rc = pthread_rwlock_unlock(&mlock);
+    if (rc != 0) {
+        perror("Could not release message lock");
+        return rc;
+    }
+
+    return rc;
+}
+
 int netlink_create(struct socket *sock, int protocol)
 {
     struct sock *sk;
@@ -314,6 +335,8 @@ int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
 {
     struct inet_diag_msg *idm = (struct inet_diag_msg *) ptr;
 
+    memset(ptr, 0, sizeof(struct inet_diag_msg));
+
     idm->idiag_family = AF_INET;
     idm->idiag_state = TCP_ESTABLISHED;
     idm->idiag_timer = 0;
@@ -323,16 +346,14 @@ int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
     idm->idiag_wqueue = 0;
     idm->idiag_uid = 0;
     idm->idiag_inode = 0;
+    idm->id.idiag_sport = htons(1337);
+    idm->id.idiag_dport = htons(1337);
     
     return sizeof(struct inet_diag_msg);
 }
 
 int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
 {
-
-    struct inet_diag_msg *idm = (struct inet_diag_msg *)(nl + sizeof(struct nlmsghdr));
-    //struct sock_diag_req *sdr = (struct sock_diag_req *)(req->data);
-    idm->idiag_family = AF_INET;
 
     struct inet_diag_msg *tmp = NULL;
 
@@ -343,20 +364,19 @@ int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
         return -1;
     }
 
-    printf("Pointer memory location %p\n", tmp);
-
     struct
     {
         struct nlmsghdr nlh;
         struct inet_diag_msg idm;
         struct nlattr nla;
-        uint8_t flag;
+        uint32_t flag;
     } resp[rc];
 
-    int size = 0;
+    size_t size = sizeof(struct nlmsghdr) + sizeof(struct inet_diag_msg) + sizeof(struct nlattr) + sizeof(uint32_t);
 
     for (int i = 0; i < rc; i++) {
         resp->nlh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
+        resp->nlh.nlmsg_len = size;
         resp->nlh.nlmsg_flags = NLM_F_MULTI;
         resp->nlh.nlmsg_seq = 123456;
         resp->nlh.nlmsg_pid = 0;
@@ -365,15 +385,15 @@ int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
         resp->flag = 0;
 
         memcpy(&resp->idm, (tmp + i), sizeof(struct inet_diag_msg));
-
-        size += sizeof(resp);
     }
+
+    memcpy(nl, resp, sizeof(resp));
 
     if (tmp != NULL) {
         free(tmp);
     }
 
-    return size;
+    return size * rc;
 }
 
 int process_netlink_request_not_supported(struct nlmsghdr *nl, struct nl_message *req)
@@ -385,6 +405,10 @@ int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *req, int flags
 {
     int rc = -1;
 
+    if (req == NULL) {
+        return 0;
+    }
+
     struct sock_diag_req *sdr = (struct sock_diag_req *)req->data;
 
     switch (sdr->sdiag_family) {
@@ -394,29 +418,24 @@ int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *req, int flags
             rc = process_netlink_request_tcp(nl, req);
             break;
         default:
+            print_err("Not supported sdiag_protocol: %d\n", sdr->sdiag_protocol);
             rc = process_netlink_request_not_supported(nl, req);
             break;
         }
         break;
     default:
+        print_err("Not supported sdiag_family: %d\n", sdr->sdiag_family);
         rc = process_netlink_request_not_supported(nl, req);
         break;
     }
-    
-    if (flags & (MSG_PEEK | MSG_TRUNC)) {
-        // Empty out msg_iov contents
-        nl->nlmsg_flags = MSG_TRUNC;
-        return rc;
+
+    if (!(flags & (MSG_PEEK | MSG_TRUNC))) {
+        // Request has been consumed, delete it
+        assert(message_free(req) == 0);
     }
 
-    // Remove nl_message from list
-    nl->nlmsg_len = 20;
-    nl->nlmsg_type = NLMSG_DONE;
-    nl->nlmsg_flags = NLM_F_MULTI;
-    nl->nlmsg_seq = 123456;
-    nl->nlmsg_pid = 0;
-
     printf("Returning nlmsghdr: nlmsg_type DONE %d, flags MULTI %d\n", nl->nlmsg_type & NLMSG_DONE, nl->nlmsg_flags & NLM_F_MULTI);
+    printf("Rc %d\n", rc);
     
     return rc;
 }
@@ -438,12 +457,26 @@ int netlink_recvmsg(struct socket *sock, struct msghdr *message, int flags)
 
     struct nl_message *nlm = find_netlink_request(sock->fd);
 
-    if (nlm == NULL) {
-        return -EBADF;
-    }
-
     int rc = demux_netlink_request(nl, nlm, flags);
 
+    if (rc == 0) {
+        rc = 20;
+    }
+
+    if (flags & (MSG_PEEK | MSG_TRUNC)) {
+        // Empty out msg_iov contents
+        nl->nlmsg_flags = MSG_TRUNC;
+        return rc;
+    }
+    
+    if (rc == 20) {
+        nl->nlmsg_len = 20;
+        nl->nlmsg_type = NLMSG_DONE;
+        nl->nlmsg_flags = NLM_F_MULTI;
+        nl->nlmsg_seq = 123456;
+        nl->nlmsg_pid = 0;
+    }
+    
     v->iov_len = rc;
 
     return rc;

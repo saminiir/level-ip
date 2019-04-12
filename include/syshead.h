@@ -1,6 +1,7 @@
 #ifndef SYSHEAD_H
 #define SYSHEAD_H
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
