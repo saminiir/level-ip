@@ -338,7 +338,7 @@ int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
     memset(ptr, 0, sizeof(struct inet_diag_msg));
 
     idm->idiag_family = AF_INET;
-    idm->idiag_state = TCP_ESTABLISHED;
+    idm->idiag_state = s->sk->state;
     idm->idiag_timer = 0;
     idm->idiag_retrans = 0;
     idm->idiag_expires = 0;
@@ -346,8 +346,10 @@ int convert_socket_to_inet_tcp_diag_msg(struct socket *s, uint8_t *ptr)
     idm->idiag_wqueue = 0;
     idm->idiag_uid = 0;
     idm->idiag_inode = 0;
-    idm->id.idiag_sport = htons(1337);
-    idm->id.idiag_dport = htons(1337);
+    idm->id.idiag_sport = htons(s->sk->sport);
+    idm->id.idiag_dport = htons(s->sk->dport);
+    idm->id.idiag_src[0] = htonl(s->sk->saddr);
+    idm->id.idiag_dst[0] = htonl(s->sk->daddr);
     idm->id.idiag_if = 0;
     
     return sizeof(struct inet_diag_msg);
