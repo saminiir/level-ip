@@ -184,7 +184,7 @@ out:
     return sock;
 }
 
-int filter_sockets(int family, int proto, uint8_t **store,
+int filter_sockets(int family, int type, uint8_t **store,
                    int (*f)(struct socket *s, uint8_t *ptr), int size)
 {
     struct list_head *item;
@@ -199,7 +199,7 @@ int filter_sockets(int family, int proto, uint8_t **store,
     list_for_each(item, &sockets) {
         sock = list_entry(item, struct socket, list);
 
-        if (sock->family == family && sock->sk->protocol == proto) {
+        if (sock->family == family && sock->type == type) {
             allocated += size;
 
             *store = realloc(*store, allocated);

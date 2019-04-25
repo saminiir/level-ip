@@ -360,7 +360,7 @@ int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
 
     struct inet_diag_msg *tmp = NULL;
 
-    int rc = filter_sockets(AF_INET, IPPROTO_TCP, (uint8_t **)&tmp, convert_socket_to_inet_tcp_diag_msg, sizeof(struct inet_diag_msg));
+    int rc = filter_sockets(AF_INET, SOCK_STREAM, (uint8_t **)&tmp, convert_socket_to_inet_tcp_diag_msg, sizeof(struct inet_diag_msg));
 
     if (rc < 0) {
         perror("Failed on netlink TCP processing");
@@ -378,16 +378,16 @@ int process_netlink_request_tcp(struct nlmsghdr *nl, struct nl_message *req)
     size_t size = sizeof(struct nlmsghdr) + sizeof(struct inet_diag_msg) + sizeof(struct nlattr) + sizeof(uint32_t);
 
     for (int i = 0; i < rc; i++) {
-        resp->nlh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
-        resp->nlh.nlmsg_len = size;
-        resp->nlh.nlmsg_flags = NLM_F_MULTI;
-        resp->nlh.nlmsg_seq = 123456;
-        resp->nlh.nlmsg_pid = 0;
-        resp->nla.nla_len = 5;
-        resp->nla.nla_type = INET_DIAG_SHUTDOWN;
-        resp->flag = 0;
+        resp[i].nlh.nlmsg_type = SOCK_DIAG_BY_FAMILY;
+        resp[i].nlh.nlmsg_len = size;
+        resp[i].nlh.nlmsg_flags = NLM_F_MULTI;
+        resp[i].nlh.nlmsg_seq = 123456;
+        resp[i].nlh.nlmsg_pid = 0;
+        resp[i].nla.nla_len = 5;
+        resp[i].nla.nla_type = INET_DIAG_SHUTDOWN;
+        resp[i].flag = 0;
 
-        memcpy(&resp->idm, (tmp + i), sizeof(struct inet_diag_msg));
+        memcpy(&resp[i].idm, (tmp + i), sizeof(struct inet_diag_msg));
     }
 
     memcpy(nl, resp, sizeof(resp));
