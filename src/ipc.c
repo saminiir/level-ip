@@ -480,8 +480,6 @@ static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
 
     rc = _recvmsg(pid, payload->sockfd, &message, payload->flags);
 
-    printf("ipc msg len is now %d\n", payload->msg_iovlen);
-
     int iovlen = 0;
 
     for (int i = 0; i < payload->msg_iovlen; i++) {
@@ -503,8 +501,6 @@ static int ipc_recvmsg(int sockfd, struct ipc_msg *msg)
 
     error->rc = rc < 0 ? -1 : rc;
     error->err = rc < 0 ? -rc : 0;
-
-    printf("IPC recvmsg sending %d bytes\n", resplen);
 
     if (ipc_try_send(sockfd, (char *)response, resplen) == -1) {
         perror("Error on writing IPC recvmsg response");

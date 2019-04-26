@@ -286,8 +286,6 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
     int rc = 0;
     struct nl_message *nlmsg;
 
-    printf("Netlink message amount %d\n", message_amount);
-
     for (int i = 0; i<message->msg_iovlen; i++) {
         struct iovec *v = &message->msg_iov[i];
         struct nlmsghdr *nl = v->iov_base;
@@ -300,12 +298,6 @@ int netlink_sendmsg(struct socket *sock, const struct msghdr *message, int flags
         message_amount++;
         pthread_rwlock_unlock(&mlock);
 
-        printf("nl len %d, nl type %d, nl flags %d\n", nl->nlmsg_len, nl->nlmsg_type, nl->nlmsg_flags);
-        printf("nl pid %d, nl seq %d\n", nl->nlmsg_pid, nl->nlmsg_seq);
-        printf("sdr family %d, proto %d\n", sdr->sdiag_family, sdr->sdiag_protocol);
-        
-        printf("type is sock_diag %d\n", nl->nlmsg_type == SOCK_DIAG_BY_FAMILY);
-        printf("type is sock_diag %d\n", 1 == 1);
         rc += nl->nlmsg_len;
     }
 
@@ -437,9 +429,6 @@ int demux_netlink_request(struct nlmsghdr *nl, struct nl_message *req, int flags
         assert(message_free(req) == 0);
     }
 
-    printf("Returning nlmsghdr: nlmsg_type DONE %d, flags MULTI %d\n", nl->nlmsg_type & NLMSG_DONE, nl->nlmsg_flags & NLM_F_MULTI);
-    printf("Rc %d\n", rc);
-    
     return rc;
 }
 

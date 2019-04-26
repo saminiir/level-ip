@@ -219,10 +219,6 @@ int filter_sockets(int family, int type, uint8_t **store,
         }
     }
 
-    printf("Iterated through sockets %d\n", amount);
-
-    printf("Store pointer location %p\n", *store);
-
     return amount;
 
 error:
