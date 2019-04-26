@@ -118,6 +118,22 @@ void init_security()
         perror("Error on capability set drop");
         exit(1);
     }
+
+    // 65534 should be `nobody` according to http://www.linfo.org/uid.html
+    if (setgid(65534) != 0) {
+        perror("Error on changing gid");
+        exit(1);
+    }
+
+    if (setuid(65534) != 0) {
+        perror("Error on changing uid");
+        exit(1);
+    }
+
+    if (getuid() == 0 || getgid() == 0) {
+        print_err("Error on dropping root privileges\n");
+        exit(1);
+    }
 }
 
 int main(int argc, char** argv)

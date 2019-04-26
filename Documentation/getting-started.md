@@ -12,13 +12,7 @@ Standard `make` stuff.
 
     make all
 
-This builds `lvl-ip` itself, but also the libc wrapper and provided example applications.
-
-When building, `sudo setcap ...` probably asks super user permissions from you. This is because `lvl-ip` needs the `CAP_NET_ADMIN` capability to setup itself. After the setup, it drops that capability.
-
-Currently, `lvl-ip` also configures the tap interface through the `ip` tool. Hence, give it permissions too:
-
-    sudo setcap cap_net_admin=ep $(which ip)
+This builds `lvl-ip` and the libc wrapper (under `tools/`) and provided example applications (under `apps/`).
 
 # Setup
 
@@ -45,9 +39,13 @@ See http://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-9.html f
 
 When you've built lvl-ip and setup your host stack to forward packets, you can try communicating to the Internet:
 
-    ./lvl-ip
+    sudo ./lvl-ip
 
-The userspace TCP/IP stack should start. Now, first test communications with the provided applications:
+(Super-user privileges are needed for configuring the tap interface, but the privileges are dropped before the TCP stack starts.)
+
+The userspace TCP/IP stack should start. 
+
+Now, first test communications with the provided applications:
 
     cd tools
     ./level-ip ../apps/curl/curl google.com 80
@@ -56,10 +54,6 @@ The userspace TCP/IP stack should start. Now, first test communications with the
 
 The important point is that `./level-ip` aims to be usable against any existing dynamically-linked application. Let's try the _real_ `curl`:
 
-    [saminiir@localhost tools]$ curl --version
-    curl 7.50.0 (x86_64-pc-linux-gnu) libcurl/7.50.0 OpenSSL/1.0.2h zlib/1.2.8 libidn/1.33 libssh2/1.7.0
-    Protocols: dict file ftp ftps gopher http https imap imaps pop3 pop3s rtsp scp sftp smb smbs smtp smtps telnet tftp
-    Features: AsynchDNS IDN IPv6 Largefile GSS-API Kerberos SPNEGO NTLM NTLM_WB SSL libz TLS-SRP UnixSockets
     [saminiir@localhost tools]$ curl google.com
     <HTML><HEAD><meta http-equiv="content-type" content="text/html;charset=utf-8">
     <TITLE>302 Moved</TITLE></HEAD><BODY>
@@ -87,7 +81,6 @@ Try browsing the Web, with Level-IP doing the packet transfer:
     [saminiir@localhost tools]$ ./level-ip firefox google.com
 
 That's it!
-
 
 # Troubleshooting
 
