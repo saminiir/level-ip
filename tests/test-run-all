@@ -5,7 +5,7 @@ set -eu
 source "utils/common"
 
 function teardown {
-    kill "$stackip"
+    sudo killall lvl-ip
 }
 
 trap teardown EXIT ERR
