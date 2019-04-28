@@ -26,6 +26,7 @@ function test_pass {
 
 function test_fail {
     echo -e "\t$2 Test fail: $1" 2>&1
+    cat ../lvl-ip-test.log
     exit 1
 }
 
