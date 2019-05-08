@@ -9,21 +9,6 @@ char *tapaddr = "10.0.0.5";
 char *cidr = "10.0.0.5/24";
 char *taproute = "10.0.0.0/24";
 
-static int set_if_route(char *dev, char *cidr)
-{
-    return run_cmd("ip route add dev %s %s", dev, cidr);
-}
-
-static int set_if_address(char *dev, char *cidr)
-{
-    return run_cmd("ip address add dev %s local %s", dev, cidr);
-}
-
-static int set_if_up(char *dev)
-{
-    return run_cmd("ip link set dev %s up", dev);
-}
-
 /*
  * Taken from Kernel Documentation/networking/tuntap.txt
  */
@@ -48,6 +33,7 @@ static int tun_alloc(char *dev)
      */
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     if( *dev ) {
+        printf("dev is %s\n", dev);
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
     }
 
@@ -56,8 +42,7 @@ static int tun_alloc(char *dev)
         close(fd);
         return err;
     }
-
-    strcpy(dev, ifr.ifr_name);
+    
     return fd;
 }
 
@@ -73,20 +58,7 @@ int tun_write(char *buf, int len)
 
 void tun_init()
 {
-    dev = calloc(10, 1);
-    tun_fd = tun_alloc(dev);
-
-    if (set_if_up(dev) != 0) {
-        print_err("ERROR when setting up if\n");
-    }
-
-    if (set_if_route(dev, taproute) != 0) {
-        print_err("ERROR when setting route for if\n");
-    }
-
-    if (set_if_address(dev, cidr) != 0) {
-        print_err("ERROR when setting addr for if\n");
-    }
+    tun_fd = tun_alloc("tap0");
 }
 
 void free_tun()

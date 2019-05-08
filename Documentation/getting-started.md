@@ -20,6 +20,9 @@ Level-IP uses a Linux TAP device to communicate to the outside world. In short, 
 
     sudo mknod /dev/net/tap c 10 200
     sudo chmod 0666 /dev/net/tap
+    sudo ip tuntap add mode tap tap0
+    sudo ip link set dev tap0 up
+    sudo ip addr add 10.0.0.5/24 dev tap0
 
 In essence, `lvl-ip` operates as a host inside the tap device's subnet. Therefore, in order to communicate with other hosts, the tap device needs to be set in a forwarding mode:
 
@@ -39,9 +42,7 @@ See http://www.netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-9.html f
 
 When you've built lvl-ip and setup your host stack to forward packets, you can try communicating to the Internet:
 
-    sudo ./lvl-ip
-
-(Super-user privileges are needed for configuring the tap interface, but the privileges are dropped before the TCP stack starts.)
+    ./lvl-ip
 
 The userspace TCP/IP stack should start. 
 
@@ -101,7 +102,3 @@ $ modprobe tun
 ```
 
 Otherwise, consult your distro's documentation on setting it up.
-
-## Missing capabilities for Level-IP
-
-`lvl-ip` requires the `CAP_NET_ADMIN` capability to bind to the tap device.
