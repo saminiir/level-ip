@@ -586,7 +586,7 @@ void *start_ipc_listener()
     }
 
     if ((fd = socket(AF_UNIX, SOCK_STREAM, 0)) < 0) {
-        exit_with_error(fd, "IPC listener UNIX socket");
+        exit_with_error(fd, "Unable to create IPC UNIX socket");
     }
 
     memset(&un, 0, sizeof(struct sockaddr_un));
@@ -594,11 +594,12 @@ void *start_ipc_listener()
     strncpy(un.sun_path, sockname, sizeof(un.sun_path) - 1);
 
     if ((rc = bind(fd, (const struct sockaddr *) &un, sizeof(struct sockaddr_un))) == -1) {
-        exit_with_error(rc, "IPC bind");
+        print_err("Check socket file permissions: %s\n", sockname);
+        exit_with_error(rc, "Unable to bind to IPC socket");
     }
 
     if ((rc = listen(fd, 20)) == -1) {
-        exit_with_error(rc, "IPC listen");
+        exit_with_error(rc, "Unable to listen on IPC socket");
     }
 
     if ((rc = chmod(sockname, S_IRUSR | S_IWUSR | S_IXUSR |

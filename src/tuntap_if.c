@@ -33,7 +33,6 @@ static int tun_alloc(char *dev)
      */
     ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
     if( *dev ) {
-        printf("dev is %s\n", dev);
         strncpy(ifr.ifr_name, dev, IFNAMSIZ);
     }
 
