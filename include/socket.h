@@ -50,6 +50,8 @@ struct sock_ops {
                         socklen_t *restrict address_len);
     int (*getsockname) (struct socket *sock, struct sockaddr *restrict addr,
                         socklen_t *restrict address_len);
+    int (*sendmsg) (struct socket *sock, const struct msghdr *message, int flags);
+    int (*recvmsg) (struct socket *sock, struct msghdr *message, int flags);
 };
 
 struct net_family {
@@ -62,6 +64,7 @@ struct socket {
     pid_t pid;
     int refcnt;
     enum socket_state state;
+    int family;
     short type;
     int flags;
     struct sock *sk;
@@ -83,9 +86,13 @@ int _getpeername(pid_t pid, int socket, struct sockaddr *restrict address,
                  socklen_t *restrict address_len);
 int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
                  socklen_t *restrict address_len);
+int _sendmsg (pid_t pid, int socket, const struct msghdr *message, int flags);
+int _recvmsg (pid_t pid, int socket, struct msghdr *message, int flags);
 
 struct socket *socket_lookup(uint16_t sport, uint16_t dport);
 struct socket *socket_find(struct socket *sock);
+int filter_sockets(int family, int proto, uint8_t **store,
+                   int (*f)(struct socket *s, uint8_t *ptr), int size);
 int socket_rd_acquire(struct socket *sock);
 int socket_wr_acquire(struct socket *sock);
 int socket_release(struct socket *sock);

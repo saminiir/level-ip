@@ -113,6 +113,8 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
             goto out;
         }
 
+        // False thread deadlock detected here by TSan?
+        // See commit c60d98322964976439ad4f09344de2989131d091
         pthread_mutex_lock(&sock->sleep.lock);
         while (sock->state == SS_CONNECTING && sk->err == -EINPROGRESS) {
             socket_release(sock);
@@ -120,7 +122,6 @@ static int inet_stream_connect(struct socket *sock, const struct sockaddr *addr,
             socket_wr_acquire(sock);
         }
         pthread_mutex_unlock(&sock->sleep.lock);
-        socket_wr_acquire(sock);
         
         switch (sk->err) {
         case -ETIMEDOUT:

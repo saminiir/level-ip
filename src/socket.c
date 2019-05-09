@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "socket.h"
 #include "inet.h"
+#include "netlink.h"
 #include "wait.h"
 #include "timer.h"
 
@@ -10,9 +11,11 @@ static LIST_HEAD(sockets);
 static pthread_rwlock_t slock = PTHREAD_RWLOCK_INITIALIZER;
 
 extern struct net_family inet;
+extern struct net_family netlink;
 
 static struct net_family *families[128] = {
     [AF_INET] = &inet,
+    [AF_NETLINK] = &netlink,
 };
 
 static struct socket *alloc_socket(pid_t pid)
@@ -181,6 +184,47 @@ out:
     return sock;
 }
 
+int filter_sockets(int family, int type, uint8_t **store,
+                   int (*f)(struct socket *s, uint8_t *ptr), int size)
+{
+    struct list_head *item;
+    struct socket *sock = NULL;
+
+    int rc = 0;
+    int allocated = 0;
+    int amount = 0;
+
+    // Socket mutex should already be locked upstairs
+    
+    list_for_each(item, &sockets) {
+        sock = list_entry(item, struct socket, list);
+
+        if (sock->family == family && sock->type == type) {
+            allocated += size;
+
+            *store = realloc(*store, allocated);
+            if (*store == NULL) {
+                perror("Failed on allocating socket filter store memory");
+                goto error;
+            }
+            
+            rc = f(sock, (*store + (rc * amount)));
+
+            if (rc < 0) {
+                perror("Failed on socket filtering");
+                goto error;
+            }
+
+            amount++;
+        }
+    }
+
+    return amount;
+
+error:
+    return -1;
+}
+
 #ifdef DEBUG_SOCKET
 void socket_debug()
 {
@@ -216,6 +260,7 @@ int _socket(pid_t pid, int domain, int type, int protocol)
     }
 
     sock->type = type;
+    sock->family = domain;
 
     family = families[domain];
 
@@ -464,5 +509,39 @@ int _getsockname(pid_t pid, int socket, struct sockaddr *restrict address,
     int rc = sock->ops->getsockname(sock, address, address_len);
     socket_release(sock);
 
+    return rc;
+}
+
+int _sendmsg(pid_t pid, int socket, const struct msghdr *msg, int flags)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Sendmsg: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    socket_wr_acquire(sock);
+    int rc = sock->ops->sendmsg(sock, msg, flags);
+    socket_release(sock);
+
+    return rc;
+}
+
+int _recvmsg(pid_t pid, int socket, struct msghdr *msg, int flags)
+{
+    struct socket *sock;
+
+    if ((sock = get_socket(pid, socket)) == NULL) {
+        print_err("Recvmsg: could not find socket (fd %u) for connection (pid %d)\n", socket, pid);
+        return -EBADF;
+    }
+
+    pthread_rwlock_rdlock(&slock);
+    socket_rd_acquire(sock);
+    int rc = sock->ops->recvmsg(sock, msg, flags);
+    socket_release(sock);
+    pthread_rwlock_unlock(&slock);
+    
     return rc;
 }

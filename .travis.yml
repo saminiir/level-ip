@@ -12,5 +12,7 @@ before_install:
 script:
   - sudo mknod /dev/net/tap c 10 200
   - sudo chmod 0666 /dev/net/tap
-  - sudo setcap cap_net_admin=ep /bin/ip
+  - sudo ip tuntap add mode tap tap0
+  - sudo ip link set dev tap0 up
+  - sudo ip addr add 10.0.0.5/24 dev tap0
   - make test

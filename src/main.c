@@ -107,26 +107,12 @@ void free_stack()
     free_tun();
 }
 
-void init_security()
-{
-    if (prctl(PR_CAPBSET_DROP, CAP_NET_ADMIN) == -1) {
-        perror("Error on network admin capability drop");
-        exit(1);
-    }
-
-    if (prctl(PR_CAPBSET_DROP, CAP_SETPCAP) == -1) {
-        perror("Error on capability set drop");
-        exit(1);
-    }
-}
-
 int main(int argc, char** argv)
 {
     parse_cli(argc, argv);
     
     init_signals();
     init_stack();
-    init_security();
     
     run_threads();
     wait_for_threads();

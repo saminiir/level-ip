@@ -7,7 +7,7 @@
 #define ipc_dbg(msg, th)                                                \
     do {                                                                \
         print_debug("IPC sockets count %d, current sock %d, tid %lu: %s", \
-                    socket_count, th->sock, th->id, msg);             \
+                socket_count, th->sock, th->id, msg);             \
     } while (0)
 #else
 #define ipc_dbg(msg, th)
@@ -26,6 +26,8 @@ void *start_ipc_listener();
 #define IPC_SETSOCKOPT  0x0009
 #define IPC_GETPEERNAME 0x000A
 #define IPC_GETSOCKNAME 0x000B
+#define IPC_SENDMSG     0x000C
+#define IPC_RECVMSG     0x000D
 
 struct ipc_thread {
     struct list_head list;
@@ -104,5 +106,19 @@ struct ipc_sockname {
     socklen_t address_len;
     uint8_t sa_data[128];
 };
+
+struct ipc_msghdr {
+    int sockfd;
+    socklen_t msg_namelen;
+    int msg_iovlen;
+    socklen_t msg_controllen;
+    int flags;
+    uint8_t data[];
+} __attribute__((packed));
+
+struct ipc_iovec {
+    size_t iov_len;
+    uint8_t iov_base[];
+} __attribute__((packed));
 
 #endif

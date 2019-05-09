@@ -7,9 +7,6 @@ apps = apps/curl/curl
 
 lvl-ip: $(obj)
 	$(CC) $(CFLAGS) $(CPPFLAGS) $(obj) -o lvl-ip
-	@echo
-	@echo "lvl-ip needs CAP_NET_ADMIN:"
-	sudo setcap cap_setpcap,cap_net_admin=ep lvl-ip
 
 build/%.o: src/%.c ${headers}
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
