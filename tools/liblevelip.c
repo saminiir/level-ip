@@ -368,21 +368,25 @@ ssize_t recvfrom(int fd, void *restrict buf, size_t len,
 
 int poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-    struct pollfd *kernel_fds[nfds];
+    struct pollfd kernel_fds[nfds];
     struct pollfd *lvlip_fds[nfds];
     int lvlip_nfds = 0;
     int kernel_nfds = 0;
     int lvlip_sock = 0;
+    int kfds_fds_map[nfds];
 
     struct lvlip_sock *sock = NULL;
 
+    memset(kfds_fds_map, 0, sizeof(kfds_fds_map));
     for (int i = 0; i < nfds; i++) {
         struct pollfd *pfd = &fds[i];
         if ((sock = lvlip_get_sock(pfd->fd)) != NULL) {
             lvlip_fds[lvlip_nfds++] = pfd;
             lvlip_sock = sock->lvlfd;
         } else {
-            kernel_fds[kernel_nfds++] = pfd;
+            memcpy(&kernel_fds[kernel_nfds], pfd, sizeof(struct pollfd));
+            kfds_fds_map[kernel_nfds] = i;
+            kernel_nfds++;
         }
     }
 
@@ -403,12 +407,16 @@ int poll(struct pollfd *fds, nfds_t nfds, int timeout)
                 lvl_dbg("Kernel nfd %d events %d timeout %d", kernel_fds[i]->fd, kernel_fds[i]->events, timeout);
             }
             
-            events = _poll(*kernel_fds, kernel_nfds, timeout);
+            events = _poll(kernel_fds, kernel_nfds, timeout);
 
             if (events == -1) {
                 perror("Poll kernel error");
                 errno = EAGAIN;
                 return -1;
+            }
+
+            for (int i = 0; i < kernel_nfds; i++) {
+                memcpy(&fds[kfds_fds_map[i]], &kernel_fds[i], sizeof(struct pollfd));
             }
         }
 
